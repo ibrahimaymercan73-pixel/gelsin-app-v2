@@ -14,8 +14,7 @@ export default function ProviderDashboard() {
       const { data: { user } } = await supabase.auth.getUser()
       const { data: p } = await supabase.from('profiles').select('full_name').eq('id', user!.id).single()
       setName(p?.full_name || '')
-      const { data: pp } = await supabase.from('provider_profiles')
-        .select('wallet_balance, is_online').eq('id', user!.id).single()
+      const { data: pp } = await supabase.from('provider_profiles').select('wallet_balance, is_online').eq('id', user!.id).single()
       setIsOnline(pp?.is_online || false)
       const [active, pending, total] = await Promise.all([
         supabase.from('jobs').select('id', { count: 'exact' }).eq('provider_id', user!.id).in('status', ['accepted','started']),
@@ -39,52 +38,92 @@ export default function ProviderDashboard() {
     setIsOnline(!isOnline)
   }
 
-  return (
-    <div>
-      <div className="bg-gradient-to-br from-blue-700 to-blue-900 px-5 pt-14 pb-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-blue-300 text-sm">Hoş geldin 👷</p>
-            <h1 className="text-xl font-black mt-0.5">{name || 'Usta'}</h1>
-          </div>
-          <button onClick={toggleOnline}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm transition-all ${
-              isOnline ? 'bg-emerald-500 text-white' : 'bg-white/20 text-white'
-            }`}>
-            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-gray-400'}`} />
-            {isOnline ? 'Çevrimiçi' : 'Çevrimdışı'}
-          </button>
-        </div>
-      </div>
+  const statCards = [
+    { label: 'Aktif Is', value: stats.active, icon: '🔨', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-100', href: '/provider/my-jobs' },
+    { label: 'Bekleyen Teklif', value: stats.pending, icon: '💬', color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-100', href: '/provider/jobs' },
+    { label: 'Cuzdan', value: `₺\${stats.wallet}`, icon: '💰', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-100', href: '/provider/wallet' },
+    { label: 'Toplam Kazanc', value: `₺\${stats.total.toFixed(0)}`, icon: '📈', color: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-100', href: '/provider/wallet' },
+  ]
 
-      <div className="px-4 py-4 space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: 'Aktif İş', value: stats.active, icon: '🔨', color: 'text-blue-700', bg: 'bg-blue-50', href: '/provider/my-jobs' },
-            { label: 'Bekleyen Teklif', value: stats.pending, icon: '💬', color: 'text-orange-700', bg: 'bg-orange-50', href: '/provider/jobs' },
-            { label: 'Cüzdan', value: `₺${stats.wallet}`, icon: '💰', color: 'text-emerald-700', bg: 'bg-emerald-50', href: '/provider/wallet' },
-            { label: 'Toplam Kazanç', value: `₺${stats.total.toFixed(0)}`, icon: '📈', color: 'text-purple-700', bg: 'bg-purple-50', href: '/provider/wallet' },
-          ].map(s => (
+  return (
+    <div className="min-h-screen bg-[#F4F7FA]">
+      <header className="px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
+        <div>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Hos geldin</p>
+          <h1 className="text-xl lg:text-2xl font-black text-slate-800 mt-0.5">{name || 'Usta'}</h1>
+        </div>
+        <button onClick={toggleOnline}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-sm \${
+            isOnline ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-white text-slate-600 border border-slate-200'
+          }`}>
+          <div className={`w-2 h-2 rounded-full \${isOnline ? 'bg-white animate-pulse' : 'bg-slate-400'}`} />
+          {isOnline ? 'Cevrimici' : 'Cevrimdisi'}
+        </button>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-8 space-y-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {statCards.map((s, i) => (
             <Link key={s.label} href={s.href}>
-              <div className="card p-4 active:scale-98 transition-transform">
-                <div className={`w-9 h-9 ${s.bg} rounded-xl flex items-center justify-center text-lg mb-2`}>{s.icon}</div>
-                <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+              <div className={`bg-white rounded-2xl p-5 border \${s.border} shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 animate-slide-up`}
+                style={{ animationDelay: `\${i * 0.06}s` }}>
+                <div className={`w-10 h-10 \${s.bg} rounded-xl flex items-center justify-center text-xl mb-3`}>{s.icon}</div>
+                <p className={`text-3xl font-black \${s.color}`}>{s.value}</p>
+                <p className="text-sm text-gray-500 mt-1 font-medium">{s.label}</p>
               </div>
             </Link>
           ))}
         </div>
 
-        <Link href="/provider/jobs">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-5 flex items-center justify-between text-white"
-            style={{ boxShadow: '0 4px 24px rgba(37,99,235,0.35)' }}>
-            <div>
-              <p className="font-black text-base">Radar'ı Aç</p>
-              <p className="text-blue-200 text-xs mt-0.5">Yakınındaki işleri gör, teklif ver</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Link href="/provider/jobs">
+            <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-[2rem] p-8 lg:p-10 text-white relative overflow-hidden shadow-xl shadow-blue-200 hover:shadow-2xl hover:-translate-y-1 transition-all">
+              <div className="relative z-10">
+                <p className="text-blue-200 text-sm font-semibold uppercase tracking-widest mb-2">Radar</p>
+                <p className="text-3xl font-black mb-2">Yakindaki isleri gor</p>
+                <p className="text-blue-200 mb-6">Bolgenizdeki acik is ilanlarına teklif verin</p>
+                <span className="bg-white text-blue-700 px-6 py-3 rounded-xl font-bold text-sm inline-block">Radari Ac</span>
+              </div>
+              <div className="absolute right-[-20px] bottom-[-20px] text-[160px] opacity-10 select-none">🔍</div>
             </div>
-            <div className="text-3xl">🔍</div>
-          </div>
-        </Link>
+          </Link>
+
+          <Link href="/provider/my-jobs">
+            <div className="bg-white rounded-[2rem] p-8 lg:p-10 relative overflow-hidden shadow-sm border border-slate-100 hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="relative z-10">
+                <p className="text-slate-400 text-sm font-semibold uppercase tracking-widest mb-2">Devam Eden</p>
+                <p className="text-3xl font-black text-slate-800 mb-2">{stats.active} Aktif Is</p>
+                <p className="text-slate-500 mb-6">Surdurudugunuz isleri takip edin</p>
+                <span className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold text-sm inline-block">Islerimi Gor</span>
+              </div>
+              <div className="absolute right-[-20px] bottom-[-20px] text-[160px] opacity-5 select-none">🔨</div>
+            </div>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Link href="/provider/wallet">
+            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center gap-5">
+              <div className="w-14 h-14 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center text-2xl">💰</div>
+              <div>
+                <p className="text-sm text-slate-500 font-medium">Cuzdan Bakiyesi</p>
+                <p className="text-3xl font-black text-emerald-600">₺{stats.wallet}</p>
+              </div>
+              <span className="ml-auto text-slate-300 text-2xl">→</span>
+            </div>
+          </Link>
+
+          <Link href="/provider/profile">
+            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center gap-5">
+              <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-2xl">👤</div>
+              <div>
+                <p className="text-sm text-slate-500 font-medium">Profilim</p>
+                <p className="text-lg font-black text-slate-800">{name || 'Profili Duzenle'}</p>
+              </div>
+              <span className="ml-auto text-slate-300 text-2xl">→</span>
+            </div>
+          </Link>
+        </div>
       </div>
     </div>
   )
