@@ -103,3 +103,4 @@ Müşteri iş açar (status: open)
 - ✅ KVKK uyumlu belge yönetimi (onay sonrası otomatik silme)
 - ✅ Escrow (havuz) sistemi ve komisyon yönetimi
 - ✅ Admin canlı operasyon haritası
+# fix
