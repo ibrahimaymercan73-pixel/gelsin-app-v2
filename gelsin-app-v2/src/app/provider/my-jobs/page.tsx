@@ -1,0 +1,193 @@
+'use client'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase'
+import Link from 'next/link'
+import dynamic from 'next/dynamic'
+
+const QrScanner = dynamic(() => import('@/components/QrScanner'), { ssr: false })
+
+export default function ProviderMyJobsPage() {
+  const [jobs, setJobs] = useState<any[]>([])
+  const [scanModal, setScanModal] = useState<{ jobId: string; action: 'start' | 'end' } | null>(null)
+  const [pinModal, setPinModal] = useState<{ jobId: string; action: 'start' | 'end' } | null>(null)
+  const [pin, setPin] = useState('')
+  const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null)
+
+  const load = async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data } = await supabase.from('jobs')
+      .select('*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone)')
+      .eq('provider_id', user!.id)
+      .in('status', ['accepted', 'started'])
+      .order('created_at', { ascending: false })
+    setJobs(data || [])
+  }
+
+  useEffect(() => { load() }, [])
+
+  const processToken = async (jobId: string, action: 'start' | 'end', token: string) => {
+    const job = jobs.find(j => j.id === jobId)
+    const expected = action === 'start' ? job?.qr_token : job?.end_qr_token
+    if (!expected || token.toUpperCase() !== expected.slice(-6).toUpperCase()) {
+      setResult({ ok: false, msg: 'Kod hatalı veya eşleşmiyor!' })
+      return false
+    }
+    return true
+  }
+
+  const handleQRScan = async (jobId: string, action: 'start' | 'end', raw: string) => {
+    setScanModal(null)
+    try {
+      const parsed = JSON.parse(raw)
+      const job = jobs.find(j => j.id === jobId)
+      const expectedToken = action === 'start' ? job?.qr_token : job?.end_qr_token
+      if (parsed.job_id !== jobId || parsed.token !== expectedToken || parsed.action !== action) {
+        setResult({ ok: false, msg: 'QR kod bu iş için geçersiz!' })
+        return
+      }
+      await completeAction(jobId, action)
+    } catch {
+      setResult({ ok: false, msg: 'QR kod okunamadı.' })
+    }
+  }
+
+  const handlePINSubmit = async () => {
+    if (!pinModal) return
+    const valid = await processToken(pinModal.jobId, pinModal.action, pin)
+    if (valid) await completeAction(pinModal.jobId, pinModal.action)
+    setPinModal(null)
+    setPin('')
+  }
+
+  const completeAction = async (jobId: string, action: 'start' | 'end') => {
+    const supabase = createClient()
+    const job = jobs.find(j => j.id === jobId)
+    if (action === 'start') {
+      await supabase.from('jobs').update({ status: 'started', qr_scanned_at: new Date().toISOString() }).eq('id', jobId)
+      await supabase.from('notifications').insert({
+        user_id: job.customer_id, title: '🔨 Usta İşe Başladı!',
+        body: `"${job.title}" işi başladı.`, type: 'job_started', related_job_id: jobId
+      })
+      setResult({ ok: true, msg: '✅ İş başlatıldı! Göreve devam edin.' })
+    } else {
+      await supabase.rpc('release_payment', { p_job_id: jobId })
+      await supabase.from('notifications').insert({
+        user_id: job.customer_id, title: '✅ İş Tamamlandı!',
+        body: 'Ödeme cüzdanınıza aktarıldı.', type: 'job_completed', related_job_id: jobId
+      })
+      setResult({ ok: true, msg: '🎉 İş tamamlandı! Ödeme cüzdanınıza aktarıldı.' })
+    }
+    await load()
+  }
+
+  return (
+    <div>
+      <div className="bg-white px-5 pt-14 pb-5 border-b border-gray-100">
+        <h1 className="text-2xl font-black text-gray-900">Kabul Ettiğim İşler</h1>
+        <p className="text-gray-500 text-sm mt-0.5">QR okutarak başlat ve bitir</p>
+      </div>
+
+      {result && (
+        <div className={`mx-4 mt-4 p-4 rounded-2xl flex items-center gap-3 animate-scale-in ${
+          result.ok ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'
+        }`}>
+          <p className={`font-semibold text-sm flex-1 ${result.ok ? 'text-emerald-800' : 'text-red-700'}`}>
+            {result.msg}
+          </p>
+          <button onClick={() => setResult(null)} className="text-gray-400 text-lg">✕</button>
+        </div>
+      )}
+
+      {/* QR Scanner Modal */}
+      {scanModal && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-end justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 w-full max-w-sm animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <p className="font-black text-gray-900">
+                {scanModal.action === 'start' ? '📱 Başlangıç QR Okut' : '🏁 Bitiş QR Okut'}
+              </p>
+              <button onClick={() => setScanModal(null)} className="text-gray-400 text-2xl leading-none">✕</button>
+            </div>
+            <QrScanner onScan={(data) => handleQRScan(scanModal.jobId, scanModal.action, data)} />
+            <button className="btn-secondary mt-3 py-3 text-sm"
+              onClick={() => { setScanModal(null); setPinModal(scanModal); }}>
+              🔢 PIN ile Gir
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* PIN Modal */}
+      {pinModal && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-end justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 w-full max-w-sm animate-slide-up space-y-4">
+            <p className="font-black text-gray-900 text-center">6 Haneli PIN Gir</p>
+            <input className="input text-center text-4xl tracking-[0.5em] font-black py-6"
+              type="text" maxLength={6} placeholder="——————"
+              value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} autoFocus />
+            <button className="btn-primary py-3.5" onClick={handlePINSubmit} disabled={pin.length < 6}>
+              Doğrula
+            </button>
+            <button className="btn-secondary py-3 text-sm" onClick={() => { setPinModal(null); setPin('') }}>
+              İptal
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="px-4 py-4 space-y-3">
+        {jobs.map(job => (
+          <div key={job.id} className="card p-4 animate-slide-up">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+                {job.service_categories?.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-900 truncate">{job.title}</p>
+                <p className="text-xs text-gray-500 mt-0.5">📍 {job.address}</p>
+                <p className="text-xs text-gray-400">👤 {job.profiles?.full_name || job.profiles?.phone}</p>
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <p className="text-xl font-black text-blue-700">₺{job.agreed_price}</p>
+                <span className={job.status === 'started' ? 'badge-orange' : 'badge-green'}>
+                  {job.status === 'started' ? '🔨 Devam' : '✅ Bekliyor'}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {job.status === 'accepted' && (
+                <button className="btn-primary py-3.5"
+                  onClick={() => setScanModal({ jobId: job.id, action: 'start' })}>
+                  📷 Başlangıç QR Okut
+                </button>
+              )}
+              {job.status === 'started' && (
+                <button className="btn-success py-3.5"
+                  onClick={() => setScanModal({ jobId: job.id, action: 'end' })}>
+                  🏁 Bitiş QR Okut
+                </button>
+              )}
+              <a href={`https://maps.google.com/?q=${job.lat},${job.lng}`}
+                target="_blank" rel="noopener noreferrer"
+                className="btn-secondary py-3 text-sm text-center block">
+                🗺️ Yol Tarifi Al
+              </a>
+            </div>
+          </div>
+        ))}
+
+        {jobs.length === 0 && (
+          <div className="flex flex-col items-center py-16 text-center">
+            <div className="text-5xl mb-4">📭</div>
+            <p className="font-bold text-gray-700">Kabul edilen iş yok</p>
+            <Link href="/provider/jobs" className="btn-primary mt-4 px-8 inline-block w-auto py-3 text-sm">
+              İşlere Bak
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
