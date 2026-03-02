@@ -60,56 +60,106 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col max-w-md mx-auto">
-      <div className="bg-gradient-to-br from-blue-600 to-blue-800 px-6 pt-16 pb-10 text-white">
-        <button onClick={() => router.back()} className="text-blue-200 text-sm mb-6 flex items-center gap-1">
-          ← Geri
+    <div className="min-h-screen flex flex-col lg:flex-row w-full font-sans selection:bg-blue-500 selection:text-white bg-slate-50">
+      
+      {/* Sol Panel - Marka ve Karşılama */}
+      <div className="relative lg:w-5/12 bg-gradient-to-br from-blue-600 to-blue-900 px-8 pt-16 pb-12 lg:p-16 text-white flex flex-col justify-center shadow-2xl z-10">
+        <button 
+          onClick={() => router.back()} 
+          className="absolute top-6 lg:top-10 left-6 lg:left-10 text-blue-200 hover:text-white text-sm font-bold flex items-center gap-2 transition-colors"
+        >
+          ← Geri Dön
         </button>
-        <div className="text-5xl mb-4">{defaultRole === 'provider' ? '🔧' : '🏡'}</div>
-        <h1 className="text-2xl font-black">
-          {step === 'phone' ? 'Telefon Numaranız' : 'SMS Kodu'}
+        
+        <div className="text-7xl lg:text-8xl mb-6 drop-shadow-xl animate-scale-in">
+          {defaultRole === 'provider' ? '🔧' : '🏡'}
+        </div>
+        
+        <h1 className="text-4xl lg:text-5xl font-black mb-4 tracking-tight leading-tight">
+          {defaultRole === 'provider' ? 'Usta Olarak\nGiriş Yapın' : 'Ev Sahibi Olarak\nGiriş Yapın'}
         </h1>
-        <p className="text-blue-200 text-sm mt-1">
+        
+        <p className="text-blue-100/90 text-lg lg:text-xl font-medium max-w-md leading-relaxed">
           {step === 'phone'
-            ? 'Güvenli giriş için SMS kodu göndereceğiz'
-            : `${phone} numarasına gönderildi`}
+            ? 'Güvenli giriş yapmak için telefon numaranızı girin. Size tek kullanımlık bir SMS kodu göndereceğiz.'
+            : `${phone} numaralı telefona gönderilen 6 haneli doğrulama kodunu girin.`}
         </p>
       </div>
 
-      <div className="flex-1 bg-white px-6 py-8 space-y-4 max-w-md w-full mx-auto">
-        {step === 'phone' && (
-          <div className="animate-slide-up space-y-4">
-            <div className="flex gap-2">
-              <div className="flex items-center px-3 bg-gray-100 rounded-xl text-sm font-bold text-gray-600 whitespace-nowrap border border-gray-200">
-                🇹🇷 +90
-              </div>
-              <input className="input flex-1" type="tel" placeholder="5XX XXX XX XX"
-                value={phone} onChange={e => setPhone(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && sendOtp()} autoFocus />
-            </div>
-            {error && <p className="text-red-500 text-sm bg-red-50 p-3 rounded-xl">{error}</p>}
-            <button className="btn-primary" onClick={sendOtp} disabled={loading || phone.length < 10}>
-              {loading ? 'Gönderiliyor...' : 'SMS Kodu Gönder →'}
-            </button>
+      {/* Sağ Panel - Form Alanı */}
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-16">
+        <div className="w-full max-w-md bg-white p-8 lg:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+          
+          <div className="space-y-2 mb-8">
+            <h2 className="text-2xl font-bold text-slate-900">
+              {step === 'phone' ? 'Telefon Numaranız' : 'SMS Kodunu Girin'}
+            </h2>
+            <p className="text-slate-500 text-sm font-medium">
+              {step === 'phone' ? 'Hemen başlamak için numaranızı doğrulayın.' : 'Lütfen mesajlar kutunuzu kontrol edin.'}
+            </p>
           </div>
-        )}
 
-        {step === 'otp' && (
-          <div className="animate-slide-up space-y-4">
-            <input className="input text-center text-4xl tracking-[0.5em] font-bold py-6"
-              type="text" maxLength={6} placeholder="••••••"
-              value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
-              onKeyDown={e => e.key === 'Enter' && verifyOtp()} autoFocus />
-            {error && <p className="text-red-500 text-sm bg-red-50 p-3 rounded-xl">{error}</p>}
-            <button className="btn-primary" onClick={verifyOtp} disabled={loading || otp.length < 6}>
-              {loading ? 'Doğrulanıyor...' : 'Giriş Yap →'}
-            </button>
-            <button onClick={() => { setStep('phone'); setOtp(''); setError('') }}
-              className="w-full text-center text-sm text-gray-400 py-2">
-              ← Numarayı değiştir
-            </button>
-          </div>
-        )}
+          {step === 'phone' && (
+            <div className="animate-slide-up space-y-5">
+              <div className="flex gap-3">
+                <div className="flex items-center px-4 bg-slate-50 rounded-2xl text-base font-bold text-slate-600 border border-slate-200 shadow-sm">
+                  🇹🇷 +90
+                </div>
+                <input 
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-lg font-medium text-slate-900 shadow-sm placeholder:text-slate-400" 
+                  type="tel" 
+                  placeholder="5XX XXX XX XX"
+                  value={phone} 
+                  onChange={e => setPhone(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && sendOtp()} 
+                  autoFocus 
+                />
+              </div>
+              
+              {error && <p className="text-red-600 text-sm font-medium bg-red-50 p-4 rounded-xl border border-red-100">{error}</p>}
+              
+              <button 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl text-lg font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0" 
+                onClick={sendOtp} 
+                disabled={loading || phone.length < 10}
+              >
+                {loading ? 'Gönderiliyor...' : 'SMS Kodu Gönder →'}
+              </button>
+            </div>
+          )}
+
+          {step === 'otp' && (
+            <div className="animate-slide-up space-y-5">
+              <input 
+                className="w-full text-center text-4xl tracking-[0.4em] font-black py-6 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-slate-900 shadow-sm placeholder:text-slate-300"
+                type="text" 
+                maxLength={6} 
+                placeholder="••••••"
+                value={otp} 
+                onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                onKeyDown={e => e.key === 'Enter' && verifyOtp()} 
+                autoFocus 
+              />
+              
+              {error && <p className="text-red-600 text-sm font-medium bg-red-50 p-4 rounded-xl border border-red-100">{error}</p>}
+              
+              <button 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl text-lg font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0" 
+                onClick={verifyOtp} 
+                disabled={loading || otp.length < 6}
+              >
+                {loading ? 'Doğrulanıyor...' : 'Giriş Yap →'}
+              </button>
+              
+              <button 
+                onClick={() => { setStep('phone'); setOtp(''); setError('') }}
+                className="w-full text-center text-sm font-bold text-slate-400 hover:text-slate-600 py-3 transition-colors"
+              >
+                ← Numarayı değiştir
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
