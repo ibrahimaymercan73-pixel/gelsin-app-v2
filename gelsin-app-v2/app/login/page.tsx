@@ -79,7 +79,7 @@ function LoginForm() {
           {defaultRole === 'provider' ? 'Usta Olarak\nGiriş Yapın' : 'Ev Sahibi Olarak\nGiriş Yapın'}
         </h1>
         
-        <p className="text-blue-100/90 text-lg lg:text-xl font-medium max-w-md leading-relaxed">
+        <p className="text-blue-100/90 text-lg lg:text-xl font-medium max-w-7xl leading-relaxed">
           {step === 'phone'
             ? 'Güvenli giriş yapmak için telefon numaranızı girin. Size tek kullanımlık bir SMS kodu göndereceğiz.'
             : `${phone} numaralı telefona gönderilen 6 haneli doğrulama kodunu girin.`}
@@ -88,7 +88,7 @@ function LoginForm() {
 
       {/* Sağ Panel - Form Alanı */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-16">
-        <div className="w-full max-w-md bg-white p-8 lg:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
+        <div className="w-full max-w-7xl bg-white p-8 lg:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
           
           <div className="space-y-2 mb-8">
             <h2 className="text-2xl font-bold text-slate-900">

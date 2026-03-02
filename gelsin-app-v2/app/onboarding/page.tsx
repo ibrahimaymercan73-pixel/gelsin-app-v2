@@ -80,7 +80,7 @@ export default function OnboardingPage() {
 
       {/* Butonlar Alanı - Alt Kısım */}
       <div className="bg-white px-6 py-10 md:py-16 w-full flex flex-col items-center justify-center shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-10">
-        <div className="w-full max-w-md space-y-4 md:space-y-5">
+        <div className="w-full max-w-7xl space-y-4 md:space-y-5">
           {step < slides.length - 1 ? (
             <>
               <button 

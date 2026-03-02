@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     check()
   }, [router])
   return (
-    <div className="max-w-md mx-auto min-h-dvh bg-gray-50">
+    <div className="max-w-7xl mx-auto min-h-dvh bg-gray-50">
       <div className="pb-24">{children}</div>
       <BottomTabBar tabs={tabs} />
     </div>

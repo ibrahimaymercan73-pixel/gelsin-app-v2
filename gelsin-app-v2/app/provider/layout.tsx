@@ -26,7 +26,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
     check()
   }, [router])
   return (
-    <div className="max-w-md mx-auto min-h-dvh bg-gray-50">
+    <div className="max-w-7xl mx-auto min-h-dvh bg-gray-50">
       {pending && (
         <div className="bg-amber-500 text-white text-xs font-semibold text-center py-2.5 px-4">
           ⏳ Hesabınız onay bekliyor — Profil'den belgelerinizi yükleyin

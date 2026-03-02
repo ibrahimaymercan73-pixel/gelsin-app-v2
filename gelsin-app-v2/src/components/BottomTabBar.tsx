@@ -7,7 +7,7 @@ interface Tab { href: string; icon: string; label: string }
 export default function BottomTabBar({ tabs }: { tabs: Tab[] }) {
   const pathname = usePathname()
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50 max-w-md mx-auto"
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50 max-w-7xl mx-auto"
       style={{ boxShadow: '0 -4px 24px rgba(0,0,0,0.08)', paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
       <div className="flex items-center justify-around px-2 py-1">
         {tabs.map(tab => {

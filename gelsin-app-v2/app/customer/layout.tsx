@@ -19,7 +19,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
     })
   }, [router])
   return (
-    <div className="max-w-md mx-auto min-h-dvh bg-gray-50">
+    <div className="max-w-7xl mx-auto min-h-dvh bg-gray-50">
       <div className="pb-24">{children}</div>
       <BottomTabBar tabs={tabs} />
     </div>

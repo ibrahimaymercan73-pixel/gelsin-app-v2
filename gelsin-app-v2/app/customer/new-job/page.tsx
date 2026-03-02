@@ -59,7 +59,7 @@ function NewJobForm() {
   const selectedCat = categories.find(c => c.slug === cat)
 
   return (
-    <div className="min-h-dvh bg-white max-w-md mx-auto">
+    <div className="min-h-dvh bg-white max-w-7xl mx-auto">
       <div className="bg-gradient-to-br from-blue-700 to-blue-900 px-5 pt-14 pb-6 text-white">
         <button onClick={() => step > 0 ? setStep(s => s - 1) : router.back()}
           className="text-blue-300 text-sm mb-4 flex items-center gap-1">← Geri</button>
