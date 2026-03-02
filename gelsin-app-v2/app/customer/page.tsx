@@ -31,126 +31,163 @@ export default function CustomerHome() {
     load()
   }, [])
 
-  // CSS class'larını Tailwind'in kendi renkleriyle güncelledim ki global.css'e muhtaç kalmasın
   const statusMap: Record<string, { label: string; cls: string }> = {
-    open: { label: '📢 Teklif Bekleniyor', cls: 'bg-blue-50 text-blue-700 border border-blue-200' },
-    offered: { label: '💬 Teklif Var', cls: 'bg-amber-50 text-amber-700 border border-amber-200' },
-    accepted: { label: '🚗 Usta Yolda', cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
-    started: { label: '🔨 Devam Ediyor', cls: 'bg-orange-50 text-orange-700 border border-orange-200' },
+    open: { label: '📢 Teklif Bekleniyor', cls: 'bg-blue-50 text-blue-700 border-blue-100' },
+    offered: { label: '💬 3 Yeni Teklif', cls: 'bg-amber-100 text-amber-700 border-amber-200 animate-bounce' },
+    accepted: { label: '🚗 Usta Yolda', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+    started: { label: '🔨 Devam Ediyor', cls: 'bg-orange-50 text-orange-700 border-orange-100' },
   }
 
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Günaydın' : hour < 18 ? 'İyi günler' : 'İyi akşamlar'
-
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-500 selection:text-white pb-20 lg:pb-10">
+    <div className="min-h-screen bg-[#f8fafc] flex">
       
-      {/* Üst Karşılama Alanı (Banner) */}
-      <div className="bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 lg:pb-24 pb-12 pt-12 lg:pt-16 shadow-lg lg:rounded-b-[3rem]">
-        <div className="max-w-7xl mx-auto px-6 lg:px-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-            <div className="animate-fade-in">
-              <p className="text-blue-200 text-lg font-medium mb-1">{greeting} 👋</p>
-              <h1 className="text-3xl lg:text-4xl font-black text-white tracking-tight">
-                {userName || 'Hoş Geldiniz!'}
-              </h1>
-            </div>
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/10 self-start md:self-auto animate-fade-in">
-              <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.5)]" />
-              <span className="text-sm text-white font-bold tracking-wide">{providers.length} Usta Aktif</span>
-            </div>
-          </div>
+      {/* SOL MENÜ (Sidebar) - Bilgisayarda Burası Havalı Durur */}
+      <aside className="hidden lg:flex w-72 bg-white border-r border-slate-200 flex-col p-6 gap-8 fixed h-full">
+        <div className="text-2xl font-black text-blue-600 tracking-tighter italic">GELSİN.app</div>
+        
+        <nav className="flex flex-col gap-2">
+          <Link href="/customer" className="flex items-center gap-3 p-3 bg-blue-50 text-blue-600 rounded-xl font-bold transition-all">
+            <span>🏠</span> Ana Sayfa
+          </Link>
+          <Link href="/customer/jobs" className="flex items-center gap-3 p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all">
+            <span>📋</span> İşlerim
+          </Link>
+          <Link href="/customer/messages" className="flex items-center gap-3 p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all">
+            <span>💬</span> Mesajlar
+          </Link>
+          <Link href="/customer/profile" className="flex items-center gap-3 p-3 text-slate-600 hover:bg-slate-50 rounded-xl font-medium transition-all">
+            <span>👤</span> Profilim
+          </Link>
+        </nav>
 
-          {/* Hızlı Aksiyonlar - Bilgisayarda makul boyutta, telefonda 3'lü ızgara */}
-          <div className="grid grid-cols-3 gap-4 lg:max-w-3xl animate-slide-up">
-            {[
-              { icon: '🔧', label: 'Tamir', href: '/customer/new-job?cat=repair' },
-              { icon: '🧹', label: 'Temizlik', href: '/customer/new-job?cat=cleaning' },
-              { icon: '🏠', label: 'Halı Yıkama', href: '/customer/new-job?cat=carpet' },
-            ].map(item => (
-              <Link key={item.label} href={item.href}
-                className="bg-white/10 hover:bg-white/20 active:bg-white/30 border border-white/10 rounded-2xl p-4 lg:p-6 flex flex-col items-center justify-center transition-all hover:-translate-y-1 shadow-sm">
-                <div className="text-3xl lg:text-4xl mb-3 drop-shadow-md">{item.icon}</div>
-                <div className="text-sm lg:text-base font-bold text-white tracking-wide">{item.label}</div>
-              </Link>
-            ))}
-          </div>
+        <div className="mt-auto bg-slate-900 rounded-2xl p-4 text-white">
+          <p className="text-xs text-slate-400 font-medium">Destek Hattı</p>
+          <p className="text-sm font-bold">0850 123 45 67</p>
+          <button className="mt-3 w-full py-2 bg-blue-600 rounded-lg text-xs font-bold hover:bg-blue-500 transition-colors">
+            Yardım Al
+          </button>
         </div>
-      </div>
+      </aside>
 
-      {/* Ana İçerik Izgarası (Grid) */}
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 -mt-6 lg:-mt-16 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
+      {/* ANA İÇERİK */}
+      <main className="flex-1 lg:ml-72 pb-24 lg:pb-10">
+        
+        {/* ÜST BAR */}
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
+          <div className="lg:hidden text-xl font-black text-blue-600 italic">G.</div>
+          <div className="flex items-center gap-4 ml-auto">
+            <button className="p-2 hover:bg-slate-100 rounded-full relative">
+              🔔 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            <div className="h-8 w-[1px] bg-slate-200 mx-2"></div>
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold text-slate-900 leading-none">{userName || 'Kullanıcı'}</p>
+                <p className="text-[10px] text-slate-500 font-medium mt-1 uppercase tracking-wider italic">Ev Sahibi</p>
+              </div>
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-200">
+                {userName?.charAt(0) || 'K'}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="p-6 lg:p-10 max-w-6xl mx-auto space-y-10">
           
-          {/* Sol Sütun: Aktif İşler (Bilgisayarda daha geniş alan kaplar) */}
-          <div className="lg:col-span-8 space-y-6">
-            {activeJobs.length > 0 ? (
-              <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 animate-slide-up delay-1">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl lg:text-2xl font-black text-slate-800 tracking-tight">Aktif İşlerim</h2>
-                  <Link href="/customer/jobs" className="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 transition-colors">
-                    Tümü <span className="text-lg">→</span>
-                  </Link>
-                </div>
-                
-                <div className="space-y-4">
-                  {activeJobs.map(job => (
-                    <Link key={job.id} href={`/customer/jobs/${job.id}`} className="block group">
-                      <div className="p-4 lg:p-5 flex items-center gap-4 lg:gap-5 rounded-2xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-blue-100 hover:shadow-md transition-all">
-                        <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm flex-shrink-0 group-hover:scale-110 transition-transform">
-                          {job.service_categories?.icon || '📦'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-slate-900 text-base lg:text-lg truncate mb-1">{job.title}</p>
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${statusMap[job.status]?.cls}`}>
+          {/* HOŞGELDİN VE ÖZET KARTLARI */}
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[2rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-blue-200">
+              <div className="relative z-10">
+                <h2 className="text-3xl font-black mb-2">Selam, {userName?.split(' ')[0] || 'Dostum'}! 👋</h2>
+                <p className="text-blue-100 font-medium opacity-90 max-w-sm">Bugün evinde halledilmesi gereken bir iş mi var? Biz buradayız.</p>
+                <Link href="/customer/new-job" className="inline-block mt-6 px-8 py-3 bg-white text-blue-600 rounded-xl font-black shadow-lg hover:bg-blue-50 transition-all transform hover:-translate-y-1">
+                  Yeni İş Talebi Oluştur
+                </Link>
+              </div>
+              <div className="absolute right-[-20px] bottom-[-20px] text-[150px] opacity-10 rotate-12 select-none pointer-events-none">🏠</div>
+            </div>
+
+            <div className="bg-white rounded-[2rem] p-8 border border-slate-200 flex flex-col justify-center items-center text-center shadow-sm">
+              <div className="text-4xl mb-2">✨</div>
+              <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mb-1">Cüzdan</p>
+              <p className="text-3xl font-black text-slate-900 tracking-tight">₺0,00</p>
+              <button className="mt-4 text-blue-600 font-bold text-sm hover:underline">Bakiye Yükle →</button>
+            </div>
+          </section>
+
+          {/* KATEGORİLER - Cezbedici Görünüm */}
+          <section>
+            <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
+              <span className="w-2 h-6 bg-blue-600 rounded-full"></span> 
+              Popüler Hizmetler
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {[
+                { icon: '🔧', label: 'Tamir', color: 'bg-orange-50 text-orange-600' },
+                { icon: '🧹', label: 'Temizlik', color: 'bg-emerald-50 text-emerald-600' },
+                { icon: '🏠', label: 'Halı Yıkama', color: 'bg-blue-50 text-blue-600' },
+                { icon: '⚡', label: 'Elektrik', color: 'bg-yellow-50 text-yellow-600' },
+                { icon: '🚰', label: 'Tesisat', color: 'bg-sky-50 text-sky-600' },
+              ].map(cat => (
+                <button key={cat.label} className="group p-6 bg-white border border-slate-100 rounded-[1.5rem] hover:border-blue-500 hover:shadow-xl hover:shadow-blue-100 transition-all text-center">
+                  <div className={`w-12 h-12 ${cat.color} rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 group-hover:scale-110 transition-transform`}>
+                    {cat.icon}
+                  </div>
+                  <span className="font-bold text-slate-700 text-sm">{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* AKTİF İŞLER VE HARİTA YAN YANA */}
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div>
+               <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center justify-between">
+                <span>📋 Aktif İşlerin</span>
+                <Link href="/customer/jobs" className="text-sm text-blue-600 italic">Tümünü gör</Link>
+               </h3>
+               <div className="space-y-4">
+                  {activeJobs.length > 0 ? activeJobs.map(job => (
+                    <div key={job.id} className="bg-white p-5 rounded-2xl border border-slate-200 hover:shadow-md transition-shadow">
+                       <div className="flex justify-between items-start mb-3">
+                          <span className="text-2xl">{job.service_categories?.icon}</span>
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${statusMap[job.status]?.cls}`}>
                             {statusMap[job.status]?.label}
                           </span>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors shadow-sm">
-                          →
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white rounded-3xl p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 animate-slide-up delay-1">
-                <div className="text-5xl mb-4">📋</div>
-                <h3 className="text-xl font-bold text-slate-800 mb-2">Henüz Aktif İşiniz Yok</h3>
-                <p className="text-slate-500 font-medium">İhtiyacınız olan hizmet için hemen yeni bir iş talebi oluşturun.</p>
-              </div>
-            )}
-          </div>
+                       </div>
+                       <p className="font-black text-slate-800">{job.title}</p>
+                       <p className="text-xs text-slate-500 mt-1 font-medium">Oluşturulma: {new Date(job.created_at).toLocaleDateString('tr-TR')}</p>
+                    </div>
+                  )) : (
+                    <div className="bg-slate-100 border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center">
+                      <p className="text-slate-400 font-bold">Şu an aktif bir işin yok.</p>
+                    </div>
+                  )}
+               </div>
+            </div>
 
-          {/* Sağ Sütun: Harita ve Yeni İş Butonu */}
-          <div className="lg:col-span-4 space-y-6">
-            
-            {/* Dev Yeni İş Aç Butonu */}
-            <Link href="/customer/new-job" className="block animate-slide-up delay-2 group">
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-6 lg:p-8 flex items-center justify-between text-white shadow-[0_10px_40px_rgba(37,99,235,0.3)] hover:shadow-[0_15px_50px_rgba(37,99,235,0.4)] hover:-translate-y-1 transition-all">
-                <div>
-                  <h3 className="text-2xl font-black mb-1">Yeni İş Aç</h3>
-                  <p className="text-blue-100 text-sm font-medium">Hemen teklifleri almaya başla</p>
-                </div>
-                <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl group-hover:bg-white group-hover:text-blue-600 group-hover:rotate-90 transition-all duration-300">
-                  ➕
-                </div>
-              </div>
-            </Link>
-
-            {/* Harita Kartı */}
-            <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 animate-slide-up delay-3">
-              <h2 className="text-xl font-black text-slate-800 tracking-tight mb-4">Yakınımdaki Ustalar</h2>
-              <div className="rounded-2xl overflow-hidden border border-slate-100 shadow-inner bg-slate-50 relative" style={{ height: '300px' }}>
+            <div>
+              <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-2">
+                <span>📍 Çevrendeki Ustalar</span>
+                <span className="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded-full animate-pulse">CANLI</span>
+              </h3>
+              <div className="rounded-[2rem] overflow-hidden border-4 border-white shadow-2xl h-[350px] relative">
                 <ProviderMap providers={providers} />
               </div>
             </div>
-
-          </div>
+          </section>
 
         </div>
-      </div>
+      </main>
+
+      {/* MOBİL ALT MENÜ - Sadece küçük ekranlarda görünür */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50">
+        <Link href="/customer" className="text-blue-600 text-2xl">🏠</Link>
+        <Link href="/customer/jobs" className="text-slate-400 text-2xl">📋</Link>
+        <Link href="/customer/new-job" className="bg-blue-600 w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl shadow-lg -mt-10 border-4 border-[#f8fafc]">＋</Link>
+        <Link href="/customer/messages" className="text-slate-400 text-2xl">💬</Link>
+        <Link href="/customer/profile" className="text-slate-400 text-2xl">👤</Link>
+      </nav>
     </div>
   )
 }
