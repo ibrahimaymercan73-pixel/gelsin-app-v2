@@ -46,13 +46,22 @@ function NewJobForm() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const qrToken = crypto.randomUUID()
-    const { data: job } = await supabase.from('jobs').insert({
+
+    const { data: job, error } = await supabase.from('jobs').insert({
       customer_id: user!.id,
-      category_id: catId,
+      category_id: catId || null,
       title, description: desc, address,
       lat, lng, job_type: jobType,
       qr_token: qrToken, status: 'open'
     }).select().single()
+
+    if (error || !job) {
+      console.error('INSERT HATASI:', error)
+      alert('İş oluşturulamadı: ' + error?.message)
+      setLoading(false)
+      return
+    }
+
     router.replace(`/customer/jobs/${job.id}`)
   }
 
