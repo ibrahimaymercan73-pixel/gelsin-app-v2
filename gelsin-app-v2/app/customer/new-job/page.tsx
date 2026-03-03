@@ -44,11 +44,18 @@ function NewJobForm() {
     if (!title || !address) return
     setLoading(true)
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      alert('Oturum bulunamadı. Lütfen tekrar giriş yapın.')
+      setLoading(false)
+      return
+    }
     const qrToken = crypto.randomUUID()
 
     const { data: job, error } = await supabase.from('jobs').insert({
-      customer_id: user!.id,
+      customer_id: user.id,
       category_id: catId || null,
       title, description: desc, address,
       lat, lng, job_type: jobType,

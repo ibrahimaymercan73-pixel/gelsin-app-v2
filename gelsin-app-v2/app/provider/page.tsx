@@ -11,15 +11,43 @@ export default function ProviderDashboard() {
   useEffect(() => {
     const load = async () => {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      const { data: p } = await supabase.from('profiles').select('full_name').eq('id', user!.id).single()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        setName('')
+        setStats({ active: 0, pending: 0, wallet: 0, total: 0 })
+        return
+      }
+
+      const { data: p } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
       setName(p?.full_name || '')
-      const { data: pp } = await supabase.from('provider_profiles').select('wallet_balance, is_online').eq('id', user!.id).single()
+      const { data: pp } = await supabase
+        .from('provider_profiles')
+        .select('wallet_balance, is_online')
+        .eq('id', user.id)
+        .single()
       setIsOnline(pp?.is_online || false)
       const [active, pending, total] = await Promise.all([
-        supabase.from('jobs').select('id', { count: 'exact' }).eq('provider_id', user!.id).in('status', ['accepted','started']),
-        supabase.from('offers').select('id', { count: 'exact' }).eq('provider_id', user!.id).eq('status', 'pending'),
-        supabase.from('transactions').select('amount').eq('to_id', user!.id).eq('type', 'provider_payout'),
+        supabase
+          .from('jobs')
+          .select('id', { count: 'exact' })
+          .eq('provider_id', user.id)
+          .in('status', ['accepted', 'started']),
+        supabase
+          .from('offers')
+          .select('id', { count: 'exact' })
+          .eq('provider_id', user.id)
+          .eq('status', 'pending'),
+        supabase
+          .from('transactions')
+          .select('amount')
+          .eq('to_id', user.id)
+          .eq('type', 'provider_payout'),
       ])
       setStats({
         active: active.count || 0,
@@ -33,8 +61,17 @@ export default function ProviderDashboard() {
 
   const toggleOnline = async () => {
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('provider_profiles').update({ is_online: !isOnline }).eq('id', user!.id)
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      alert('Oturum bulunamadı. Lütfen tekrar giriş yapın.')
+      return
+    }
+    await supabase
+      .from('provider_profiles')
+      .update({ is_online: !isOnline })
+      .eq('id', user.id)
     setIsOnline(!isOnline)
   }
 
