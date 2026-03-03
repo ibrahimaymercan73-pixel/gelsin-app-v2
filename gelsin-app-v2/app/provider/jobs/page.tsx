@@ -52,8 +52,7 @@ export default function ProviderJobsPage() {
       message: o.message
     })
 
-    // 2. *** HATA BURADAN GELİYORDU *** Job statusunu 'offered' yap ki müşteri görsün
-    await supabase.from('jobs').update({ status: 'offered' }).eq('id', jobId)
+    // 2. İşi müşteri tarafında teklifler üzerinden göstereceğiz (status'u burada değiştirmiyoruz)
 
     // 3. Bildirim gönder
     const job = jobs.find(j => j.id === jobId)

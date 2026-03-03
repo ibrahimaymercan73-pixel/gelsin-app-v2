@@ -17,17 +17,54 @@ export default function JobDetailPage() {
 
   const load = async () => {
     const supabase = createClient()
-    const { data: j } = await supabase.from('jobs')
-      .select('*, service_categories(name, icon)').eq('id', id).single()
+
+    const { data: j } = await supabase
+      .from('jobs')
+      .select('*, service_categories(name, icon)')
+      .eq('id', id)
+      .single()
+
     setJob(j)
-    const { data: o } = await supabase.from('offers')
+
+    const { data: o } = await supabase
+      .from('offers')
       .select('*, profiles(full_name, phone), provider_profiles(rating)')
-      .eq('job_id', id).order('price', { ascending: true })
+      .eq('job_id', id)
+      .order('price', { ascending: true })
+
     setOffers(o || [])
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [id])
+  useEffect(() => {
+    load()
+  }, [id])
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    const channel = supabase
+      .channel(`job-${id}-offers`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'offers', filter: `job_id=eq.${id}` },
+        () => {
+          load()
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'jobs', filter: `id=eq.${id}` },
+        () => {
+          load()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [id])
 
   const acceptOffer = async (offerId: string, providerId: string, price: number) => {
     setAccepting(offerId)
@@ -56,11 +93,12 @@ export default function JobDetailPage() {
     setGeneratingEnd(false)
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-dvh">
-      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  if (loading)
+    return (
+      <div className="flex items-center justify-center min-h-dvh">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
 
   const startQrData = JSON.stringify({ job_id: job?.id, token: job?.qr_token, action: 'start' })
   const endQrData = JSON.stringify({ job_id: job?.id, token: job?.end_qr_token, action: 'end' })
@@ -72,7 +110,11 @@ export default function JobDetailPage() {
     started: { label: '🔨 İş Devam Ediyor', bg: 'bg-orange-50', color: 'text-orange-700' },
     completed: { label: '✅ Tamamlandı', bg: 'bg-gray-50', color: 'text-gray-600' },
   }
-  const sc = statusConfig[job?.status] || statusConfig.open
+
+  const rawStatus = (job?.status as string) || 'open'
+  const hasOffers = offers.length > 0
+  const statusKey = hasOffers && rawStatus === 'open' ? 'offered' : rawStatus
+  const sc = statusConfig[statusKey] || statusConfig.open
 
   return (
     <div className="min-h-dvh bg-gray-50">
