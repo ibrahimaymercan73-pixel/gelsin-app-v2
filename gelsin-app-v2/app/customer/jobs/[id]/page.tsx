@@ -134,9 +134,13 @@ export default function JobDetailPage() {
   const generateEndQR = async () => {
     setGeneratingEnd(true)
     const supabase = createClient()
-    const endToken = crypto.randomUUID()
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    let endToken = ''
+    for (let i = 0; i < 6; i++) {
+      endToken += chars[Math.floor(Math.random() * chars.length)]
+    }
     await supabase.from('jobs').update({ end_qr_token: endToken }).eq('id', id)
-    await load()
+    setJob((prev: any) => (prev ? { ...prev, end_qr_token: endToken } : prev))
     setShowEndQR(true)
     setGeneratingEnd(false)
   }
@@ -228,6 +232,16 @@ export default function JobDetailPage() {
   if (rawStatus === 'accepted') activeStep = 2
   else if (rawStatus === 'started') activeStep = 3
   else if (rawStatus === 'completed') activeStep = 4
+
+  // İş started olduğunda ve henüz bitiş kodu yoksa otomatik üret
+  useEffect(() => {
+    if (!job) return
+    if ((job.status as string) === 'started' && !job.end_qr_token && !generatingEnd) {
+      // Arkaplanda bitiş kodu üretelim, card açıldığında QR hemen hazır olsun
+      generateEndQR()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.status, job?.end_qr_token])
 
   return (
     <div className="min-h-dvh bg-gray-50">
