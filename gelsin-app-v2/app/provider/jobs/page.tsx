@@ -104,32 +104,46 @@ export default function ProviderJobsPage() {
   })).sort((a, b) => (a.dist ?? 99) - (b.dist ?? 99))
 
   return (
-    <div className="min-h-screen bg-[#F4F7FA]">
-      <header className="px-6 lg:px-10 py-6 sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
-        <h1 className="text-xl lg:text-2xl font-black text-slate-800">🔍 Radar</h1>
+    <div className="min-h-screen bg-slate-950">
+      <header className="px-6 lg:px-10 py-6 sticky top-0 bg-slate-950/90 backdrop-blur-md z-40 border-b border-slate-800">
+        <h1 className="text-xl lg:text-2xl font-black text-slate-50">🔍 Radar</h1>
         <p className="text-slate-400 text-sm mt-0.5">Yakınımdaki açık işler — en yakın önce</p>
       </header>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-6 space-y-4">
         {sorted.map((job, i) => (
-          <div key={job.id} className={`bg-white rounded-2xl p-5 border border-slate-100 shadow-sm animate-slide-up`}
-            style={{ animationDelay: `${Math.min(i, 4) * 0.06}s` }}>
+          <div
+            key={job.id}
+            className={`rounded-3xl p-[1px] animate-slide-up ${
+              job.job_type === 'urgent'
+                ? 'bg-gradient-to-r from-rose-500 via-orange-400 to-amber-300'
+                : 'bg-slate-800/60'
+            }`}
+            style={{ animationDelay: `${Math.min(i, 4) * 0.06}s` }}
+          >
+            <div className="bg-slate-950/90 lg:bg-slate-900 rounded-3xl p-5 border border-slate-800 shadow-xl shadow-black/40">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center text-xl">
+                <div className="w-11 h-11 bg-slate-800 rounded-xl flex items-center justify-center text-xl text-sky-400">
                   {job.service_categories?.icon}
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900 text-sm">{job.title}</p>
+                  <p className="font-bold text-slate-50 text-sm">{job.title}</p>
                   <p className="text-xs text-slate-400">{job.service_categories?.name}</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1.5">
-                <span className={job.job_type === 'urgent' ? 'badge-red' : 'badge-blue'}>
+                <span
+                  className={
+                    job.job_type === 'urgent'
+                      ? 'badge-red'
+                      : 'badge-blue'
+                  }
+                >
                   {job.job_type === 'urgent' ? '⚡ Acil' : '📅 Normal'}
                 </span>
                 {job.dist !== null && (
-                  <span className={`text-xs font-bold ${job.dist < 1 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  <span className={`text-xs font-bold ${job.dist < 1 ? 'text-emerald-400' : 'text-slate-500'}`}>
                     {job.dist < 1 ? `${(job.dist*1000).toFixed(0)}m` : `${job.dist.toFixed(1)}km`}
                   </span>
                 )}
@@ -137,7 +151,9 @@ export default function ProviderJobsPage() {
             </div>
 
             {job.description && (
-              <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl mb-3">{job.description}</p>
+              <p className="text-xs text-slate-300 bg-slate-900/60 p-3 rounded-xl mb-3 border border-slate-800">
+                {job.description}
+              </p>
             )}
             <p className="text-xs text-slate-400 mb-4">📍 {job.address}</p>
 
@@ -180,6 +196,7 @@ export default function ProviderJobsPage() {
                 💬 Teklif Ver
               </button>
             )}
+          </div>
           </div>
         ))}
 

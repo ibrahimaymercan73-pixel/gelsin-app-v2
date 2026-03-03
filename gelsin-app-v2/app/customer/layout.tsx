@@ -38,10 +38,10 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   }, [router])
 
   return (
-    <div className="min-h-dvh bg-[#F4F7FA] flex font-sans">
+    <div className="min-h-dvh bg-sky-50 flex font-sans">
 
       {/* DESKTOP SIDEBAR */}
-      <aside className="hidden lg:flex w-64 bg-slate-900 flex-col fixed h-full z-50">
+      <aside className="hidden lg:flex w-64 bg-slate-950 flex-col fixed h-full z-50">
         <div className="px-8 py-7 border-b border-white/5">
           <span className="text-xl font-black text-white italic tracking-tighter">
             GELSİN<span className="text-blue-500">.</span>
@@ -78,7 +78,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       </main>
 
       {/* MOBİL BOTTOM NAV */}
-      <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-slate-900/95 backdrop-blur-lg px-4 py-3 flex justify-around items-center z-[100] rounded-[2rem] shadow-2xl border border-white/10">
+      <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-slate-950/95 backdrop-blur-lg px-4 py-3 flex justify-around items-center z-[90] rounded-[2rem] shadow-2xl border border-white/10">
         {navItems.map(item => {
           const isActive = pathname === item.href
           return (
@@ -92,11 +92,20 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           )
         })}
         <Link href="/customer/new-job"
-          className="flex flex-col items-center gap-1 px-2 py-1 rounded-xl text-slate-500">
+          className="flex flex-col items-center gap-1 px-2 py-1 rounded-xl text-slate-400">
           <span className="text-xl">➕</span>
           <span className="text-[10px] font-bold">Yeni İş</span>
         </Link>
       </nav>
+
+      {/* Floating Action Button - Yeni İş */}
+      <Link
+        href="/customer/new-job"
+        className="fixed right-5 bottom-24 lg:bottom-8 z-[95] bg-gradient-to-br from-sky-500 to-emerald-500 text-white w-14 h-14 rounded-full shadow-xl shadow-sky-900/40 flex items-center justify-center text-3xl hover:scale-105 transition-transform"
+        aria-label="Yeni iş oluştur"
+      >
+        +
+      </Link>
 
     </div>
   )

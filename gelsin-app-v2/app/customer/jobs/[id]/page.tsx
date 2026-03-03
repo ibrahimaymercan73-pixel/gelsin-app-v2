@@ -208,7 +208,7 @@ export default function JobDetailPage() {
     disputed: { label: '⚠️ Uyuşmazlık Açıldı', bg: 'bg-amber-50', color: 'text-amber-700' },
   }
 
-  const rawStatus = (job?.status as string) || 'open'
+  const rawStatus: string = (job?.status as string) || 'open'
   const hasOffers = offers.length > 0
   const statusKey = hasOffers && rawStatus === 'open' ? 'offered' : rawStatus
   const sc = statusConfig[statusKey] || statusConfig.open
@@ -216,21 +216,68 @@ export default function JobDetailPage() {
   const showEndSection = job?.status === 'started' || !!job?.end_qr_token
   const canOpenDispute = rawStatus === 'accepted' || rawStatus === 'started'
 
+  const stepItems = [
+    { key: 'open', label: 'Teklif', icon: '📢' },
+    { key: 'offer', label: 'Onay', icon: '✅' },
+    { key: 'accepted', label: 'Yolda', icon: '🚗' },
+    { key: 'started', label: 'Devam', icon: '🔨' },
+    { key: 'completed', label: 'Bitti', icon: '🏁' },
+  ] as const
+
+  let activeStep = 0
+  if (rawStatus === 'accepted') activeStep = 2
+  else if (rawStatus === 'started') activeStep = 3
+  else if (rawStatus === 'completed') activeStep = 4
+
   return (
     <div className="min-h-dvh bg-gray-50">
-      <div className="bg-white px-4 pt-12 pb-4 border-b border-gray-100">
+      <div className="bg-white px-4 pt-12 pb-4 border-b border-sky-100 shadow-sm">
         <button onClick={() => router.back()} className="text-blue-600 font-semibold text-sm mb-4 flex items-center gap-1">
           ← Geri
         </button>
         <div className="flex items-start gap-3">
-          <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">
+          <div className="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">
             {job?.service_categories?.icon}
           </div>
           <div className="flex-1">
-            <h1 className="font-black text-gray-900 text-lg">{job?.title}</h1>
+            <h1 className="font-black text-slate-900 text-lg">{job?.title}</h1>
             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold mt-1 ${sc.bg} ${sc.color}`}>
               {sc.label}
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Durum Stepper */}
+      <div className="px-4 pt-3">
+        <div className="bg-white rounded-2xl px-3 py-3 border border-sky-100 shadow-sm overflow-x-auto">
+          <div className="flex items-center gap-3 min-w-max">
+            {stepItems.map((step, index) => {
+              const isActive = index <= activeStep
+              return (
+                <div key={step.label} className="flex items-center gap-2">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                      isActive
+                        ? 'bg-gradient-to-br from-sky-500 to-emerald-500 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-400'
+                    }`}
+                  >
+                    {step.icon}
+                  </div>
+                  <span
+                    className={`text-[11px] font-semibold ${
+                      isActive ? 'text-slate-800' : 'text-slate-400'
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                  {index < stepItems.length - 1 && (
+                    <div className="w-6 h-px bg-gradient-to-r from-slate-200 via-sky-200 to-slate-200" />
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -335,9 +382,11 @@ export default function JobDetailPage() {
         {offers.length > 0 && (
           <div>
             <p className="font-bold text-gray-800 mb-3">Teklifler ({offers.length})</p>
-            <div className="space-y-2">
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:block lg:space-y-2">
               {offers.map(offer => (
-                <div key={offer.id} className={`card p-4 ${
+                <div
+                  key={offer.id}
+                  className={`card p-4 w-72 flex-shrink-0 lg:w-full ${
                   offer.status === 'accepted' ? 'border-2 border-emerald-400' :
                   offer.status === 'rejected' ? 'opacity-50' : ''
                 }`}>

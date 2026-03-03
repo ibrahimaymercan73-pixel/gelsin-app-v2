@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
@@ -14,7 +14,7 @@ type JobWithMeta = {
   agreed_price: number | null
   job_type: 'urgent' | 'scheduled' | 'process' | null
   address: string
-  service_categories?: { name: string; icon?: string } | null
+  service_categories?: { name: string; icon?: string; slug?: string } | null
   offerCount: number
   hasAcceptedOffer: boolean
 }
@@ -80,7 +80,7 @@ const statusBadge: Record<
 }
 
 function deriveBucket(job: JobWithMeta): TabKey {
-  const rawStatus = (job.status as string) || 'open'
+  const rawStatus: string = (job.status as string) || 'open'
   const hasOffers = job.offerCount > 0
 
   if (rawStatus === 'completed' || rawStatus === 'cancelled' || rawStatus === 'disputed')
@@ -91,7 +91,7 @@ function deriveBucket(job: JobWithMeta): TabKey {
 }
 
 function deriveStatusKey(job: JobWithMeta): string {
-  const rawStatus = (job.status as string) || 'open'
+  const rawStatus: string = (job.status as string) || 'open'
   const hasOffers = job.offerCount > 0
 
   if (rawStatus === 'completed' || rawStatus === 'cancelled' || rawStatus === 'disputed')
@@ -103,6 +103,7 @@ function deriveStatusKey(job: JobWithMeta): string {
 
 export default function CustomerJobsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [jobs, setJobs] = useState<JobWithMeta[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabKey>('open')
@@ -124,7 +125,7 @@ export default function CustomerJobsPage() {
     const { data: jobRows } = await supabase
       .from('jobs')
       .select(
-        'id, title, status, created_at, agreed_price, job_type, address, service_categories(name, icon)'
+        'id, title, status, created_at, agreed_price, job_type, address, service_categories(name, icon, slug)'
       )
       .eq('customer_id', user.id)
       .order('created_at', { ascending: false })
@@ -169,7 +170,15 @@ export default function CustomerJobsPage() {
       }
     })
 
-    setJobs(mapped)
+    const categoryFilter = searchParams.get('category')
+    const filtered =
+      categoryFilter && categoryFilter.length > 0
+        ? mapped.filter(
+            (job) => job.service_categories?.slug === categoryFilter
+          )
+        : mapped
+
+    setJobs(filtered)
     setLoading(false)
   }
 
