@@ -203,6 +203,45 @@ export default function JobDetailPage() {
   const startQrData = JSON.stringify({ job_id: job?.id, token: job?.qr_token, action: 'start' })
   const endQrData = JSON.stringify({ job_id: job?.id, token: job?.end_qr_token, action: 'end' })
 
+  const hasStartToken =
+    typeof job?.qr_token === 'string' && job.qr_token.length >= 1
+  const hasEndToken =
+    typeof job?.end_qr_token === 'string' && job.end_qr_token.length >= 1
+
+  let startQrNode: JSX.Element | null = null
+  try {
+    if (hasStartToken) {
+      startQrNode = (
+        <QRCodeSVG
+          value={startQrData}
+          size={180}
+          level="H"
+          imageSettings={{ src: '', height: 0, width: 0, excavate: false }}
+        />
+      )
+    }
+  } catch (error) {
+    console.error('Start QR render error', error)
+    startQrNode = null
+  }
+
+  let endQrNode: JSX.Element | null = null
+  try {
+    if (hasEndToken) {
+      endQrNode = (
+        <QRCodeSVG
+          value={endQrData}
+          size={180}
+          level="H"
+          imageSettings={{ src: '', height: 0, width: 0, excavate: false }}
+        />
+      )
+    }
+  } catch (error) {
+    console.error('End QR render error', error)
+    endQrNode = null
+  }
+
   const statusConfig: Record<string, { label: string; bg: string; color: string }> = {
     open: { label: '📢 Teklif Bekleniyor', bg: 'bg-blue-50', color: 'text-blue-700' },
     offered: { label: '💬 Teklif Geldi', bg: 'bg-orange-50', color: 'text-orange-700' },
@@ -310,16 +349,24 @@ export default function JobDetailPage() {
             {showStartQR ? (
               <div className="flex flex-col items-center gap-3">
                 <div className="bg-white p-4 rounded-2xl border-2 border-blue-100">
-                  <QRCodeSVG value={startQrData} size={180} level="H"
-                    imageSettings={{ src: '', height: 0, width: 0, excavate: false }} />
+                  {startQrNode || (
+                    <div className="w-[180px] h-[180px] flex items-center justify-center text-xs text-gray-400">
+                      Kod hazırlanıyor...
+                    </div>
+                  )}
                 </div>
-                <div className="bg-gray-900 text-white px-6 py-2.5 rounded-2xl font-mono text-2xl font-black tracking-[0.3em]">
-                  {job?.qr_token?.slice(-6).toUpperCase()}
-                </div>
-                <p className="text-xs text-gray-400 text-center">QR veya PIN'i ustayla paylaşın</p>
+                {hasStartToken && (
+                  <div className="bg-gray-900 text-white px-6 py-2.5 rounded-2xl font-mono text-2xl font-black tracking-[0.3em]">
+                    {job?.qr_token?.slice(-6).toUpperCase()}
+                  </div>
+                )}
+                <p className="text-xs text-gray-400 text-center">
+                  QR veya PIN'i ustayla paylaşın
+                </p>
                 {job?.qr_scanned_at && (
                   <div className="badge-green w-full justify-center py-2.5 text-sm">
-                    ✅ İş Başladı — {new Date(job.qr_scanned_at).toLocaleTimeString('tr-TR')}
+                    ✅ İş Başladı —{' '}
+                    {new Date(job.qr_scanned_at).toLocaleTimeString('tr-TR')}
                   </div>
                 )}
               </div>
@@ -341,16 +388,21 @@ export default function JobDetailPage() {
                 <p className="text-xs text-gray-500">Onaylayın, bitiş QR'ı üretin, ustayla taratın</p>
               </div>
             </div>
-            {showEndQR && job?.end_qr_token ? (
+            {showEndQR && hasEndToken ? (
               <div className="flex flex-col items-center gap-3">
                 <div className="bg-white p-4 rounded-2xl border-2 border-emerald-100">
-                  <QRCodeSVG value={endQrData} size={180} level="H"
-                    imageSettings={{ src: '', height: 0, width: 0, excavate: false }} />
+                  {endQrNode || (
+                    <div className="w-[180px] h-[180px] flex items-center justify-center text-xs text-gray-400">
+                      Kod hazırlanıyor...
+                    </div>
+                  )}
                 </div>
                 <div className="bg-emerald-700 text-white px-6 py-2.5 rounded-2xl font-mono text-2xl font-black tracking-[0.3em]">
                   {job?.end_qr_token?.slice(-6).toUpperCase()}
                 </div>
-                <p className="text-xs text-gray-400 text-center">Usta okutunca ödeme cüzdanına aktarılır</p>
+                <p className="text-xs text-gray-400 text-center">
+                  Usta okutunca ödeme cüzdanına aktarılır
+                </p>
               </div>
             ) : (
               <button className="btn-success" onClick={generateEndQR} disabled={generatingEnd}>
