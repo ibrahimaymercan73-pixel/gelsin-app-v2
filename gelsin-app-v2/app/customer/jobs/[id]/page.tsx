@@ -26,13 +26,51 @@ export default function JobDetailPage() {
 
     setJob(j)
 
-    const { data: o } = await supabase
+    const { data: offerRows } = await supabase
       .from('offers')
-      .select('*, profiles(full_name, phone), provider_profiles(rating)')
+      .select('id, job_id, provider_id, price, estimated_duration, message, status')
       .eq('job_id', id)
       .order('price', { ascending: true })
 
-    setOffers(o || [])
+    const offersList = (offerRows || []) as any[]
+    const providerIds = Array.from(
+      new Set(
+        offersList
+          .map((o) => o.provider_id as string | null)
+          .filter((x): x is string => !!x)
+      )
+    )
+
+    let profilesById: Record<string, any> = {}
+    let providerProfilesById: Record<string, any> = {}
+
+    if (providerIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, phone')
+        .in('id', providerIds)
+
+      profilesById = Object.fromEntries(
+        (profiles || []).map((p: any) => [p.id as string, p])
+      )
+
+      const { data: providerProfiles } = await supabase
+        .from('provider_profiles')
+        .select('id, rating')
+        .in('id', providerIds)
+
+      providerProfilesById = Object.fromEntries(
+        (providerProfiles || []).map((p: any) => [p.id as string, p])
+      )
+    }
+
+    const enrichedOffers = offersList.map((o) => ({
+      ...o,
+      profiles: profilesById[o.provider_id as string] || null,
+      provider_profiles: providerProfilesById[o.provider_id as string] || null,
+    }))
+
+    setOffers(enrichedOffers)
     setLoading(false)
   }
 
@@ -228,12 +266,22 @@ export default function JobDetailPage() {
                 }`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-lg">👷</div>
+                      <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-lg">
+                        {offer.profiles?.full_name?.charAt(0)?.toUpperCase() || '👷'}
+                      </div>
                       <div>
-                        <p className="font-bold text-sm text-gray-900">{offer.profiles?.full_name || 'Usta'}</p>
-                        <div className="flex items-center gap-1">
+                        <p className="font-bold text-sm text-gray-900">
+                          {offer.profiles?.full_name || 'İsimsiz Usta'}
+                        </p>
+                        <div className="flex items-center gap-1 text-[11px] text-gray-500">
                           <span className="text-yellow-400 text-xs">★</span>
-                          <span className="text-xs text-gray-500">{offer.provider_profiles?.rating || '—'}</span>
+                          <span className="text-xs">
+                            {offer.provider_profiles?.rating ?? 'Puan yok'}
+                          </span>
+                          <span className="mx-1">•</span>
+                          <span className="text-xs">
+                            {offer.profiles?.phone || 'Telefon yok'}
+                          </span>
                         </div>
                       </div>
                     </div>

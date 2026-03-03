@@ -43,18 +43,45 @@ export default function ProviderJobsPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
+    if (!user) {
+      alert('Teklif verebilmek için tekrar giriş yapın.')
+      setSubmitting('')
+      return
+    }
+
+    // Aynı ustanın aynı işe ikinci kez teklif vermesini engelle
+    const { data: existing } = await supabase
+      .from('offers')
+      .select('id')
+      .eq('job_id', jobId)
+      .eq('provider_id', user.id)
+
+    if (existing && existing.length > 0) {
+      alert('Bu işe zaten teklif verdiniz.')
+      setSubmitting('')
+      return
+    }
+
     // 1. Teklifi ekle
-    await supabase.from('offers').insert({
+    const { error } = await supabase.from('offers').insert({
       job_id: jobId,
-      provider_id: user!.id,
+      provider_id: user.id,
       price: parseFloat(o.price),
       estimated_duration: o.duration,
-      message: o.message
+      message: o.message,
     })
 
-    // 2. İşi müşteri tarafında teklifler üzerinden göstereceğiz (status'u burada değiştirmiyoruz)
+    if (error) {
+      if ((error as any).code === '23505') {
+        alert('Bu işe zaten teklif verdiniz.')
+      } else {
+        alert('Teklif kaydedilirken bir hata oluştu: ' + error.message)
+      }
+      setSubmitting('')
+      return
+    }
 
-    // 3. Bildirim gönder
+    // 2. Bildirim gönder
     const job = jobs.find(j => j.id === jobId)
     await supabase.from('notifications').insert({
       user_id: job?.customer_id,
