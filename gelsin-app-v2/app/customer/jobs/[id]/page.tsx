@@ -17,6 +17,7 @@ export default function JobDetailPage() {
   const [showDispute, setShowDispute] = useState(false)
   const [disputeReason, setDisputeReason] = useState('')
   const [disputeSubmitting, setDisputeSubmitting] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   const load = async () => {
     const supabase = createClient()
@@ -87,6 +88,10 @@ export default function JobDetailPage() {
   useEffect(() => {
     load()
   }, [id])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const supabase = createClient()
@@ -200,47 +205,21 @@ export default function JobDetailPage() {
       </div>
     )
 
-  const startQrData = JSON.stringify({ job_id: job?.id, token: job?.qr_token, action: 'start' })
-  const endQrData = JSON.stringify({ job_id: job?.id, token: job?.end_qr_token, action: 'end' })
+  const startQrData = JSON.stringify({
+    job_id: job?.id ?? '',
+    token: job?.qr_token ?? '',
+    action: 'start',
+  })
+  const endQrData = JSON.stringify({
+    job_id: job?.id ?? '',
+    token: job?.end_qr_token ?? '',
+    action: 'end',
+  })
 
   const hasStartToken =
     typeof job?.qr_token === 'string' && job.qr_token.length >= 1
   const hasEndToken =
     typeof job?.end_qr_token === 'string' && job.end_qr_token.length >= 1
-
-  let startQrNode: JSX.Element | null = null
-  try {
-    if (hasStartToken) {
-      startQrNode = (
-        <QRCodeSVG
-          value={startQrData}
-          size={180}
-          level="H"
-          imageSettings={{ src: '', height: 0, width: 0, excavate: false }}
-        />
-      )
-    }
-  } catch (error) {
-    console.error('Start QR render error', error)
-    startQrNode = null
-  }
-
-  let endQrNode: JSX.Element | null = null
-  try {
-    if (hasEndToken) {
-      endQrNode = (
-        <QRCodeSVG
-          value={endQrData}
-          size={180}
-          level="H"
-          imageSettings={{ src: '', height: 0, width: 0, excavate: false }}
-        />
-      )
-    }
-  } catch (error) {
-    console.error('End QR render error', error)
-    endQrNode = null
-  }
 
   const statusConfig: Record<string, { label: string; bg: string; color: string }> = {
     open: { label: '📢 Teklif Bekleniyor', bg: 'bg-blue-50', color: 'text-blue-700' },
@@ -256,7 +235,8 @@ export default function JobDetailPage() {
   const statusKey = hasOffers && rawStatus === 'open' ? 'offered' : rawStatus
   const sc = statusConfig[statusKey] || statusConfig.open
 
-  const showEndSection = job?.status === 'started' || !!job?.end_qr_token
+  const showEndSection =
+    mounted && (job?.status === 'started' || !!job?.end_qr_token)
   const canOpenDispute = rawStatus === 'accepted' || rawStatus === 'started'
 
   const stepItems = [
@@ -337,7 +317,7 @@ export default function JobDetailPage() {
 
       <div className="px-4 py-4 space-y-4">
         {/* Başlangıç QR — accepted durumunda */}
-        {job?.status === 'accepted' && (
+        {mounted && job?.status === 'accepted' && (
           <div className="card p-5 border-2 border-blue-200 animate-scale-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl">📱</div>
@@ -349,7 +329,19 @@ export default function JobDetailPage() {
             {showStartQR ? (
               <div className="flex flex-col items-center gap-3">
                 <div className="bg-white p-4 rounded-2xl border-2 border-blue-100">
-                  {startQrNode || (
+                  {mounted && hasStartToken ? (
+                    <QRCodeSVG
+                      value={startQrData}
+                      size={180}
+                      level="H"
+                      imageSettings={{
+                        src: '',
+                        height: 0,
+                        width: 0,
+                        excavate: false,
+                      }}
+                    />
+                  ) : (
                     <div className="w-[180px] h-[180px] flex items-center justify-center text-xs text-gray-400">
                       Kod hazırlanıyor...
                     </div>
@@ -391,7 +383,19 @@ export default function JobDetailPage() {
             {showEndQR && hasEndToken ? (
               <div className="flex flex-col items-center gap-3">
                 <div className="bg-white p-4 rounded-2xl border-2 border-emerald-100">
-                  {endQrNode || (
+                  {mounted && hasEndToken ? (
+                    <QRCodeSVG
+                      value={endQrData}
+                      size={180}
+                      level="H"
+                      imageSettings={{
+                        src: '',
+                        height: 0,
+                        width: 0,
+                        excavate: false,
+                      }}
+                    />
+                  ) : (
                     <div className="w-[180px] h-[180px] flex items-center justify-center text-xs text-gray-400">
                       Kod hazırlanıyor...
                     </div>
