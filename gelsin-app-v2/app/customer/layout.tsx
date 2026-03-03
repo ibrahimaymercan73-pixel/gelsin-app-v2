@@ -1,13 +1,12 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import { getCurrentUserAndRole } from '@/lib/auth'
 
 const navItems = [
   { href: '/customer', icon: '🏠', label: 'Ana Sayfa' },
   { href: '/customer/jobs', icon: '📋', label: 'İşlerim' },
-  { href: '/customer/messages', icon: '💬', label: 'Mesajlar' },
   { href: '/customer/profile', icon: '👤', label: 'Profilim' },
 ]
 
@@ -16,9 +15,26 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   const pathname = usePathname()
 
   useEffect(() => {
-    createClient().auth.getUser().then(({ data: { user } }) => {
-      if (!user) router.replace('/onboarding')
-    })
+    const ensureAuthenticated = async () => {
+      const { user, role } = await getCurrentUserAndRole()
+
+      if (!user) {
+        router.replace('/onboarding')
+        return
+      }
+
+      if (role === 'provider') {
+        router.replace('/provider')
+        return
+      }
+
+      if (role === 'admin') {
+        router.replace('/admin')
+        return
+      }
+    }
+
+    ensureAuthenticated()
   }, [router])
 
   return (

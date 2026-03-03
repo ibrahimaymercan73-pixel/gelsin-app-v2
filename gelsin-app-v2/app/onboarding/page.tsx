@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { getCurrentUserAndRole } from '@/lib/auth'
 
 const slides = [
   {
@@ -30,14 +30,13 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     const check = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-        if (data?.role === 'admin') router.replace('/admin')
-        else if (data?.role === 'provider') router.replace('/provider')
-        else if (data?.role === 'customer') router.replace('/customer')
-      }
+      const { user, role } = await getCurrentUserAndRole()
+
+      if (!user || !role) return
+
+      if (role === 'admin') router.replace('/admin')
+      else if (role === 'provider') router.replace('/provider')
+      else if (role === 'customer') router.replace('/customer')
     }
     check()
   }, [router])

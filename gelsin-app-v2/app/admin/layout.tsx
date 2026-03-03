@@ -1,8 +1,8 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import { getCurrentUserAndRole } from '@/lib/auth'
 
 const navItems = [
   { href: '/admin', icon: '📊', label: 'Özet' },
@@ -18,11 +18,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const check = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.replace('/onboarding'); return }
-      const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-      if (data?.role !== 'admin') router.replace('/customer')
+      const { user, role } = await getCurrentUserAndRole()
+
+      if (!user) {
+        router.replace('/onboarding')
+        return
+      }
+
+      if (role !== 'admin') router.replace('/customer')
     }
     check()
   }, [router])

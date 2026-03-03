@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import { getCurrentUserAndRole, getProviderStatus } from '@/lib/auth'
 
 const navItems = [
   { href: '/provider', icon: '📊', label: 'Özet' },
@@ -19,11 +19,25 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
 
   useEffect(() => {
     const check = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.replace('/onboarding'); return }
-      const { data } = await supabase.from('provider_profiles').select('status').eq('id', user.id).single()
-      setPending(data?.status === 'pending')
+      const { user, role } = await getCurrentUserAndRole()
+
+      if (!user) {
+        router.replace('/onboarding')
+        return
+      }
+
+      if (role === 'customer') {
+        router.replace('/customer')
+        return
+      }
+
+      if (role === 'admin') {
+        router.replace('/admin')
+        return
+      }
+
+      const status = await getProviderStatus(user.id)
+      setPending(status === 'pending')
     }
     check()
   }, [router])
