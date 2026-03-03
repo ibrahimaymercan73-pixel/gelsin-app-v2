@@ -12,6 +12,9 @@ export default function ProviderMyJobsPage() {
   const [pinModal, setPinModal] = useState<{ jobId: string; action: 'start' | 'end' } | null>(null)
   const [pin, setPin] = useState('')
   const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [disputeModal, setDisputeModal] = useState<{ jobId: string } | null>(null)
+  const [disputeReason, setDisputeReason] = useState('')
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false)
 
   const load = async () => {
     const supabase = createClient()
@@ -81,6 +84,56 @@ export default function ProviderMyJobsPage() {
     await load()
   }
 
+  const submitDispute = async () => {
+    if (!disputeModal) return
+    if (!disputeReason.trim()) {
+      alert('Lütfen kısaca sebebi yazın.')
+      return
+    }
+    setDisputeSubmitting(true)
+    const supabase = createClient()
+    const job = jobs.find(j => j.id === disputeModal.jobId)
+
+    await supabase.from('jobs').update({ status: 'disputed' }).eq('id', disputeModal.jobId)
+
+    const notifications: any[] = []
+
+    if (job?.customer_id) {
+      notifications.push({
+        user_id: job.customer_id,
+        title: '⚠️ İşte Uyuşmazlık Açıldı',
+        body: `"${job.title}" işi için usta uyuşmazlık talebi oluşturdu: ${disputeReason}`,
+        type: 'job_disputed',
+        related_job_id: disputeModal.jobId,
+      })
+    }
+
+    const { data: admins } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin')
+
+    for (const admin of admins || []) {
+      notifications.push({
+        user_id: admin.id,
+        title: '⚠️ Yeni Uyuşmazlık Talebi',
+        body: `"${job?.title}" işi için usta uyuşmazlık talebi oluşturdu: ${disputeReason}`,
+        type: 'job_disputed_admin',
+        related_job_id: disputeModal.jobId,
+      })
+    }
+
+    if (notifications.length > 0) {
+      await supabase.from('notifications').insert(notifications)
+    }
+
+    setDisputeSubmitting(false)
+    setDisputeModal(null)
+    setDisputeReason('')
+    setResult({ ok: true, msg: 'Uyuşmazlık talebi oluşturuldu. Admin ekibi inceleyecek.' })
+    await load()
+  }
+
   return (
     <div>
       <div className="bg-white px-5 pt-14 pb-5 border-b border-gray-100">
@@ -125,12 +178,49 @@ export default function ProviderMyJobsPage() {
             <p className="font-black text-gray-900 text-center">6 Haneli PIN Gir</p>
             <input className="input text-center text-4xl tracking-[0.5em] font-black py-6"
               type="text" maxLength={6} placeholder="——————"
-              value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, ''))} autoFocus />
+              value={pin} onChange={e => setPin(e.target.value)} autoFocus />
             <button className="btn-primary py-3.5" onClick={handlePINSubmit} disabled={pin.length < 6}>
               Doğrula
             </button>
             <button className="btn-secondary py-3 text-sm" onClick={() => { setPinModal(null); setPin('') }}>
               İptal
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Dispute Modal */}
+      {disputeModal && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-end justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 w-full max-w-sm animate-slide-up space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="font-black text-gray-900 text-sm">
+                ⚠️ Sorun Bildir / Uyuşmazlık Talebi
+              </p>
+              <button
+                className="text-gray-400 text-xl leading-none"
+                onClick={() => !disputeSubmitting && setDisputeModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Kısaca neyin yanlış gittiğini yazın. Bu bilgi admin ekibine ve müşteriye iletilecektir.
+            </p>
+            <textarea
+              className="input text-sm py-2.5 resize-none"
+              rows={3}
+              placeholder="Örn: Adrese gelindi ama iş tanımı değişti..."
+              value={disputeReason}
+              onChange={(e) => setDisputeReason(e.target.value)}
+              disabled={disputeSubmitting}
+            />
+            <button
+              className="btn-primary py-3 text-sm disabled:opacity-60"
+              onClick={submitDispute}
+              disabled={disputeSubmitting}
+            >
+              {disputeSubmitting ? 'Gönderiliyor...' : 'Uyuşmazlık Talebi Oluştur'}
             </button>
           </div>
         </div>
@@ -167,6 +257,14 @@ export default function ProviderMyJobsPage() {
                 <button className="btn-success py-3.5"
                   onClick={() => setScanModal({ jobId: job.id, action: 'end' })}>
                   🏁 Bitiş QR Okut
+                </button>
+              )}
+              {(job.status === 'accepted' || job.status === 'started') && (
+                <button
+                  className="btn-secondary py-3 text-sm border-amber-300 text-amber-800"
+                  onClick={() => setDisputeModal({ jobId: job.id })}
+                >
+                  ⚠️ Sorun Bildir / İptal Talebi
                 </button>
               )}
               <a href={`https://maps.google.com/?q=${job.lat},${job.lng}`}

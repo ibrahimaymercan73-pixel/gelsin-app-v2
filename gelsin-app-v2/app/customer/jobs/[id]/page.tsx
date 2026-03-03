@@ -14,6 +14,9 @@ export default function JobDetailPage() {
   const [showStartQR, setShowStartQR] = useState(false)
   const [showEndQR, setShowEndQR] = useState(false)
   const [generatingEnd, setGeneratingEnd] = useState(false)
+  const [showDispute, setShowDispute] = useState(false)
+  const [disputeReason, setDisputeReason] = useState('')
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false)
 
   const load = async () => {
     const supabase = createClient()
@@ -33,10 +36,12 @@ export default function JobDetailPage() {
       .order('price', { ascending: true })
 
     const offersList = (offerRows || []) as any[]
+
+    // Teklif veren ustalarin profil ID'lerini netlestir (stringe zorla, boslari at)
     const providerIds = Array.from(
       new Set(
         offersList
-          .map((o) => o.provider_id as string | null)
+          .map((o) => (o.provider_id ? String(o.provider_id) : null))
           .filter((x): x is string => !!x)
       )
     )
@@ -60,15 +65,20 @@ export default function JobDetailPage() {
         .in('id', providerIds)
 
       providerProfilesById = Object.fromEntries(
-        (providerProfiles || []).map((p: any) => [p.id as string, p])
+        (providerProfiles || []).map((p: any) => [String(p.id), p])
       )
     }
 
-    const enrichedOffers = offersList.map((o) => ({
-      ...o,
-      profiles: profilesById[o.provider_id as string] || null,
-      provider_profiles: providerProfilesById[o.provider_id as string] || null,
-    }))
+    const enrichedOffers = offersList.map((o) => {
+      const providerId = o.provider_id ? String(o.provider_id) : ''
+      return {
+        ...o,
+        profiles: providerId ? profilesById[providerId] || null : null,
+        provider_profiles: providerId
+          ? providerProfilesById[providerId] || null
+          : null,
+      }
+    })
 
     setOffers(enrichedOffers)
     setLoading(false)
@@ -131,6 +141,54 @@ export default function JobDetailPage() {
     setGeneratingEnd(false)
   }
 
+  const submitDispute = async () => {
+    if (!disputeReason.trim()) {
+      alert('Lütfen kısaca sebebi yazın.')
+      return
+    }
+    setDisputeSubmitting(true)
+    const supabase = createClient()
+
+    await supabase.from('jobs').update({ status: 'disputed' }).eq('id', id)
+
+    // Adminleri ve ustayı bilgilendir
+    const notifications: any[] = []
+
+    if (job?.provider_id) {
+      notifications.push({
+        user_id: job.provider_id,
+        title: '⚠️ İşte Uyuşmazlık Açıldı',
+        body: `"${job.title}" işi için müşteri uyuşmazlık talebi oluşturdu: ${disputeReason}`,
+        type: 'job_disputed',
+        related_job_id: id,
+      })
+    }
+
+    const { data: admins } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'admin')
+
+    for (const admin of admins || []) {
+      notifications.push({
+        user_id: admin.id,
+        title: '⚠️ Yeni Uyuşmazlık Talebi',
+        body: `"${job?.title}" işi için müşteri uyuşmazlık talebi oluşturdu: ${disputeReason}`,
+        type: 'job_disputed_admin',
+        related_job_id: id,
+      })
+    }
+
+    if (notifications.length > 0) {
+      await supabase.from('notifications').insert(notifications)
+    }
+
+    setShowDispute(false)
+    setDisputeReason('')
+    setDisputeSubmitting(false)
+    await load()
+  }
+
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-dvh">
@@ -147,12 +205,16 @@ export default function JobDetailPage() {
     accepted: { label: '🚗 Usta Yolda', bg: 'bg-emerald-50', color: 'text-emerald-700' },
     started: { label: '🔨 İş Devam Ediyor', bg: 'bg-orange-50', color: 'text-orange-700' },
     completed: { label: '✅ Tamamlandı', bg: 'bg-gray-50', color: 'text-gray-600' },
+    disputed: { label: '⚠️ Uyuşmazlık Açıldı', bg: 'bg-amber-50', color: 'text-amber-700' },
   }
 
   const rawStatus = (job?.status as string) || 'open'
   const hasOffers = offers.length > 0
   const statusKey = hasOffers && rawStatus === 'open' ? 'offered' : rawStatus
   const sc = statusConfig[statusKey] || statusConfig.open
+
+  const showEndSection = job?.status === 'started' || !!job?.end_qr_token
+  const canOpenDispute = rawStatus === 'accepted' || rawStatus === 'started'
 
   return (
     <div className="min-h-dvh bg-gray-50">
@@ -208,8 +270,8 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* Bitiş QR — started durumunda */}
-        {job?.status === 'started' && (
+        {/* Bitiş QR — iş devam ederken veya bitiş kodu üretilmişse */}
+        {showEndSection && (
           <div className="card p-5 border-2 border-emerald-200 animate-scale-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">🏁</div>
@@ -254,6 +316,21 @@ export default function JobDetailPage() {
           )}
         </div>
 
+        {/* Sorun Bildir / Uyuşmazlık Talebi */}
+        {canOpenDispute && rawStatus !== 'disputed' && (
+          <div className="card p-4 space-y-2 border border-amber-200 bg-amber-50/60">
+            <p className="text-sm font-bold text-amber-800">
+              Bir sorun mu var? Usta ile anlaşamadıysanız uyuşmazlık talebi oluşturabilirsiniz.
+            </p>
+            <button
+              className="btn-secondary py-3 text-sm border-amber-300 text-amber-800"
+              onClick={() => setShowDispute(true)}
+            >
+              ⚠️ Sorun Bildir / İptal Talebi
+            </button>
+          </div>
+        )}
+
         {/* Teklifler */}
         {offers.length > 0 && (
           <div>
@@ -267,11 +344,13 @@ export default function JobDetailPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5">
                       <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-lg">
-                        {offer.profiles?.full_name?.charAt(0)?.toUpperCase() || '👷'}
+                        {(offer.profiles?.full_name || offer.profiles?.phone || 'Usta')
+                          .charAt(0)
+                          .toUpperCase() || '👷'}
                       </div>
                       <div>
                         <p className="font-bold text-sm text-gray-900">
-                          {offer.profiles?.full_name || 'İsimsiz Usta'}
+                          {offer.profiles?.full_name || offer.profiles?.phone || 'İsimsiz Usta'}
                         </p>
                         <div className="flex items-center gap-1 text-[11px] text-gray-500">
                           <span className="text-yellow-400 text-xs">★</span>
@@ -319,6 +398,43 @@ export default function JobDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Dispute Modal */}
+      {showDispute && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-end justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 w-full max-w-md animate-slide-up space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="font-black text-gray-900 text-sm">
+                ⚠️ Sorun Bildir / Uyuşmazlık Talebi
+              </p>
+              <button
+                className="text-gray-400 text-xl leading-none"
+                onClick={() => !disputeSubmitting && setShowDispute(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Kısaca neyin yanlış gittiğini yazın. Bu bilgi admin ekibine ve ustaya iletilecektir.
+            </p>
+            <textarea
+              className="input text-sm py-2.5 resize-none"
+              rows={3}
+              placeholder="Örn: Usta fiyatta anlaşmadı, iş şartları değişti..."
+              value={disputeReason}
+              onChange={(e) => setDisputeReason(e.target.value)}
+              disabled={disputeSubmitting}
+            />
+            <button
+              className="btn-primary py-3 text-sm disabled:opacity-60"
+              onClick={submitDispute}
+              disabled={disputeSubmitting}
+            >
+              {disputeSubmitting ? 'Gönderiliyor...' : 'Uyuşmazlık Talebi Oluştur'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

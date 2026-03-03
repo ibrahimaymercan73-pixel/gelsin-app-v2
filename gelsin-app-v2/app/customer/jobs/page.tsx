@@ -34,7 +34,7 @@ const tabConfig: Record<TabKey, { label: string; description: string }> = {
   },
   done: {
     label: 'Tamamlananlar',
-    description: 'Tamamlanan veya iptal edilen işler',
+    description: 'Tamamlanan, iptal edilen veya uyuşmazlık açılan işler',
   },
 }
 
@@ -72,13 +72,19 @@ const statusBadge: Record<
     bg: 'bg-red-50',
     color: 'text-red-700',
   },
+  disputed: {
+    label: 'Uyuşmazlık Açıldı',
+    bg: 'bg-amber-50',
+    color: 'text-amber-700',
+  },
 }
 
 function deriveBucket(job: JobWithMeta): TabKey {
   const rawStatus = (job.status as string) || 'open'
   const hasOffers = job.offerCount > 0
 
-  if (rawStatus === 'completed' || rawStatus === 'cancelled') return 'done'
+  if (rawStatus === 'completed' || rawStatus === 'cancelled' || rawStatus === 'disputed')
+    return 'done'
   if (rawStatus === 'accepted' || rawStatus === 'started') return 'progress'
   if (hasOffers) return 'offers'
   return 'open'
@@ -88,7 +94,8 @@ function deriveStatusKey(job: JobWithMeta): string {
   const rawStatus = (job.status as string) || 'open'
   const hasOffers = job.offerCount > 0
 
-  if (rawStatus === 'completed' || rawStatus === 'cancelled') return rawStatus
+  if (rawStatus === 'completed' || rawStatus === 'cancelled' || rawStatus === 'disputed')
+    return rawStatus
   if (rawStatus === 'accepted' || rawStatus === 'started') return rawStatus
   if (hasOffers && rawStatus === 'open') return 'offered'
   return rawStatus

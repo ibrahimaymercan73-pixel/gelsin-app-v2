@@ -55,9 +55,9 @@ CREATE TABLE jobs (
   address TEXT NOT NULL,
   lat DOUBLE PRECISION NOT NULL,
   lng DOUBLE PRECISION NOT NULL,
-  status TEXT DEFAULT 'open' CHECK (status IN (
-    'open', 'offered', 'accepted', 'started', 'completed', 'cancelled'
-  )),
+status TEXT DEFAULT 'open' CHECK (status IN (
+  'open', 'offered', 'accepted', 'started', 'completed', 'cancelled', 'disputed'
+)),
   job_type TEXT CHECK (job_type IN ('urgent', 'scheduled', 'process')),
   scheduled_at TIMESTAMPTZ,
   agreed_price NUMERIC(10,2),
