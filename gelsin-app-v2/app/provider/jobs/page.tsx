@@ -42,15 +42,29 @@ export default function ProviderJobsPage() {
     setSubmitting(jobId)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
+
+    // 1. Teklifi ekle
     await supabase.from('offers').insert({
-      job_id: jobId, provider_id: user!.id,
-      price: parseFloat(o.price), estimated_duration: o.duration, message: o.message
+      job_id: jobId,
+      provider_id: user!.id,
+      price: parseFloat(o.price),
+      estimated_duration: o.duration,
+      message: o.message
     })
+
+    // 2. *** HATA BURADAN GELİYORDU *** Job statusunu 'offered' yap ki müşteri görsün
+    await supabase.from('jobs').update({ status: 'offered' }).eq('id', jobId)
+
+    // 3. Bildirim gönder
     const job = jobs.find(j => j.id === jobId)
     await supabase.from('notifications').insert({
-      user_id: job?.customer_id, title: '💬 Yeni Teklif!',
-      body: `"${job?.title}" işine yeni teklif geldi.`, type: 'new_offer', related_job_id: jobId
+      user_id: job?.customer_id,
+      title: '💬 Yeni Teklif!',
+      body: `"${job?.title}" işine yeni teklif geldi.`,
+      type: 'new_offer',
+      related_job_id: jobId
     })
+
     const next = new Set(Array.from(myOffers))
     next.add(jobId)
     setMyOffers(next)
@@ -64,23 +78,24 @@ export default function ProviderJobsPage() {
   })).sort((a, b) => (a.dist ?? 99) - (b.dist ?? 99))
 
   return (
-    <div>
-      <div className="bg-white px-5 pt-14 pb-5 border-b border-gray-100">
-        <h1 className="text-2xl font-black text-gray-900">🔍 Radar</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Yakınımdaki açık işler — en yakın önce</p>
-      </div>
+    <div className="min-h-screen bg-[#F4F7FA]">
+      <header className="px-6 lg:px-10 py-6 sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
+        <h1 className="text-xl lg:text-2xl font-black text-slate-800">🔍 Radar</h1>
+        <p className="text-slate-400 text-sm mt-0.5">Yakınımdaki açık işler — en yakın önce</p>
+      </header>
 
-      <div className="px-4 py-4 space-y-3">
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-6 space-y-4">
         {sorted.map((job, i) => (
-          <div key={job.id} className={`card p-4 animate-slide-up delay-${Math.min(i+1,4)}`}>
+          <div key={job.id} className={`bg-white rounded-2xl p-5 border border-slate-100 shadow-sm animate-slide-up`}
+            style={{ animationDelay: `${Math.min(i, 4) * 0.06}s` }}>
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-xl">
+                <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center text-xl">
                   {job.service_categories?.icon}
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 text-sm">{job.title}</p>
-                  <p className="text-xs text-gray-500">{job.service_categories?.name}</p>
+                  <p className="font-bold text-slate-900 text-sm">{job.title}</p>
+                  <p className="text-xs text-slate-400">{job.service_categories?.name}</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1.5">
@@ -88,7 +103,7 @@ export default function ProviderJobsPage() {
                   {job.job_type === 'urgent' ? '⚡ Acil' : '📅 Normal'}
                 </span>
                 {job.dist !== null && (
-                  <span className={`text-xs font-bold ${job.dist < 1 ? 'text-emerald-600' : 'text-gray-400'}`}>
+                  <span className={`text-xs font-bold ${job.dist < 1 ? 'text-emerald-600' : 'text-slate-400'}`}>
                     {job.dist < 1 ? `${(job.dist*1000).toFixed(0)}m` : `${job.dist.toFixed(1)}km`}
                   </span>
                 )}
@@ -96,22 +111,22 @@ export default function ProviderJobsPage() {
             </div>
 
             {job.description && (
-              <p className="text-xs text-gray-500 bg-gray-50 p-2.5 rounded-xl mb-3">{job.description}</p>
+              <p className="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl mb-3">{job.description}</p>
             )}
-            <p className="text-xs text-gray-400 mb-3">📍 {job.address}</p>
+            <p className="text-xs text-slate-400 mb-4">📍 {job.address}</p>
 
             {offering[job.id] && (
-              <div className="bg-blue-50 rounded-2xl p-4 space-y-3 mb-3">
-                <div className="grid grid-cols-2 gap-2">
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 space-y-3 mb-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-gray-600">Fiyat (₺) *</label>
-                    <input className="input mt-1 text-sm py-2.5" type="number" placeholder="250"
+                    <label className="text-xs font-bold text-slate-600 mb-1 block">Fiyat (₺) *</label>
+                    <input className="input text-sm py-2.5" type="number" placeholder="250"
                       value={offering[job.id]?.price}
                       onChange={e => setOffering(p => ({ ...p, [job.id]: { ...p[job.id], price: e.target.value } }))} />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-gray-600">Süre</label>
-                    <input className="input mt-1 text-sm py-2.5" placeholder="2 saat"
+                    <label className="text-xs font-bold text-slate-600 mb-1 block">Süre</label>
+                    <input className="input text-sm py-2.5" placeholder="2 saat"
                       value={offering[job.id]?.duration}
                       onChange={e => setOffering(p => ({ ...p, [job.id]: { ...p[job.id], duration: e.target.value } }))} />
                   </div>
@@ -125,7 +140,7 @@ export default function ProviderJobsPage() {
                   <button className="btn-primary py-2.5 text-sm"
                     onClick={() => submitOffer(job.id)}
                     disabled={submitting === job.id || !offering[job.id]?.price}>
-                    {submitting === job.id ? '...' : '📤 Gönder'}
+                    {submitting === job.id ? '⏳ Gönderiliyor...' : '📤 Gönder'}
                   </button>
                 </div>
               </div>
@@ -134,7 +149,7 @@ export default function ProviderJobsPage() {
             {myOffers.has(job.id) ? (
               <div className="badge-green w-full justify-center py-2.5 text-sm">✅ Teklif Verildi</div>
             ) : !offering[job.id] && (
-              <button className="btn-primary py-3 text-sm"
+              <button className="btn-primary py-3 text-sm w-full"
                 onClick={() => setOffering(p => ({ ...p, [job.id]: { price: '', duration: '', message: '' } }))}>
                 💬 Teklif Ver
               </button>
@@ -143,10 +158,10 @@ export default function ProviderJobsPage() {
         ))}
 
         {jobs.length === 0 && (
-          <div className="flex flex-col items-center py-16 text-center">
-            <div className="text-5xl mb-4">🔍</div>
-            <p className="font-bold text-gray-700">Açık iş bulunamadı</p>
-            <p className="text-sm text-gray-400 mt-1">Yeni işler gelince burada görünecek</p>
+          <div className="flex flex-col items-center py-20 text-center">
+            <div className="text-6xl mb-4">🔍</div>
+            <p className="font-bold text-slate-700">Açık iş bulunamadı</p>
+            <p className="text-sm text-slate-400 mt-1">Yeni işler gelince burada görünecek</p>
           </div>
         )}
       </div>
