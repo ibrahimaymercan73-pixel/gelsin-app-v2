@@ -364,7 +364,7 @@ export default function JobDetailPage() {
         </div>
 
         {/* Sorun Bildir / Uyuşmazlık Talebi */}
-        {canOpenDispute && rawStatus !== 'disputed' && (
+        {canOpenDispute && (
           <div className="card p-4 space-y-2 border border-amber-200 bg-amber-50/60">
             <p className="text-sm font-bold text-amber-800">
               Bir sorun mu var? Usta ile anlaşamadıysanız uyuşmazlık talebi oluşturabilirsiniz.

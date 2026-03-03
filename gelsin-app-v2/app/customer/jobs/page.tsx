@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
@@ -103,7 +103,6 @@ function deriveStatusKey(job: JobWithMeta): string {
 
 export default function CustomerJobsPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [jobs, setJobs] = useState<JobWithMeta[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabKey>('open')
@@ -170,12 +169,15 @@ export default function CustomerJobsPage() {
       }
     })
 
-    const categoryFilter = searchParams.get('category')
+    let categoryFilter: string | null = null
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      categoryFilter = params.get('category')
+    }
+
     const filtered =
       categoryFilter && categoryFilter.length > 0
-        ? mapped.filter(
-            (job) => job.service_categories?.slug === categoryFilter
-          )
+        ? mapped.filter((job) => job.service_categories?.slug === categoryFilter)
         : mapped
 
     setJobs(filtered)
