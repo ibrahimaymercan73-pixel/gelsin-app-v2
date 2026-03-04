@@ -88,7 +88,7 @@ export default function ProviderNotificationsPage() {
 
           const handleClick = () => {
             if (isChat && n.related_job_id) {
-              router.push(`/chat/${n.related_job_id}`)
+              router.push(`/provider/chat/${n.related_job_id}`)
             }
           }
 

@@ -88,7 +88,7 @@ export default function CustomerNotificationsPage() {
 
           const handleClick = () => {
             if (isChat && n.related_job_id) {
-              router.push(`/chat/${n.related_job_id}`)
+              router.push(`/customer/chat/${n.related_job_id}`)
             }
           }
 

@@ -620,7 +620,7 @@ export default function JobDetailPage() {
         {job?.provider_id && (
           <button
             className="btn-secondary py-3 text-sm"
-            onClick={() => router.push(`/chat/${job.id}`)}
+            onClick={() => router.push(`/customer/chat/${job.id}`)}
           >
             💬 Ustayla Mesajlaş
           </button>

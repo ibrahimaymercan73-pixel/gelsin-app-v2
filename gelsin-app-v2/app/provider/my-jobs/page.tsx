@@ -282,7 +282,7 @@ export default function ProviderMyJobsPage() {
               )}
               {(job.status === 'accepted' || job.status === 'started' || job.status === 'completed') && (
                 <Link
-                  href={`/chat/${job.id}`}
+                  href={`/provider/chat/${job.id}`}
                   className="btn-secondary py-3 text-sm text-center block"
                 >
                   💬 Müşteriyle Mesajlaş
