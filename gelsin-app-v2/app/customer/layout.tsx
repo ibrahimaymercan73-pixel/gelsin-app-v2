@@ -39,6 +39,8 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
     ensureAuthenticated()
   }, [router])
 
+  const hideBottomNav = pathname.startsWith('/customer/chat')
+
   return (
     <ChatOverlayProvider>
       <div className="min-h-dvh bg-sky-50 flex font-sans">
@@ -81,25 +83,27 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       </main>
 
       {/* MOBİL BOTTOM NAV */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-lg px-4 py-3 flex justify-around items-center z-[90] rounded-t-[2rem] shadow-2xl border-t border-white/10">
-        {navItems.map(item => {
-          const isActive = pathname === item.href
-          return (
-            <Link key={item.href} href={item.href}
-              className={`flex flex-col items-center gap-1 px-2 py-1 rounded-xl transition-all ${
-                isActive ? 'text-blue-400' : 'text-slate-500'
-              }`}>
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-[10px] font-bold">{item.label}</span>
-            </Link>
-          )
-        })}
-        <Link href="/customer/new-job"
-          className="flex flex-col items-center gap-1 px-2 py-1 rounded-xl text-slate-400">
-          <span className="text-xl">➕</span>
-          <span className="text-[10px] font-bold">Yeni İş</span>
-        </Link>
-      </nav>
+      {!hideBottomNav && (
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-lg px-4 py-3 flex justify-around items-center z-[90] rounded-t-[2rem] shadow-2xl border-t border-white/10">
+          {navItems.map(item => {
+            const isActive = pathname === item.href
+            return (
+              <Link key={item.href} href={item.href}
+                className={`flex flex-col items-center gap-1 px-2 py-1 rounded-xl transition-all ${
+                  isActive ? 'text-blue-400' : 'text-slate-500'
+                }`}>
+                <span className="text-xl">{item.icon}</span>
+                <span className="text-[10px] font-bold">{item.label}</span>
+              </Link>
+            )
+          })}
+          <Link href="/customer/new-job"
+            className="flex flex-col items-center gap-1 px-2 py-1 rounded-xl text-slate-400">
+            <span className="text-xl">➕</span>
+            <span className="text-[10px] font-bold">Yeni İş</span>
+          </Link>
+        </nav>
+      )}
 
       {/* Floating Action Button - Yeni İş */}
       <Link

@@ -160,11 +160,12 @@ CREATE POLICY "provider_profiles_select" ON provider_profiles FOR SELECT USING (
 CREATE POLICY "provider_profiles_update" ON provider_profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "provider_profiles_insert" ON provider_profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Jobs: Müşteri kendi işlerini, usta da kabul ettiği işleri görebilir
+-- Jobs: Müşteri kendi işlerini, usta da kabul ettiği işleri görebilir; adminler tüm işleri görebilir
 CREATE POLICY "jobs_select" ON jobs FOR SELECT USING (
   auth.uid() = customer_id OR
   auth.uid() = provider_id OR
-  status = 'open'
+  status = 'open' OR
+  auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin')
 );
 CREATE POLICY "jobs_insert" ON jobs FOR INSERT WITH CHECK (auth.uid() = customer_id);
 CREATE POLICY "jobs_update" ON jobs FOR UPDATE USING (

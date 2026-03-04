@@ -83,22 +83,12 @@ function ChatOverlayFrame({ jobId, isDesktop, onClose }: FrameProps) {
     )
   }
 
-  // Mobil: tam ekran overlay
+  // Mobil: tam ekran overlay, başlık içerideki sohbet componentinden gelir
   return (
-    <div className="fixed inset-0 z-[130] bg-black/60 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-900 text-white">
-        <span className="text-sm font-semibold">Sohbet</span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-xs font-bold px-3 py-1 rounded-full bg-white/10"
-        >
-          Kapat
-        </button>
-      </div>
+    <div className="fixed inset-0 z-[130] bg-black/60">
       <iframe
         src={`/chat/${jobId}?embed=1`}
-        className="flex-1 w-full border-0 bg-white"
+        className="w-full h-full border-0 bg-white"
       />
     </div>
   )

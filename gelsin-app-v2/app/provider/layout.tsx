@@ -44,6 +44,8 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
     check()
   }, [router])
 
+  const hideBottomNav = pathname.startsWith('/provider/chat')
+
   return (
     <ChatOverlayProvider>
       <div className="min-h-dvh bg-[#F4F7FA] flex font-sans">
@@ -90,20 +92,22 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
         {children}
       </main>
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg px-2 py-3 flex justify-around items-center z-[100] rounded-t-3xl shadow-2xl border-t border-white/10">
-        {navItems.map(item => {
-          const isActive = pathname === item.href
-          return (
-            <Link key={item.href} href={item.href}
-              className={`flex flex-col items-center gap-1 px-2 py-1 rounded-xl transition-all ${
-                isActive ? 'text-blue-400' : 'text-slate-500'
-              }`}>
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-[10px] font-bold">{item.label}</span>
-            </Link>
-          )
-        })}
-      </nav>
+      {!hideBottomNav && (
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg px-2 py-3 flex justify-around items-center z-[100] rounded-t-3xl shadow-2xl border-t border-white/10">
+          {navItems.map(item => {
+            const isActive = pathname === item.href
+            return (
+              <Link key={item.href} href={item.href}
+                className={`flex flex-col items-center gap-1 px-2 py-1 rounded-xl transition-all ${
+                  isActive ? 'text-blue-400' : 'text-slate-500'
+                }`}>
+                <span className="text-xl">{item.icon}</span>
+                <span className="text-[10px] font-bold">{item.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
+      )}
       </div>
     </ChatOverlayProvider>
   )
