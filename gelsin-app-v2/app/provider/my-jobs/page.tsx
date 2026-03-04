@@ -79,8 +79,8 @@ export default function ProviderMyJobsPage() {
     } else {
       await supabase.rpc('release_payment', { p_job_id: jobId })
       await supabase.from('notifications').insert({
-        user_id: job.customer_id, title: '✅ İş Tamamlandı!',
-        body: 'Ödeme cüzdanınıza aktarıldı.', type: 'job_completed', related_job_id: jobId
+        user_id: job.provider_id, title: '💰 Ödemen Cüzdana Aktarıldı!',
+        body: `"${job.title}" işi için ödemen cüzdanına aktarıldı.`, type: 'provider_payment_released', related_job_id: jobId
       })
       setResult({ ok: true, msg: '🎉 İş tamamlandı! Ödeme cüzdanınıza aktarıldı.' })
     }
@@ -279,6 +279,14 @@ export default function ProviderMyJobsPage() {
                 >
                   ⚠️ Sorun Bildir / İptal Talebi
                 </button>
+              )}
+              {(job.status === 'accepted' || job.status === 'started' || job.status === 'completed') && (
+                <Link
+                  href={`/chat/${job.id}`}
+                  className="btn-secondary py-3 text-sm text-center block"
+                >
+                  💬 Müşteriyle Mesajlaş
+                </Link>
               )}
               <a href={`https://maps.google.com/?q=${job.lat},${job.lng}`}
                 target="_blank" rel="noopener noreferrer"

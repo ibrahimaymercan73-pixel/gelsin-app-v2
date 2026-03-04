@@ -120,6 +120,16 @@ CREATE TABLE notifications (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Mesajlar (müşteri <-> usta, iş bazlı sohbet)
+CREATE TABLE messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  job_id UUID REFERENCES jobs(id) ON DELETE CASCADE NOT NULL,
+  sender_id UUID REFERENCES profiles(id) NOT NULL,
+  receiver_id UUID REFERENCES profiles(id) NOT NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ============================================================
 -- SEED DATA: Hizmet kategorileri
 -- ============================================================
@@ -138,6 +148,7 @@ ALTER TABLE offers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: Herkes kendi profilini okuyabilir ve düzenleyebilir
 CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (true);
@@ -173,6 +184,17 @@ CREATE POLICY "offers_update" ON offers FOR UPDATE USING (
 -- Notifications: Sadece kendi bildirimleri
 CREATE POLICY "notifications_select" ON notifications FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "notifications_update" ON notifications FOR UPDATE USING (auth.uid() = user_id);
+
+-- Messages: sadece ilgili taraflar görebilir ve gönderebilir
+CREATE POLICY "messages_select" ON messages
+FOR SELECT USING (
+  auth.uid() = sender_id OR auth.uid() = receiver_id
+);
+
+CREATE POLICY "messages_insert" ON messages
+FOR INSERT WITH CHECK (
+  auth.uid() = sender_id
+);
 
 -- Transactions: Sadece ilgili taraflar
 CREATE POLICY "transactions_select" ON transactions FOR SELECT USING (

@@ -591,6 +591,16 @@ export default function JobDetailPage() {
           </div>
         )}
 
+        {/* Mesajlaşma */}
+        {job?.provider_id && (
+          <button
+            className="btn-secondary py-3 text-sm"
+            onClick={() => router.push(`/chat/${job.id}`)}
+          >
+            💬 Ustayla Mesajlaş
+          </button>
+        )}
+
         {/* Teklifler */}
         {offers.length > 0 && (
           <div>
