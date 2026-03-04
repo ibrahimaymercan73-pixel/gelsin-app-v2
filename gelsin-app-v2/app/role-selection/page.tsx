@@ -57,9 +57,22 @@ export default function RoleSelectionPage() {
       return
     }
 
-    await supabase
+    const { data: existing } = await supabase
       .from('profiles')
-      .upsert({ id: user.id, email: user.email, role })
+      .select('id, role, email')
+      .eq('id', user.id)
+      .single()
+
+    if (!existing) {
+      await supabase
+        .from('profiles')
+        .insert({ id: user.id, email: user.email, role })
+    } else {
+      await supabase
+        .from('profiles')
+        .update({ role, email: user.email })
+        .eq('id', user.id)
+    }
 
     if (role === 'provider') {
       await supabase

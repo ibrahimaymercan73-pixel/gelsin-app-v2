@@ -66,7 +66,6 @@ function LoginForm() {
     setError('')
     setLoading(true)
     const supabase = createClient()
-    const intendedRole = selectedRole
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -75,36 +74,28 @@ function LoginForm() {
 
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
-        // Kullanıcı yoksa: kayıt ol
-        const {
-          data: signUp,
-          error: signUpErr,
-        } = await supabase.auth.signUp({ email, password })
-        if (signUpErr || !signUp.user) {
-          setError(signUpErr?.message || 'Kayıt oluşturulamadı.')
-          setLoading(false)
-          return
-        }
-        const r = await ensureProfileEmail(signUp.user.id, email, intendedRole)
-        if (r === 'provider') {
-          router.replace('/usta/verify-email')
-        } else {
-          goTo(r)
-        }
-        setLoading(false)
-        return
+        setError('Email veya şifre hatalı. Eğer hesabınız yoksa lütfen kayıt olun.')
+      } else {
+        setError(error.message)
       }
-
-      setError(error.message)
       setLoading(false)
       return
     }
 
-    const r = await ensureProfileEmail(data.user.id, email, intendedRole)
+    // Giriş başarılıysa mevcut role'e göre yönlendir
+    const r = await ensureProfileEmail(
+      data.user.id,
+      email,
+      selectedRole // sadece profil boşsa kullanılacak
+    )
     if (r === 'provider') {
-      router.replace('/usta/verify-email')
+      router.replace('/provider')
+    } else if (r === 'customer') {
+      router.replace('/customer')
+    } else if (r === 'admin') {
+      router.replace('/admin')
     } else {
-      goTo(r)
+      router.replace('/role-selection')
     }
     setLoading(false)
   }
@@ -265,7 +256,14 @@ function LoginForm() {
               disabled={loading || !email || password.length < 6}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl text-base font-bold transition-all shadow-lg disabled:opacity-50"
             >
-              {loading ? 'İşleniyor...' : 'Giriş Yap / Kayıt Ol →'}
+              {loading ? 'İşleniyor...' : 'Giriş Yap →'}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.replace('/register')}
+              className="w-full text-center text-sm font-bold text-slate-400 hover:text-slate-600 py-2 transition-colors"
+            >
+              Hesabınız yok mu? Kayıt Ol
             </button>
           </div>
         </div>
