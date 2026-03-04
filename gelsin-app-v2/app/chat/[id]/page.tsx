@@ -169,15 +169,7 @@ export default function JobChatPage() {
     return (
       <div className="fixed inset-0 z-[9999] pointer-events-none flex items-end justify-end pr-4 pb-4 bg-transparent">
         <div className="pointer-events-auto flex flex-col w-full max-w-sm h-[420px] max-h-[70vh] bg-slate-50 rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
-          <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-3">
-            {!embed && (
-              <button
-                onClick={() => router.back()}
-                className="text-slate-400 text-sm font-semibold"
-              >
-                ✕
-              </button>
-            )}
+          <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-lg">
                 {job.service_categories?.icon || '💬'}
@@ -192,6 +184,14 @@ export default function JobChatPage() {
                 </p>
               </div>
             </div>
+            {!embed && (
+              <button
+                onClick={() => router.back()}
+                className="text-slate-400 text-xs font-semibold px-2 py-1 rounded-full hover:bg-slate-100"
+              >
+                Kapat
+              </button>
+            )}
           </header>
 
           <main className="flex-1 px-3 py-3 overflow-y-auto space-y-2">
