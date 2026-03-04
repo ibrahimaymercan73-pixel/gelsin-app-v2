@@ -8,6 +8,7 @@ const navItems = [
   { href: '/provider', icon: '📊', label: 'Özet' },
   { href: '/provider/jobs', icon: '🔍', label: 'Radar' },
   { href: '/provider/my-jobs', icon: '🔨', label: 'İşlerim' },
+  { href: '/provider/notifications', icon: '🔔', label: 'Bildirimler' },
   { href: '/provider/wallet', icon: '💰', label: 'Cüzdan' },
   { href: '/provider/profile', icon: '👤', label: 'Profil' },
 ]

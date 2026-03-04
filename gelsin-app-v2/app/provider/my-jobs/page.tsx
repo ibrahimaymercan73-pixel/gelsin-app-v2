@@ -22,7 +22,7 @@ export default function ProviderMyJobsPage() {
     const { data } = await supabase.from('jobs')
       .select('*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone)')
       .eq('provider_id', user!.id)
-      .in('status', ['accepted', 'started'])
+      .in('status', ['accepted', 'started', 'completed', 'disputed', 'cancelled'])
       .order('created_at', { ascending: false })
     setJobs(data || [])
   }
@@ -230,8 +230,20 @@ export default function ProviderMyJobsPage() {
       )}
 
       <div className="px-4 py-4 space-y-3">
-        {jobs.map(job => (
-          <div key={job.id} className="card p-4 animate-slide-up">
+        {jobs.map(job => {
+          const statusLabel =
+            job.status === 'started'
+              ? { cls: 'badge-orange', text: '🔨 Devam' }
+              : job.status === 'accepted'
+              ? { cls: 'badge-green', text: '✅ Bekliyor' }
+              : job.status === 'completed'
+              ? { cls: 'badge-green', text: '✅ Tamamlandı' }
+              : job.status === 'disputed'
+              ? { cls: 'badge-orange', text: '⚠️ Uyuşmazlık' }
+              : { cls: 'badge-red', text: '✖ İptal' }
+
+          return (
+            <div key={job.id} className="card p-4 animate-slide-up">
             <div className="flex items-start gap-3 mb-4">
               <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
                 {job.service_categories?.icon}
@@ -243,9 +255,7 @@ export default function ProviderMyJobsPage() {
               </div>
               <div className="flex-shrink-0 text-right">
                 <p className="text-xl font-black text-blue-700">₺{job.agreed_price}</p>
-                <span className={job.status === 'started' ? 'badge-orange' : 'badge-green'}>
-                  {job.status === 'started' ? '🔨 Devam' : '✅ Bekliyor'}
-                </span>
+                <span className={statusLabel.cls}>{statusLabel.text}</span>
               </div>
             </div>
 
@@ -276,8 +286,9 @@ export default function ProviderMyJobsPage() {
                 🗺️ Yol Tarifi Al
               </a>
             </div>
-          </div>
-        ))}
+            </div>
+          )
+        })}
 
         {jobs.length === 0 && (
           <div className="flex flex-col items-center py-16 text-center">
