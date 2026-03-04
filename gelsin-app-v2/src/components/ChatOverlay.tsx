@@ -65,7 +65,7 @@ function ChatOverlayFrame({ jobId, isDesktop, onClose }: FrameProps) {
 
   if (isDesktop) {
     return (
-      <div className="fixed inset-0 z-[130] pointer-events-none flex items-end justify-end pr-4 pb-4">
+      <div className="fixed inset-0 z-[999] pointer-events-none flex items-end justify-end pr-4 pb-4">
         <div className="pointer-events-auto relative flex flex-col w-full max-w-sm h-[420px] max-h-[70vh] rounded-3xl border border-slate-200 shadow-2xl bg-white overflow-hidden">
           <button
             type="button"
@@ -85,7 +85,7 @@ function ChatOverlayFrame({ jobId, isDesktop, onClose }: FrameProps) {
 
   // Mobil: tam ekran overlay, başlık içerideki sohbet componentinden gelir
   return (
-    <div className="fixed inset-0 z-[130] bg-black/60">
+    <div className="fixed inset-0 z-[999] bg-black/60">
       <iframe
         src={`/chat/${jobId}?embed=1`}
         className="w-full h-full border-0 bg-white"
