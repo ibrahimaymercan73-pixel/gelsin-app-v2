@@ -197,12 +197,12 @@ function LoginForm() {
                 <h2 className="text-2xl font-black text-slate-800">Telefon Numaranız</h2>
                 <p className="text-slate-400 text-sm mt-1">SMS doğrulama kodu gönderilecek</p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 w-full max-w-full">
                 <div className="flex items-center px-4 bg-slate-50 rounded-2xl text-base font-bold text-slate-600 border border-slate-200 shrink-0">
                   🇹🇷 +90
                 </div>
                 <input
-                  className="flex-1 px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-lg font-medium text-slate-900 placeholder:text-slate-300"
+                  className="flex-1 min-w-0 px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-lg font-medium text-slate-900 placeholder:text-slate-300"
                   type="tel" placeholder="5XX XXX XX XX"
                   value={phone} onChange={e => setPhone(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && sendOtp()} autoFocus
