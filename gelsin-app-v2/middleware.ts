@@ -119,8 +119,7 @@ export async function middleware(req: NextRequest) {
   // Auth sayfalarına giren giriş yapmış kullanıcıları doğrudan paneline yönlendir
   if (isAuthPage) {
     if (role === 'customer') {
-      // Ana akış için kök sayfaya gönder; oradan onboarding/panel yönetecek
-      return NextResponse.redirect(new URL('/', req.url))
+      return NextResponse.redirect(new URL('/customer', req.url))
     }
     if (role === 'provider') {
       return NextResponse.redirect(new URL('/provider', req.url))
