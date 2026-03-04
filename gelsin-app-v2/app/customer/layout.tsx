@@ -2,14 +2,15 @@
 import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { Home, ClipboardList, Bell, User, Plus } from 'lucide-react'
 import { getCurrentUserAndRole } from '@/lib/auth'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 
 const navItems = [
-  { href: '/customer', icon: '🏠', label: 'Ana Sayfa' },
-  { href: '/customer/jobs', icon: '📋', label: 'İşlerim' },
-  { href: '/customer/notifications', icon: '🔔', label: 'Mesajlar' },
-  { href: '/customer/profile', icon: '👤', label: 'Profilim' },
+  { href: '/customer', icon: Home, label: 'Ana Sayfa' },
+  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim' },
+  { href: '/customer/notifications', icon: Bell, label: 'Mesajlar' },
+  { href: '/customer/profile', icon: User, label: 'Profilim' },
 ]
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
@@ -43,36 +44,37 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
 
   return (
     <ChatOverlayProvider>
-      <div className="min-h-dvh bg-sky-50 flex font-sans">
+      <div className="min-h-dvh bg-[#fafaf9] flex font-sans">
 
-      {/* DESKTOP SIDEBAR */}
-      <aside className="hidden lg:flex w-64 bg-slate-950 flex-col fixed h-full z-50">
-        <div className="px-8 py-7 border-b border-white/5">
-          <span className="text-xl font-black text-white italic tracking-tighter">
-            GELSİN<span className="text-blue-500">.</span>
+      {/* DESKTOP SIDEBAR - glassmorphism style */}
+      <aside className="hidden lg:flex w-64 bg-white/80 backdrop-blur-md flex-col fixed h-full z-50 border-r border-stone-200/80 shadow-lg shadow-stone-200/50">
+        <div className="px-6 py-6 border-b border-stone-200/60">
+          <span className="text-xl font-black text-stone-900 tracking-tight">
+            GELSİN<span className="text-brand-500">.</span>
           </span>
-          <p className="text-slate-500 text-xs font-semibold mt-1 uppercase tracking-widest">Müşteri Paneli</p>
+          <p className="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-widest">Müşteri Paneli</p>
         </div>
 
-        <nav className="p-4 space-y-1 mt-2 flex-1">
+        <nav className="p-3 space-y-1 mt-2 flex-1">
           {navItems.map(item => {
             const isActive = pathname === item.href
+            const Icon = item.icon
             return (
               <Link key={item.href} href={item.href}
-                className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl font-semibold text-sm transition-all ${
-                  isActive ? 'bg-blue-600/15 text-blue-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] ${
+                  isActive ? 'bg-brand-500/10 text-brand-600' : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
                 }`}>
-                <span className="text-lg">{item.icon}</span>
+                <Icon className="w-5 h-5 shrink-0" />
                 {item.label}
               </Link>
             )
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/5">
+        <div className="p-3 border-t border-stone-200/60">
           <Link href="/customer/new-job"
-            className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-2xl font-bold text-sm transition-all shadow-lg shadow-blue-600/30">
-            <span>➕</span> Yeni İş Talebi
+            className="flex items-center justify-center gap-2 w-full bg-brand-500 hover:bg-brand-600 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand-500/25 active:scale-[0.98]">
+            <Plus className="w-5 h-5" /> Yeni İş Talebi
           </Link>
         </div>
       </aside>
@@ -82,36 +84,37 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         {children}
       </main>
 
-      {/* MOBİL BOTTOM NAV */}
+      {/* MOBİL BOTTOM NAV - glassmorphism */}
       {!hideBottomNav && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-lg px-4 py-3 flex justify-around items-center z-[90] rounded-t-[2rem] shadow-2xl border-t border-white/10">
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md px-3 py-2.5 flex justify-around items-center z-[90] rounded-t-[2rem] shadow-[0_-4px_24px_rgba(0,0,0,0.06)] border-t border-stone-200/80">
           {navItems.map(item => {
             const isActive = pathname === item.href
+            const Icon = item.icon
             return (
               <Link key={item.href} href={item.href}
-                className={`flex flex-col items-center gap-1 px-2 py-1 rounded-xl transition-all ${
-                  isActive ? 'text-blue-400' : 'text-slate-500'
+                className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all active:scale-95 ${
+                  isActive ? 'text-brand-500' : 'text-stone-500'
                 }`}>
-                <span className="text-xl">{item.icon}</span>
+                <Icon className="w-6 h-6" />
                 <span className="text-[10px] font-bold">{item.label}</span>
               </Link>
             )
           })}
           <Link href="/customer/new-job"
-            className="flex flex-col items-center gap-1 px-2 py-1 rounded-xl text-slate-400">
-            <span className="text-xl">➕</span>
+            className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-stone-500 active:scale-95">
+            <Plus className="w-6 h-6" />
             <span className="text-[10px] font-bold">Yeni İş</span>
           </Link>
         </nav>
       )}
 
-      {/* Floating Action Button - Yeni İş */}
+      {/* FAB - Yeni İş */}
       <Link
         href="/customer/new-job"
-        className="fixed right-5 bottom-24 lg:bottom-8 z-[95] bg-gradient-to-br from-sky-500 to-emerald-500 text-white w-14 h-14 rounded-full shadow-xl shadow-sky-900/40 flex items-center justify-center text-3xl hover:scale-105 transition-transform"
+        className="fixed right-5 bottom-24 lg:bottom-8 z-[95] bg-brand-500 hover:bg-brand-600 text-white w-14 h-14 rounded-2xl shadow-lg shadow-brand-500/30 flex items-center justify-center text-2xl font-bold hover:scale-105 active:scale-95 transition-transform"
         aria-label="Yeni iş oluştur"
       >
-        +
+        <Plus className="w-7 h-7" />
       </Link>
 
       </div>

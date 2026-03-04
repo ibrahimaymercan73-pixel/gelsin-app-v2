@@ -5,9 +5,9 @@
 @tailwind utilities;
 
 :root {
-  --brand: #1E40AF;
-  --brand-mid: #2563EB;
-  --brand-light: #3B82F6;
+  --brand: #ea580c;
+  --brand-mid: #f97316;
+  --brand-light: #fb923c;
   --safe-bottom: env(safe-area-inset-bottom, 16px);
 }
 
