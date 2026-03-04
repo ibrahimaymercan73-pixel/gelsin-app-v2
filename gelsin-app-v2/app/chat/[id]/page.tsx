@@ -122,7 +122,8 @@ export default function JobChatPage() {
   const isCustomer = userId === job.customer_id
 
   return (
-    <div className="min-h-dvh flex flex-col bg-slate-50">
+    <div className="min-h-dvh bg-slate-50 flex justify-center">
+      <div className="flex flex-col w-full max-w-md bg-slate-50 lg:mt-6 lg:mb-6 lg:rounded-3xl lg:border lg:border-slate-200 lg:shadow-lg overflow-hidden">
       <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-3 sticky top-0 z-40">
         <button
           onClick={() => router.back()}
@@ -203,6 +204,7 @@ export default function JobChatPage() {
           Gönder
         </button>
       </footer>
+      </div>
     </div>
   )
 }
