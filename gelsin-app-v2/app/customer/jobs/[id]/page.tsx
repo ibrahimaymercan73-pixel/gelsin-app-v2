@@ -94,28 +94,54 @@ export default function JobDetailPage() {
   }, [])
 
   useEffect(() => {
+    let isMounted = true
     const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
-    const channel = supabase
-      .channel(`job-${id}-offers`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'offers', filter: `job_id=eq.${id}` },
-        () => {
-          load()
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'jobs', filter: `id=eq.${id}` },
-        () => {
-          load()
-        }
-      )
-      .subscribe()
+    try {
+      channel = supabase
+        .channel(`job-${id}-offers`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'offers',
+            filter: `job_id=eq.${id}`,
+          },
+          () => {
+            if (isMounted) {
+              load()
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'jobs',
+            filter: `id=eq.${id}`,
+          },
+          () => {
+            if (isMounted) {
+              load()
+            }
+          }
+        )
+        .subscribe()
+    } catch (error) {
+      // Realtime bağlantısı kurulamazsa sessizce devam et
+      console.error('Supabase realtime subscribe error', error)
+    }
 
     return () => {
-      supabase.removeChannel(channel)
+      isMounted = false
+      if (channel) {
+        supabase.removeChannel(channel).catch(() => {
+          // unsubscribe hatasını yut
+        })
+      }
     }
   }, [id])
 
