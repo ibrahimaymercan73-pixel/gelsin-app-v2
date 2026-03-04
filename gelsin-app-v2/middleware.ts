@@ -66,8 +66,13 @@ export async function middleware(req: NextRequest) {
 
   const role = (profile?.role as UserRole | null) ?? null
 
-  // Rol yoksa sayfanın kendi client-side mantığı devam etsin
-  if (!role) return res
+  // Rol yoksa: sadece role-selection'a izin ver, diğer her yeri role-selection'a yönlendir
+  if (!role) {
+    if (pathname !== '/role-selection') {
+      return NextResponse.redirect(new URL('/role-selection', req.url))
+    }
+    return res
+  }
 
   // Usta onboarding zorunluluğu: kategori / onboarding tamamlanmamışsa provider alanlarına sokma
   if (role === 'provider' && isProviderArea && !isProviderOnboarding) {
@@ -114,7 +119,8 @@ export async function middleware(req: NextRequest) {
   // Auth sayfalarına giren giriş yapmış kullanıcıları doğrudan paneline yönlendir
   if (isAuthPage) {
     if (role === 'customer') {
-      return NextResponse.redirect(new URL('/customer', req.url))
+      // Ana akış için kök sayfaya gönder; oradan onboarding/panel yönetecek
+      return NextResponse.redirect(new URL('/', req.url))
     }
     if (role === 'provider') {
       return NextResponse.redirect(new URL('/provider', req.url))
@@ -132,6 +138,7 @@ export const config = {
     '/customer/:path*',
     '/provider/:path*',
     '/admin/:path*',
+    '/role-selection',
     '/onboarding',
     '/login',
     '/',
