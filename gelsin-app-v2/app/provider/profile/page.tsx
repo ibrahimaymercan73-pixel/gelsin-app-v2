@@ -78,6 +78,17 @@ export default function ProviderProfile() {
             <span className={pp?.status ? statusColors[pp.status] : 'badge-gray'}>
               {pp?.status ? statusLabels[pp.status] : '—'}
             </span>
+            {typeof pp?.rating === 'number' && (
+              <div className="mt-1 flex items-center gap-2 text-xs text-blue-100">
+                <span className="text-yellow-300">★</span>
+                <span className="font-semibold">
+                  {pp.rating.toFixed(1)} / 5
+                </span>
+                <span className="text-blue-200">
+                  ({pp.total_reviews ?? 0} değerlendirme)
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

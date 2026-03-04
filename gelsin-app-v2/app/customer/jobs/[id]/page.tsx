@@ -17,6 +17,10 @@ export default function JobDetailPage() {
   const [showDispute, setShowDispute] = useState(false)
   const [disputeReason, setDisputeReason] = useState('')
   const [disputeSubmitting, setDisputeSubmitting] = useState(false)
+  const [existingReview, setExistingReview] = useState<any | null>(null)
+  const [rating, setRating] = useState<number>(5)
+  const [comment, setComment] = useState('')
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   const load = async () => {
@@ -82,6 +86,19 @@ export default function JobDetailPage() {
     })
 
     setOffers(enrichedOffers)
+
+    // Varsa mevcut değerlendirmeyi çek
+    const { data: reviewRows } = await supabase
+      .from('reviews')
+      .select('rating, comment, created_at')
+      .eq('job_id', id)
+      .limit(1)
+
+    const review = reviewRows && reviewRows.length > 0 ? reviewRows[0] : null
+    setExistingReview(review)
+    if (review?.rating) setRating(review.rating)
+    if (review?.comment) setComment(review.comment)
+
     setLoading(false)
   }
 
@@ -229,7 +246,11 @@ export default function JobDetailPage() {
   const sc = statusConfig[statusKey] || statusConfig.open
 
   const showEndSection =
-    mounted && (job?.status === 'started' || !!job?.end_qr_token)
+    mounted &&
+    job?.status !== 'completed' &&
+    job?.status !== 'cancelled' &&
+    job?.status !== 'disputed' &&
+    (job?.status === 'started' || !!job?.end_qr_token)
   const canOpenDispute = rawStatus === 'accepted' || rawStatus === 'started'
 
   const stepItems = [
@@ -244,6 +265,65 @@ export default function JobDetailPage() {
   if (rawStatus === 'accepted') activeStep = 2
   else if (rawStatus === 'started') activeStep = 3
   else if (rawStatus === 'completed') activeStep = 4
+
+  const submitReview = async () => {
+    if (!job?.id || !job?.provider_id) {
+      alert('Bu iş için usta bulunamadı.')
+      return
+    }
+    if (!rating || rating < 1 || rating > 5) {
+      alert('Lütfen 1-5 arasında bir puan verin.')
+      return
+    }
+    if (existingReview) {
+      return
+    }
+    setReviewSubmitting(true)
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      alert('Oturum bulunamadı. Lütfen tekrar giriş yapın.')
+      setReviewSubmitting(false)
+      return
+    }
+
+    const { error } = await supabase.from('reviews').insert({
+      job_id: job.id,
+      customer_id: user.id,
+      provider_id: job.provider_id,
+      rating,
+      comment: comment.trim() || null,
+    })
+
+    if (error) {
+      console.error('REVIEW INSERT HATASI:', error)
+      alert('Değerlendirme kaydedilemedi: ' + error.message)
+      setReviewSubmitting(false)
+      return
+    }
+
+    // Ustanın ortalama puanını güncelle
+    const { data: pp } = await supabase
+      .from('provider_profiles')
+      .select('rating, total_reviews')
+      .eq('id', job.provider_id)
+      .single()
+
+    const currentRating = Number(pp?.rating || 0)
+    const currentCount = Number(pp?.total_reviews || 0)
+    const newCount = currentCount + 1
+    const newRating = ((currentRating * currentCount) + rating) / newCount
+
+    await supabase
+      .from('provider_profiles')
+      .update({ rating: newRating, total_reviews: newCount })
+      .eq('id', job.provider_id)
+
+    setExistingReview({ rating, comment })
+    setReviewSubmitting(false)
+  }
 
   return (
     <div className="min-h-dvh bg-gray-50">
@@ -395,6 +475,86 @@ export default function JobDetailPage() {
               <button className="btn-success" onClick={generateEndQR} disabled={generatingEnd}>
                 {generatingEnd ? 'Hazırlanıyor...' : '✅ Onayla & Bitiş QR Üret'}
               </button>
+            )}
+          </div>
+        )}
+
+        {/* Değerlendirme - iş tamamlandıysa */}
+        {job?.status === 'completed' && (
+          <div className="card p-5 space-y-3 border border-emerald-200 bg-emerald-50/60">
+            <p className="text-sm font-bold text-emerald-900">
+              İşi nasıl buldunuz? Ustanızı değerlendirin.
+            </p>
+
+            {existingReview ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      className={
+                        star <= (existingReview.rating || 0)
+                          ? 'text-yellow-400 text-xl'
+                          : 'text-gray-300 text-xl'
+                      }
+                    >
+                      ★
+                    </span>
+                  ))}
+                  <span className="text-xs text-emerald-800 font-semibold">
+                    {existingReview.rating}/5
+                  </span>
+                </div>
+                {existingReview.comment && (
+                  <p className="text-xs text-gray-700 bg-white/80 px-3 py-2 rounded-xl">
+                    {existingReview.comment}
+                  </p>
+                )}
+                <p className="text-[11px] text-emerald-700 font-medium">
+                  Değerlendirmeniz ustanın profil puanına yansıtıldı.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      className="focus:outline-none"
+                    >
+                      <span
+                        className={
+                          star <= rating
+                            ? 'text-yellow-400 text-2xl'
+                            : 'text-gray-300 text-2xl'
+                        }
+                      >
+                        ★
+                      </span>
+                    </button>
+                  ))}
+                  <span className="text-xs text-emerald-900 font-semibold ml-2">
+                    {rating}/5
+                  </span>
+                </div>
+                <textarea
+                  className="input text-sm py-2.5 resize-none"
+                  rows={3}
+                  placeholder="Kısaca yorum bırakmak isterseniz yazabilirsiniz..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  disabled={reviewSubmitting}
+                />
+                <button
+                  className="btn-primary py-3 text-sm disabled:opacity-60"
+                  onClick={submitReview}
+                  disabled={reviewSubmitting}
+                >
+                  {reviewSubmitting ? 'Kaydediliyor...' : 'Değerlendirmeyi Gönder'}
+                </button>
+              </div>
             )}
           </div>
         )}
