@@ -32,7 +32,12 @@ export default function OnboardingPage() {
     const check = async () => {
       const { user, role } = await getCurrentUserAndRole()
 
-      if (!user || !role) return
+      if (!user) return
+
+      if (user && !role) {
+        router.replace('/role-selection')
+        return
+      }
 
       if (role === 'admin') router.replace('/admin')
       else if (role === 'provider') router.replace('/provider')
