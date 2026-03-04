@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 type Notification = {
@@ -9,9 +10,11 @@ type Notification = {
   type: string | null
   created_at: string
   is_read: boolean | null
+  related_job_id?: string | null
 }
 
 export default function ProviderNotificationsPage() {
+  const router = useRouter()
   const [items, setItems] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -30,7 +33,7 @@ export default function ProviderNotificationsPage() {
 
       const { data } = await supabase
         .from('notifications')
-        .select('id, title, body, type, created_at, is_read')
+        .select('id, title, body, type, created_at, is_read, related_job_id')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -79,29 +82,44 @@ export default function ProviderNotificationsPage() {
           </div>
         )}
 
-        {items.map((n) => (
-          <div
-            key={n.id}
-            className={`bg-white rounded-2xl p-4 border ${
-              n.is_read ? 'border-slate-100' : 'border-blue-200'
-            } shadow-sm flex items-start gap-3`}
-          >
-            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-              <span className="text-lg">🔔</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-slate-900">{n.title}</p>
-              {n.body && (
-                <p className="text-xs text-slate-500 mt-1 whitespace-pre-line">
-                  {n.body}
+        {items.map((n) => {
+          const isChat = n.type === 'chat_message' && n.related_job_id
+          const clickable = isChat
+
+          const handleClick = () => {
+            if (isChat && n.related_job_id) {
+              router.push(`/chat/${n.related_job_id}`)
+            }
+          }
+
+          return (
+            <button
+              key={n.id}
+              type="button"
+              onClick={handleClick}
+              className={`w-full text-left bg-white rounded-2xl p-4 border ${
+                n.is_read ? 'border-slate-100' : 'border-blue-200'
+              } shadow-sm flex items-start gap-3 ${
+                clickable ? 'hover:bg-slate-50 cursor-pointer' : ''
+              }`}
+            >
+              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                <span className="text-lg">🔔</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-slate-900">{n.title}</p>
+                {n.body && (
+                  <p className="text-xs text-slate-500 mt-1 whitespace-pre-line">
+                    {n.body}
+                  </p>
+                )}
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {new Date(n.created_at).toLocaleString('tr-TR')}
                 </p>
-              )}
-              <p className="text-[10px] text-slate-400 mt-1">
-                {new Date(n.created_at).toLocaleString('tr-TR')}
-              </p>
-            </div>
-          </div>
-        ))}
+              </div>
+            </button>
+          )
+        })}
       </div>
     </div>
   )

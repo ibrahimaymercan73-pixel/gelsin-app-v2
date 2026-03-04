@@ -91,6 +91,23 @@ export default function JobChatPage() {
       return
     }
 
+    // Karşı tarafa bildirim gönder
+    try {
+      const isCustomerSender = job.customer_id === userId
+      const preview =
+        body.length > 80 ? body.slice(0, 77).trimEnd() + '...' : body
+
+      await supabase.from('notifications').insert({
+        user_id: receiverId,
+        title: isCustomerSender ? 'Müşteriden Yeni Mesaj' : 'Ustadan Yeni Mesaj',
+        body: `"${job.title}" işi için yeni mesaj: ${preview}`,
+        type: 'chat_message',
+        related_job_id: id,
+      })
+    } catch (e) {
+      console.error('MESAJ BILDIRIM HATASI:', e)
+    }
+
     await loadMessages()
   }
 
