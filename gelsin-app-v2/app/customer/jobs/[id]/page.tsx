@@ -112,16 +112,6 @@ export default function JobDetailPage() {
     }
   }, [id])
 
-  // İş started olduğunda ve henüz bitiş kodu yoksa otomatik üret
-  useEffect(() => {
-    if (!job) return
-    if ((job.status as string) === 'started' && !job.end_qr_token && !generatingEnd) {
-      // Arkaplanda bitiş kodu üretelim, card açıldığında QR hemen hazır olsun
-      generateEndQR()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job?.status, job?.end_qr_token])
-
   const acceptOffer = async (offerId: string, providerId: string, price: number) => {
     setAccepting(offerId)
     const supabase = createClient()

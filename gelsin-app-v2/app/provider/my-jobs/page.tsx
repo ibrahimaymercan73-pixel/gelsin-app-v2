@@ -30,7 +30,13 @@ export default function ProviderMyJobsPage() {
   useEffect(() => { load() }, [])
 
   const processToken = async (jobId: string, action: 'start' | 'end', token: string) => {
-    const job = jobs.find(j => j.id === jobId)
+    const supabase = createClient()
+    const { data: job } = await supabase
+      .from('jobs')
+      .select('qr_token, end_qr_token')
+      .eq('id', jobId)
+      .single()
+
     const expected = action === 'start' ? job?.qr_token : job?.end_qr_token
     if (!expected || token.toUpperCase() !== expected.slice(-6).toUpperCase()) {
       setResult({ ok: false, msg: 'Kod hatalı veya eşleşmiyor!' })
@@ -43,12 +49,9 @@ export default function ProviderMyJobsPage() {
     setScanModal(null)
     try {
       const parsed = JSON.parse(raw)
-      const job = jobs.find(j => j.id === jobId)
-      const expectedToken = action === 'start' ? job?.qr_token : job?.end_qr_token
-      if (parsed.job_id !== jobId || parsed.token !== expectedToken || parsed.action !== action) {
-        setResult({ ok: false, msg: 'QR kod bu iş için geçersiz!' })
-        return
-      }
+      // Veritabanındaki en güncel token ile doğrula
+      const valid = await processToken(jobId, action, parsed.token || '')
+      if (!valid || parsed.job_id !== jobId || parsed.action !== action) return
       await completeAction(jobId, action)
     } catch {
       setResult({ ok: false, msg: 'QR kod okunamadı.' })
