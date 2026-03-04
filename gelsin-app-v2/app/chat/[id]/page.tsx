@@ -20,6 +20,7 @@ export default function JobChatPage() {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const [isDesktop, setIsDesktop] = useState(false)
 
   const supabase = createClient()
 
@@ -64,6 +65,16 @@ export default function JobChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length])
+
+  useEffect(() => {
+    const check = () => {
+      if (typeof window === 'undefined') return
+      setIsDesktop(window.innerWidth >= 1024)
+    }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const sendMessage = async () => {
     if (!text.trim() || !job || !userId) return
@@ -121,9 +132,99 @@ export default function JobChatPage() {
 
   const isCustomer = userId === job.customer_id
 
+  // DESKTOP: sağ altta küçük chat penceresi (overlay)
+  if (isDesktop) {
+    return (
+      <div className="fixed inset-0 z-[120] pointer-events-none flex items-end justify-end pr-4 pb-4 bg-transparent">
+        <div className="pointer-events-auto flex flex-col w-full max-w-sm bg-slate-50 rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
+          <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="text-slate-400 text-sm font-semibold"
+            >
+              ✕
+            </button>
+            <div className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-lg">
+                {job.service_categories?.icon || '💬'}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-900 line-clamp-1">
+                  {job.title}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  {isCustomer ? 'Usta ile sohbet' : 'Müşteri ile sohbet'}
+                </p>
+              </div>
+            </div>
+          </header>
+
+          <main className="flex-1 px-3 py-3 overflow-y-auto space-y-2">
+            {messages.length === 0 && (
+              <div className="text-center text-xs text-slate-400 mt-4">
+                Henüz mesaj yok. İlk mesajı siz gönderebilirsiniz.
+              </div>
+            )}
+            {messages.map((m) => {
+              const isMine = m.sender_id === userId
+              return (
+                <div
+                  key={m.id}
+                  className={`flex w-full ${
+                    isMine ? 'justify-end' : 'justify-start'
+                  }`}
+                >
+                  <div
+                    className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${
+                      isMine
+                        ? 'bg-blue-600 text-white rounded-br-sm'
+                        : 'bg-white text-slate-900 border border-slate-200 rounded-bl-sm'
+                    }`}
+                  >
+                    <p className="whitespace-pre-line break-words">{m.body}</p>
+                    <p className="text-[10px] opacity-70 mt-1 text-right">
+                      {new Date(m.created_at).toLocaleTimeString('tr-TR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+            <div ref={bottomRef} />
+          </main>
+
+          <footer className="border-t border-slate-200 bg-white px-3 py-2 flex items-center gap-2">
+            <textarea
+              className="flex-1 min-h-[40px] max-h-[80px] text-sm border border-slate-200 rounded-2xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              rows={1}
+              placeholder="Mesaj yazın..."
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  sendMessage()
+                }
+              }}
+            />
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-4 py-2 text-sm font-bold disabled:opacity-50"
+              onClick={sendMessage}
+              disabled={!text.trim()}
+            >
+              Gönder
+            </button>
+          </footer>
+        </div>
+      </div>
+    )
+  }
+
+  // MOBİL: tam ekran sohbet
   return (
-    <div className="min-h-dvh bg-slate-50 flex justify-center">
-      <div className="flex flex-col w-full max-w-md bg-slate-50 lg:mt-6 lg:mb-6 lg:rounded-3xl lg:border lg:border-slate-200 lg:shadow-lg overflow-hidden">
+    <div className="min-h-dvh bg-slate-50 flex flex-col">
       <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-3 sticky top-0 z-40">
         <button
           onClick={() => router.back()}
@@ -204,7 +305,6 @@ export default function JobChatPage() {
           Gönder
         </button>
       </footer>
-      </div>
     </div>
   )
 }
