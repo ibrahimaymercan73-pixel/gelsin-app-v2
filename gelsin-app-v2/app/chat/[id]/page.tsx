@@ -136,7 +136,7 @@ export default function JobChatPage() {
   if (isDesktop) {
     return (
       <div className="fixed inset-0 z-[120] pointer-events-none flex items-end justify-end pr-4 pb-4 bg-transparent">
-        <div className="pointer-events-auto flex flex-col w-full max-w-sm bg-slate-50 rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
+        <div className="pointer-events-auto flex flex-col w-full max-w-sm h-[420px] max-h-[70vh] bg-slate-50 rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
           <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-3">
             <button
               onClick={() => router.back()}
