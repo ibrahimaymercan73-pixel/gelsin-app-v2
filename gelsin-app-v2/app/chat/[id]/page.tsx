@@ -167,7 +167,7 @@ export default function JobChatPage() {
   // DESKTOP: sağ altta küçük chat penceresi (overlay)
   if (isDesktop) {
     return (
-      <div className="fixed inset-0 z-[120] pointer-events-none flex items-end justify-end pr-4 pb-4 bg-transparent">
+      <div className="fixed inset-0 z-[9999] pointer-events-none flex items-end justify-end pr-4 pb-4 bg-transparent">
         <div className="pointer-events-auto flex flex-col w-full max-w-sm h-[420px] max-h-[70vh] bg-slate-50 rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
           <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-3">
             {!embed && (
@@ -258,8 +258,12 @@ export default function JobChatPage() {
   }
 
   // MOBİL: tam ekran sohbet
+  const mobileContainerClass = embed
+    ? 'fixed inset-0 z-[9999] bg-white flex flex-col'
+    : 'min-h-dvh bg-slate-50 flex flex-col'
+
   return (
-    <div className="min-h-dvh bg-slate-50 flex flex-col">
+    <div className={mobileContainerClass}>
       <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-3 sticky top-0 z-40">
         {!embed && (
           <button
@@ -285,7 +289,7 @@ export default function JobChatPage() {
         </div>
       </header>
 
-      <main className="flex-1 px-3 py-3 overflow-y-auto space-y-2">
+      <main className="flex-1 px-3 py-3 overflow-y-auto space-y-2 pb-24 pb-[env(safe-area-inset-bottom)]">
         {messages.length === 0 && (
           <div className="text-center text-xs text-slate-400 mt-10">
             Henüz mesaj yok. İlk mesajı siz gönderebilirsiniz.
