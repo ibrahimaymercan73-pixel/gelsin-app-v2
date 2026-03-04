@@ -4,17 +4,17 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Search, Wrench, Sparkles, Shield, ArrowRight } from 'lucide-react'
+import { Search, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { getCurrentUserAndRole } from '@/lib/auth'
 
 const SEARCH_PLACEHOLDERS = [
-  'Boya, Badana',
-  'Su Tesisatı',
-  'Temizlik',
-  'Elektrik',
-  'Marangoz',
-  'Montaj',
+  'Musluk tamiri',
+  'Boya badana',
+  'Su tesisatı',
+  'Ev temizliği',
+  'Elektrik arızaları',
+  'Montaj işleri',
 ]
 
 const CATEGORIES = [
@@ -32,12 +32,6 @@ const HOW_IT_WORKS = [
   { step: 3, title: 'Güvenle Öde', desc: 'İş bitene kadar ödemen güvende, sonra onayla.', icon: '🔒' },
 ]
 
-const STATS = [
-  { value: '500+', label: 'Mutlu Müşteri' },
-  { value: '200+', label: 'Onaylı Usta' },
-  { value: '1000+', label: 'Tamamlanan İş' },
-]
-
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } }
 const itemUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } }
 
@@ -52,7 +46,7 @@ export default function LandingPage() {
     const t = setInterval(() => {
       i = (i + 1) % SEARCH_PLACEHOLDERS.length
       setSearchPlaceholder(SEARCH_PLACEHOLDERS[i])
-    }, 2500)
+    }, 2800)
     return () => clearInterval(t)
   }, [])
 
@@ -88,28 +82,28 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#fafaf9] text-stone-900">
-      {/* Navbar - Glassmorphism */}
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      {/* Navbar */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4 bg-white/70 backdrop-blur-md border-b border-stone-200/60"
+        className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4 bg-white/90 backdrop-blur-md border-b border-slate-200/80"
       >
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="text-xl font-black text-stone-900 tracking-tight">
-            GELSİN<span className="text-brand-500">.</span>
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <Link href="/" className="text-xl font-bold text-slate-900 tracking-tight">
+            GELSİN<span className="text-slate-800">.</span>
           </Link>
           <nav className="flex items-center gap-3">
             <Link
               href="/login"
-              className="px-4 py-2.5 rounded-xl font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
+              className="px-4 py-2.5 rounded-xl font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors text-sm"
             >
               Giriş Yap
             </Link>
             <Link
               href="/register"
-              className="px-5 py-2.5 rounded-xl font-bold text-white bg-brand-500 hover:bg-brand-600 active:scale-[0.98] transition-all shadow-lg shadow-brand-500/25"
+              className="px-5 py-2.5 rounded-xl font-bold text-white bg-slate-800 hover:bg-slate-700 active:scale-[0.98] transition-all text-sm"
             >
               Kayıt Ol
             </Link>
@@ -118,56 +112,53 @@ export default function LandingPage() {
       </motion.header>
 
       {/* Hero */}
-      <section className="relative pt-28 pb-20 sm:pt-36 sm:pb-28 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-50 via-white to-amber-50/50" />
-        <div className="absolute top-0 right-0 w-[50%] h-[80%] bg-gradient-to-l from-brand-100/40 to-transparent rounded-full blur-3xl" />
-        <div className="relative max-w-4xl mx-auto text-center">
+      <section className="relative pt-32 pb-24 sm:pt-40 sm:pb-32 px-4">
+        <div className="max-w-4xl mx-auto text-center">
           <motion.h1
-            initial={{ opacity: 0, y: 28 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="text-4xl sm:text-5xl md:text-6xl font-black text-stone-900 tracking-tight leading-[1.1] mb-4"
+            className="text-4xl sm:text-5xl md:text-6xl font-bold text-slate-900 tracking-tight leading-[1.15] mb-5"
           >
-            Aradığın ustayı{' '}
-            <span className="text-brand-500">hemen bul</span>
+            Aradığın ustayı hemen bul
           </motion.h1>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
-            className="text-lg sm:text-xl text-stone-500 mb-10 max-w-2xl mx-auto"
+            transition={{ delay: 0.08, duration: 0.4 }}
+            className="text-lg sm:text-xl text-slate-500 mb-12 max-w-2xl mx-auto font-medium"
           >
-            Tamir, temizlik, boya, tesisat… Güvenilir ustalardan anında teklif al, güvenle öde.
+            Tamir, temizlik, boya, tesisat… Güvenilir ustalardan anında teklif al.
           </motion.p>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
             className="max-w-2xl mx-auto"
           >
             <Link
-              href="/onboarding"
-              className="flex items-center justify-center gap-3 w-full sm:w-auto sm:min-w-[420px] mx-auto h-14 px-6 rounded-2xl bg-white border-2 border-stone-200 shadow-lg shadow-stone-200/50 hover:border-brand-200 hover:shadow-brand-100/50 focus:ring-2 focus:ring-brand-400 focus:border-brand-400 outline-none transition-all text-left"
+              href="/providers"
+              className="flex items-center justify-center gap-3 w-full sm:min-w-[480px] mx-auto h-16 sm:h-[4.25rem] px-6 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/60 hover:shadow-xl hover:border-slate-300 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none transition-all text-left"
             >
-              <Search className="w-5 h-5 text-stone-400 shrink-0" />
-              <span className="text-stone-400 flex-1">{searchPlaceholder}...</span>
-              <span className="text-brand-600 font-semibold">Ara</span>
+              <Search className="w-6 h-6 text-slate-500 shrink-0" />
+              <span className="text-slate-500 flex-1 text-base sm:text-lg">{searchPlaceholder}...</span>
+              <span className="text-slate-800 font-bold text-sm">Ara</span>
             </Link>
-            <p className="mt-3 text-sm text-stone-400">
-              Ücretsiz keşfet · Kayıt olup ilk işini aç
+            <p className="mt-4 text-sm text-slate-400">
+              Kayıt gerekmez · Önce ustaları incele, sonra giriş yap
             </p>
           </motion.div>
         </div>
       </section>
 
       {/* Categories */}
-      <section className="py-16 px-4">
+      <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-2xl sm:text-3xl font-bold text-stone-900 mb-8 text-center"
+            className="text-2xl sm:text-3xl font-bold text-slate-900 mb-10 text-center"
           >
             Hizmet Kategorileri
           </motion.h2>
@@ -176,16 +167,16 @@ export default function LandingPage() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4"
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-5"
           >
             {CATEGORIES.map((c) => (
               <motion.div key={c.slug} variants={itemUp}>
                 <Link
-                  href={`/onboarding`}
-                  className="block p-5 rounded-2xl bg-white border border-stone-100 shadow-sm hover:shadow-md hover:border-brand-100 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.98] text-center group"
+                  href={`/providers?category=${c.slug}`}
+                  className="block p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all duration-200 active:scale-[0.98] text-center group"
                 >
-                  <span className="text-3xl block mb-2 group-hover:scale-110 transition-transform">{c.icon}</span>
-                  <span className="text-sm font-semibold text-stone-700">{c.label}</span>
+                  <span className="text-3xl block mb-3 group-hover:scale-110 transition-transform">{c.icon}</span>
+                  <span className="text-sm font-bold text-slate-800">{c.label}</span>
                 </Link>
               </motion.div>
             ))}
@@ -194,13 +185,13 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="py-20 px-4 bg-white/50">
+      <section className="py-24 px-4 bg-white border-y border-slate-200/80">
         <div className="max-w-4xl mx-auto">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-2xl sm:text-3xl font-bold text-stone-900 mb-12 text-center"
+            className="text-2xl sm:text-3xl font-bold text-slate-900 mb-14 text-center"
           >
             Nasıl Çalışır?
           </motion.h2>
@@ -209,16 +200,16 @@ export default function LandingPage() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
-            className="grid sm:grid-cols-3 gap-8"
+            className="grid sm:grid-cols-3 gap-10"
           >
             {HOW_IT_WORKS.map((h) => (
-              <motion.div key={h.step} variants={itemUp} className="text-center relative">
-                <div className="w-14 h-14 rounded-2xl bg-brand-100 text-2xl flex items-center justify-center mx-auto mb-4">
+              <motion.div key={h.step} variants={itemUp} className="text-center">
+                <div className="w-16 h-16 rounded-2xl bg-slate-100 text-2xl flex items-center justify-center mx-auto mb-5">
                   {h.icon}
                 </div>
-                <div className="text-brand-600 font-bold text-sm mb-1">Adım {h.step}</div>
-                <h3 className="text-lg font-bold text-stone-900 mb-1">{h.title}</h3>
-                <p className="text-sm text-stone-500">{h.desc}</p>
+                <div className="text-slate-800 font-bold text-sm mb-1">Adım {h.step}</div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">{h.title}</h3>
+                <p className="text-slate-500 text-base">{h.desc}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -227,13 +218,13 @@ export default function LandingPage() {
 
       {/* Featured providers */}
       {providers.length > 0 && (
-        <section className="py-20 px-4">
+        <section className="py-24 px-4">
           <div className="max-w-6xl mx-auto">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-2xl sm:text-3xl font-bold text-stone-900 mb-8 text-center"
+              className="text-2xl sm:text-3xl font-bold text-slate-900 mb-10 text-center"
             >
               En İyi Ustalarımız
             </motion.h2>
@@ -242,23 +233,23 @@ export default function LandingPage() {
               initial="hidden"
               whileInView="show"
               viewport={{ once: true }}
-              className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"
+              className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
             >
-              {providers.slice(0, 6).map((p, i) => (
+              {providers.slice(0, 6).map((p) => (
                 <motion.div key={p.id} variants={itemUp}>
                   <Link
-                    href="/login"
-                    className="block p-5 rounded-2xl bg-white border border-stone-100 shadow-sm hover:shadow-lg hover:border-brand-100 hover:-translate-y-1 transition-all duration-200 active:scale-[0.99]"
+                    href="/providers"
+                    className="block p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all duration-200 active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-brand-100 flex items-center justify-center text-2xl shrink-0">
+                      <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center text-xl font-bold text-slate-800 shrink-0">
                         {(p.profiles?.full_name || 'U')[0]}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-bold text-stone-900 truncate">
+                        <p className="font-bold text-slate-900 text-lg truncate">
                           {p.profiles?.full_name || 'Usta'}
                         </p>
-                        <p className="text-sm text-stone-500">
+                        <p className="text-sm text-slate-500">
                           ⭐ {typeof p.rating === 'number' ? p.rating.toFixed(1) : '—'} · {(p.total_reviews ?? 0)} iş
                         </p>
                       </div>
@@ -272,50 +263,50 @@ export default function LandingPage() {
       )}
 
       {/* Stats */}
-      <section className="py-16 px-4 bg-stone-900 text-white">
+      <section className="py-20 px-4 bg-slate-800 text-white">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="grid grid-cols-3 gap-8 text-center"
+            className="grid grid-cols-3 gap-10 text-center"
           >
             <div>
-              <div className="text-3xl sm:text-4xl font-black text-brand-400">{stats.jobs > 0 ? `${stats.jobs}+` : '1000+'}</div>
-              <div className="text-stone-400 text-sm font-medium mt-1">Tamamlanan İş</div>
+              <div className="text-3xl sm:text-4xl font-bold text-white">{stats.jobs > 0 ? `${stats.jobs}+` : '1000+'}</div>
+              <div className="text-slate-400 text-sm font-medium mt-1">Tamamlanan İş</div>
             </div>
             <div>
-              <div className="text-3xl sm:text-4xl font-black text-brand-400">{stats.providers > 0 ? `${stats.providers}+` : '200+'}</div>
-              <div className="text-stone-400 text-sm font-medium mt-1">Onaylı Usta</div>
+              <div className="text-3xl sm:text-4xl font-bold text-white">{stats.providers > 0 ? `${stats.providers}+` : '200+'}</div>
+              <div className="text-slate-400 text-sm font-medium mt-1">Onaylı Usta</div>
             </div>
             <div>
-              <div className="text-3xl sm:text-4xl font-black text-brand-400">500+</div>
-              <div className="text-stone-400 text-sm font-medium mt-1">Mutlu Müşteri</div>
+              <div className="text-3xl sm:text-4xl font-bold text-white">500+</div>
+              <div className="text-slate-400 text-sm font-medium mt-1">Mutlu Müşteri</div>
             </div>
           </motion.div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4">
+      <section className="py-24 px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="max-w-2xl mx-auto text-center"
         >
-          <h2 className="text-2xl font-bold text-stone-900 mb-3">Hemen başla</h2>
-          <p className="text-stone-500 mb-6">Ücretsiz kayıt ol, işini aç veya usta olarak katıl.</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">Hemen başla</h2>
+          <p className="text-slate-500 text-lg mb-8">Ücretsiz kayıt ol, işini aç veya usta olarak katıl.</p>
+          <div className="flex flex-col sm:flex-row gap-5 justify-center">
             <Link
               href="/register"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-white bg-brand-500 hover:bg-brand-600 shadow-lg shadow-brand-500/25 active:scale-[0.98] transition-all"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-white bg-slate-800 hover:bg-slate-700 active:scale-[0.98] transition-all text-base"
             >
-              Kayıt Ol <ArrowRight className="w-4 h-4" />
+              Kayıt Ol <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
               href="/login"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-stone-700 bg-stone-100 hover:bg-stone-200 active:scale-[0.98] transition-all"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 active:scale-[0.98] transition-all text-base"
             >
               Giriş Yap
             </Link>
@@ -323,8 +314,8 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      <footer className="py-8 px-4 border-t border-stone-200 text-center text-sm text-stone-400">
-        GELSİN<span className="text-brand-500">.</span> — Kapınıza kadar hizmet
+      <footer className="py-10 px-4 border-t border-slate-200 bg-white text-center text-sm text-slate-500">
+        GELSİN<span className="text-slate-800 font-semibold">.</span> — Kapınıza kadar hizmet
       </footer>
     </div>
   )
