@@ -4,9 +4,12 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 const skills = [
-  { slug: 'repair', name: 'Tamir', icon: '🔧' },
+  { slug: 'painting', name: 'Boya & Badana', icon: '🎨' },
+  { slug: 'plumbing', name: 'Su Tesisatı', icon: '🚰' },
+  { slug: 'electric', name: 'Elektrik', icon: '⚡' },
+  { slug: 'carpentry', name: 'Marangoz', icon: '🪚' },
   { slug: 'cleaning', name: 'Temizlik', icon: '🧹' },
-  { slug: 'carpet', name: 'Halı Yıkama', icon: '🏠' },
+  { slug: 'assembly', name: 'Montaj', icon: '🔩' },
 ]
 
 export default function ProviderProfile() {

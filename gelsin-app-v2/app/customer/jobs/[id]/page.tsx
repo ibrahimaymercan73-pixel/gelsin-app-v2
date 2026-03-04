@@ -67,7 +67,7 @@ export default function JobDetailPage() {
 
       const { data: providerProfiles } = await supabase
         .from('provider_profiles')
-        .select('id, rating')
+        .select('id, rating, service_categories')
         .in('id', providerIds)
 
       providerProfilesById = Object.fromEntries(
@@ -652,15 +652,32 @@ export default function JobDetailPage() {
                         <p className="font-bold text-sm text-gray-900">
                           {offer.profiles?.full_name || offer.profiles?.phone || 'İsimsiz Usta'}
                         </p>
-                        <div className="flex items-center gap-1 text-[11px] text-gray-500">
-                          <span className="text-yellow-400 text-xs">★</span>
-                          <span className="text-xs">
-                            {offer.provider_profiles?.rating ?? 'Puan yok'}
-                          </span>
-                          <span className="mx-1">•</span>
-                          <span className="text-xs">
-                            {offer.profiles?.phone || 'Telefon yok'}
-                          </span>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                            <span className="text-yellow-400 text-xs">★</span>
+                            <span className="text-xs">
+                              {offer.provider_profiles?.rating ?? 'Puan yok'}
+                            </span>
+                            <span className="mx-1">•</span>
+                            <span className="text-xs">
+                              {offer.profiles?.phone || 'Telefon yok'}
+                            </span>
+                          </div>
+                          {Array.isArray(offer.provider_profiles?.service_categories) &&
+                            offer.provider_profiles.service_categories.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-0.5">
+                                {offer.provider_profiles.service_categories.map(
+                                  (c: string) => (
+                                    <span
+                                      key={c}
+                                      className="px-1.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-[9px] font-semibold text-blue-700"
+                                    >
+                                      {c}
+                                    </span>
+                                  )
+                                )}
+                              </div>
+                            )}
                         </div>
                       </div>
                     </div>

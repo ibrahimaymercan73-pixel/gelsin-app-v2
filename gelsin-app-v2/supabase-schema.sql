@@ -20,6 +20,7 @@ CREATE TABLE provider_profiles (
   id UUID REFERENCES profiles(id) ON DELETE CASCADE PRIMARY KEY,
   bio TEXT,
   service_categories TEXT[] DEFAULT '{}',  -- ['repair', 'cleaning', 'carpet']
+  is_onboarded BOOLEAN DEFAULT false,
   rating NUMERIC(3,2) DEFAULT 0,
   total_reviews INT DEFAULT 0,
   wallet_balance NUMERIC(10,2) DEFAULT 0,

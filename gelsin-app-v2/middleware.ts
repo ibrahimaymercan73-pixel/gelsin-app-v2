@@ -44,6 +44,7 @@ export async function middleware(req: NextRequest) {
   const isCustomerArea = pathname.startsWith('/customer')
   const isProviderArea = pathname.startsWith('/provider')
   const isAdminArea = pathname.startsWith('/admin')
+  const isProviderOnboarding = pathname.startsWith('/provider/onboarding')
 
   // Giriş yapılmamış kullanıcılar için panel sayfalarını koru
   if (!user) {
@@ -67,6 +68,23 @@ export async function middleware(req: NextRequest) {
 
   // Rol yoksa sayfanın kendi client-side mantığı devam etsin
   if (!role) return res
+
+  // Usta onboarding zorunluluğu: kategori / onboarding tamamlanmamışsa provider alanlarına sokma
+  if (role === 'provider' && isProviderArea && !isProviderOnboarding) {
+    const { data: providerProfile } = await supabase
+      .from('provider_profiles')
+      .select('is_onboarded, service_categories')
+      .eq('id', user.id)
+      .single()
+
+    const cats = (providerProfile?.service_categories as string[] | null) ?? []
+    const needsOnboarding =
+      !providerProfile?.is_onboarded || cats.length === 0
+
+    if (needsOnboarding) {
+      return NextResponse.redirect(new URL('/provider/onboarding', req.url))
+    }
+  }
 
   // Panel alanlarında rol guard
   if (isCustomerArea) {

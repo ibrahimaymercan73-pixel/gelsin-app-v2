@@ -20,20 +20,35 @@ const categoryMeta: Record<
   string,
   { label: string; icon: string; description: string }
 > = {
-  repair: {
-    label: 'Acil Tamir',
-    icon: '🔧',
-    description: 'Elektrik, su tesisatı ve genel tamir işleri için ustalar',
+  painting: {
+    label: 'Boya & Badana',
+    icon: '🎨',
+    description: 'Daire boyama, alçı ve tadilat işleri için ustalar',
+  },
+  plumbing: {
+    label: 'Su Tesisatı',
+    icon: '🚰',
+    description: 'Musluk, gider, petek ve tesisat tamiri',
+  },
+  electric: {
+    label: 'Elektrik',
+    icon: '⚡',
+    description: 'Elektrik arızaları, aydınlatma ve sigorta işleri',
+  },
+  carpentry: {
+    label: 'Marangoz',
+    icon: '🪚',
+    description: 'Dolap, kapı, parke ve ahşap uygulamalar',
   },
   cleaning: {
     label: 'Temizlik',
     icon: '🧹',
     description: 'Ev ve ofis temizliği için güvenilir ekipler',
   },
-  carpet: {
-    label: 'Halı Yıkama',
-    icon: '🏠',
-    description: 'Halı, koltuk ve detaylı yıkama hizmetleri',
+  assembly: {
+    label: 'Montaj',
+    icon: '🔩',
+    description: 'Mobilya, TV, avize ve beyaz eşya montajı',
   },
 }
 
