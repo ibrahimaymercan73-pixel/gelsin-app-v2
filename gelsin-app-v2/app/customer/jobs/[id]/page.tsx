@@ -266,6 +266,16 @@ export default function JobDetailPage() {
   else if (rawStatus === 'started') activeStep = 3
   else if (rawStatus === 'completed') activeStep = 4
 
+  const commissionRate = 0.02
+  const commissionAmount =
+    typeof job?.agreed_price === 'number'
+      ? job.agreed_price * commissionRate
+      : null
+  const providerNetAmount =
+    typeof job?.agreed_price === 'number' && commissionAmount !== null
+      ? job.agreed_price - commissionAmount
+      : null
+
   const submitReview = async () => {
     if (!job?.id || !job?.provider_id) {
       alert('Bu iş için usta bulunamadı.')
@@ -569,9 +579,24 @@ export default function JobDetailPage() {
             <p className="text-gray-700 text-sm flex-1">{job?.address}</p>
           </div>
           {job?.agreed_price && (
-            <div className="flex items-center justify-between bg-blue-50 px-4 py-3 rounded-xl">
-              <span className="text-gray-600 text-sm font-medium">Anlaşılan Fiyat</span>
-              <span className="text-blue-700 font-black text-xl">₺{job.agreed_price}</span>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between bg-blue-50 px-4 py-3 rounded-xl">
+                <span className="text-gray-600 text-sm font-medium">
+                  Anlaşılan Fiyat
+                </span>
+                <span className="text-blue-700 font-black text-xl">
+                  ₺{job.agreed_price}
+                </span>
+              </div>
+              {providerNetAmount !== null && (
+                <p className="text-[11px] text-slate-400 text-right">
+                  Platform hizmet bedeli: %2 &nbsp;•&nbsp; Ustaya geçecek net
+                  tutar ≈{' '}
+                  <span className="font-semibold text-slate-600">
+                    ₺{providerNetAmount.toFixed(2)}
+                  </span>
+                </p>
+              )}
             </div>
           )}
         </div>

@@ -25,7 +25,9 @@ export default function ProviderWallet() {
       <div className="bg-gradient-to-br from-blue-700 to-blue-900 px-5 pt-14 pb-8 text-white">
         <p className="text-blue-300 text-sm">Mevcut Bakiye</p>
         <p className="text-5xl font-black mt-1">₺{balance.toFixed(2)}</p>
-        <p className="text-blue-200 text-xs mt-2">Tamamlanan işlerden kazanılan toplam tutar</p>
+        <p className="text-blue-200 text-xs mt-2">
+          Tamamlanan işlerden kazanılan toplam tutar (platform komisyonu %2)
+        </p>
       </div>
 
       <div className="px-4 py-4">

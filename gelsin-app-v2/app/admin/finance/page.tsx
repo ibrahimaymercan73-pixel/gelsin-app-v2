@@ -66,7 +66,7 @@ export default function AdminFinancePage() {
         <div className="card p-5 border-l-4 border-l-brand-400">
           <p className="text-surface-500 text-sm">Platform Komisyonu</p>
           <p className="text-3xl font-extrabold text-brand-600 mt-1">₺{stats.totalCommission.toFixed(0)}</p>
-          <p className="text-xs text-surface-400 mt-1">%15 oranında</p>
+          <p className="text-xs text-surface-400 mt-1">%2 oranında</p>
         </div>
         <div className="card p-5 border-l-4 border-l-emerald-400">
           <p className="text-surface-500 text-sm">Usta Ödemeleri</p>
@@ -88,8 +88,8 @@ export default function AdminFinancePage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {escrowJobs.map(job => {
-              const commission = (job.agreed_price || 0) * 0.15
+              {escrowJobs.map(job => {
+              const commission = (job.agreed_price || 0) * 0.02
               const providerAmount = (job.agreed_price || 0) - commission
 
               return (
@@ -117,7 +117,7 @@ export default function AdminFinancePage() {
                       <p className="font-bold text-surface-900">₺{job.agreed_price}</p>
                     </div>
                     <div>
-                      <p className="text-surface-400 text-xs">Komisyon (%15)</p>
+                      <p className="text-surface-400 text-xs">Komisyon (%2)</p>
                       <p className="font-bold text-brand-600">₺{commission.toFixed(0)}</p>
                     </div>
                     <div>

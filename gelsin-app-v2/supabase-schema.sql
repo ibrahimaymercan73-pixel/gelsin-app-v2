@@ -235,7 +235,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Platform komisyonunu hesapla ve öde (%15 komisyon)
+-- Platform komisyonunu hesapla ve öde (%2 komisyon)
 CREATE OR REPLACE FUNCTION release_payment(p_job_id UUID)
 RETURNS void AS $$
 DECLARE
@@ -245,7 +245,7 @@ DECLARE
 BEGIN
   SELECT * INTO v_job FROM jobs WHERE id = p_job_id;
   
-  v_commission := v_job.agreed_price * 0.15;
+  v_commission := v_job.agreed_price * 0.02;
   v_provider_amount := v_job.agreed_price - v_commission;
   
   -- İşi güncelle
@@ -264,7 +264,7 @@ BEGIN
   
   -- İşlem kayıtları
   INSERT INTO transactions (job_id, type, amount, from_id, to_id, notes) VALUES
-    (p_job_id, 'commission', v_commission, v_job.customer_id, NULL, 'Platform komisyonu %15'),
+    (p_job_id, 'commission', v_commission, v_job.customer_id, NULL, 'Platform komisyonu %2'),
     (p_job_id, 'provider_payout', v_provider_amount, NULL, v_job.provider_id, 'Usta ödemesi');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
