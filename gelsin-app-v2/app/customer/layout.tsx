@@ -7,7 +7,7 @@ import { getCurrentUserAndRole } from '@/lib/auth'
 const navItems = [
   { href: '/customer', icon: '🏠', label: 'Ana Sayfa' },
   { href: '/customer/jobs', icon: '📋', label: 'İşlerim' },
-  { href: '/customer/notifications', icon: '🔔', label: 'Bildirimler' },
+  { href: '/customer/notifications', icon: '🔔', label: 'Mesajlar' },
   { href: '/customer/profile', icon: '👤', label: 'Profilim' },
 ]
 
