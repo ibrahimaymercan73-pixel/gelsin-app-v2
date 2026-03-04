@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import { useChatOverlay } from '@/components/ChatOverlay'
 
 const QrScanner = dynamic(() => import('@/components/QrScanner'), { ssr: false })
 
@@ -15,6 +16,7 @@ export default function ProviderMyJobsPage() {
   const [disputeModal, setDisputeModal] = useState<{ jobId: string } | null>(null)
   const [disputeReason, setDisputeReason] = useState('')
   const [disputeSubmitting, setDisputeSubmitting] = useState(false)
+  const { openChat } = useChatOverlay()
 
   const load = async () => {
     const supabase = createClient()
@@ -194,8 +196,8 @@ export default function ProviderMyJobsPage() {
 
       {/* Dispute Modal */}
       {disputeModal && (
-        <div className="fixed inset-0 bg-black/85 z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 w-full max-w-sm animate-slide-up space-y-4">
+        <div className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 w-full max-w-sm max-h-[90vh] overflow-y-auto animate-slide-up space-y-4">
             <div className="flex items-center justify-between">
               <p className="font-black text-gray-900 text-sm">
                 ⚠️ Sorun Bildir / Uyuşmazlık Talebi
@@ -281,12 +283,13 @@ export default function ProviderMyJobsPage() {
                 </button>
               )}
               {(job.status === 'accepted' || job.status === 'started' || job.status === 'completed') && (
-                <Link
-                  href={`/provider/chat/${job.id}`}
-                  className="btn-secondary py-3 text-sm text-center block"
+                <button
+                  type="button"
+                  onClick={() => openChat(job.id)}
+                  className="btn-secondary py-3 text-sm text-center w-full"
                 >
                   💬 Müşteriyle Mesajlaş
-                </Link>
+                </button>
               )}
               <a href={`https://maps.google.com/?q=${job.lat},${job.lng}`}
                 target="_blank" rel="noopener noreferrer"

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { useChatOverlay } from '@/components/ChatOverlay'
 
 type Notification = {
   id: string
@@ -14,9 +14,9 @@ type Notification = {
 }
 
 export default function ProviderNotificationsPage() {
-  const router = useRouter()
   const [items, setItems] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
+  const { openChat } = useChatOverlay()
 
   useEffect(() => {
     const load = async () => {
@@ -88,7 +88,7 @@ export default function ProviderNotificationsPage() {
 
           const handleClick = () => {
             if (isChat && n.related_job_id) {
-              router.push(`/provider/chat/${n.related_job_id}`)
+              openChat(n.related_job_id)
             }
           }
 

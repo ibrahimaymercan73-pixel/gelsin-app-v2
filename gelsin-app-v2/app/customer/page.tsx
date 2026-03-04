@@ -82,7 +82,7 @@ export default function CustomerHome() {
                 {popularCategories.map((c) => (
                   <button
                     key={c.label}
-                    onClick={() => router.push(`/customer/jobs?category=${c.slug}`)}
+                    onClick={() => router.push(`/customer/providers?category=${c.slug}`)}
                     className="bg-white/80 p-6 rounded-3xl border border-sky-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group text-left flex flex-col gap-2"
                   >
                     <div className="text-3xl mb-1 group-hover:scale-110 transition-transform">
@@ -92,7 +92,7 @@ export default function CustomerHome() {
                       {c.label}
                     </div>
                     <span className="text-[11px] text-sky-600 font-semibold">
-                      İlanları gör →
+                      Ustaları gör →
                     </span>
                   </button>
                 ))}

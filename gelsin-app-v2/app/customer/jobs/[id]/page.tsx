@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
+import { useChatOverlay } from '@/components/ChatOverlay'
 
 export default function JobDetailPage() {
   const { id } = useParams()
@@ -128,6 +129,8 @@ export default function JobDetailPage() {
       clearInterval(interval)
     }
   }, [id])
+
+  const { openChat } = useChatOverlay()
 
   const acceptOffer = async (offerId: string, providerId: string, price: number) => {
     setAccepting(offerId)
@@ -620,7 +623,7 @@ export default function JobDetailPage() {
         {job?.provider_id && (
           <button
             className="btn-secondary py-3 text-sm"
-            onClick={() => router.push(`/customer/chat/${job.id}`)}
+            onClick={() => openChat(job.id)}
           >
             💬 Ustayla Mesajlaş
           </button>
@@ -698,8 +701,8 @@ export default function JobDetailPage() {
 
       {/* Dispute Modal */}
       {showDispute && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 w-full max-w-md animate-slide-up space-y-4">
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto animate-slide-up space-y-4">
             <div className="flex items-center justify-between">
               <p className="font-black text-gray-900 text-sm">
                 ⚠️ Sorun Bildir / Uyuşmazlık Talebi

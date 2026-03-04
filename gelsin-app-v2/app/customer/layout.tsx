@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUserAndRole } from '@/lib/auth'
+import { ChatOverlayProvider } from '@/components/ChatOverlay'
 
 const navItems = [
   { href: '/customer', icon: '🏠', label: 'Ana Sayfa' },
@@ -39,7 +40,8 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   }, [router])
 
   return (
-    <div className="min-h-dvh bg-sky-50 flex font-sans">
+    <ChatOverlayProvider>
+      <div className="min-h-dvh bg-sky-50 flex font-sans">
 
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden lg:flex w-64 bg-slate-950 flex-col fixed h-full z-50">
@@ -79,7 +81,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       </main>
 
       {/* MOBİL BOTTOM NAV */}
-      <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-slate-950/95 backdrop-blur-lg px-4 py-3 flex justify-around items-center z-[90] rounded-[2rem] shadow-2xl border border-white/10">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-lg px-4 py-3 flex justify-around items-center z-[90] rounded-t-[2rem] shadow-2xl border-t border-white/10">
         {navItems.map(item => {
           const isActive = pathname === item.href
           return (
@@ -108,6 +110,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         +
       </Link>
 
-    </div>
+      </div>
+    </ChatOverlayProvider>
   )
 }

@@ -79,7 +79,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </main>
 
       {/* ── MOBİL BOTTOM NAV ── */}
-      <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-slate-900/95 backdrop-blur-lg px-4 py-3 flex justify-around items-center z-[100] rounded-[2rem] shadow-2xl border border-white/10">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg px-4 py-3 flex justify-around items-center z-[100] rounded-t-[2rem] shadow-2xl border-t border-white/10">
         {navItems.map(item => {
           const isActive = pathname === item.href
           return (

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUserAndRole, getProviderStatus } from '@/lib/auth'
+import { ChatOverlayProvider } from '@/components/ChatOverlay'
 
 const navItems = [
   { href: '/provider', icon: '📊', label: 'Özet' },
@@ -44,7 +45,8 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
   }, [router])
 
   return (
-    <div className="min-h-dvh bg-[#F4F7FA] flex font-sans">
+    <ChatOverlayProvider>
+      <div className="min-h-dvh bg-[#F4F7FA] flex font-sans">
       <aside className="hidden lg:flex w-64 bg-slate-900 flex-col fixed h-full z-50">
         <div className="px-8 py-7 border-b border-white/5">
           <span className="text-xl font-black text-white italic tracking-tighter">
@@ -88,7 +90,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
         {children}
       </main>
 
-      <nav className="lg:hidden fixed bottom-4 left-4 right-4 bg-slate-900/95 backdrop-blur-lg px-2 py-3 flex justify-around items-center z-[100] rounded-3xl shadow-2xl border border-white/10">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg px-2 py-3 flex justify-around items-center z-[100] rounded-t-3xl shadow-2xl border-t border-white/10">
         {navItems.map(item => {
           const isActive = pathname === item.href
           return (
@@ -102,6 +104,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
           )
         })}
       </nav>
-    </div>
+      </div>
+    </ChatOverlayProvider>
   )
 }

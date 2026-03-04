@@ -21,6 +21,8 @@ export default function JobChatPage() {
   const [loading, setLoading] = useState(true)
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const [isDesktop, setIsDesktop] = useState(false)
+  const [otherName, setOtherName] = useState<string>('')
+  const [embed, setEmbed] = useState(false)
 
   const supabase = createClient()
 
@@ -36,8 +38,30 @@ export default function JobChatPage() {
         .single(),
     ])
 
-    setUserId(authData.user?.id ?? null)
+    const currentUserId = authData.user?.id ?? null
+    setUserId(currentUserId)
     setJob(j)
+
+    // Konuşulan kişinin adını bul
+    if (j && currentUserId) {
+      const otherId =
+        currentUserId === j.customer_id ? j.provider_id : j.customer_id
+
+      if (otherId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('id', otherId)
+          .single()
+
+        const fallback =
+          currentUserId === j.customer_id ? 'Usta' : 'Müşteri'
+
+        setOtherName(
+          profile?.full_name || profile?.phone || fallback
+        )
+      }
+    }
   }
 
   const loadMessages = async () => {
@@ -74,6 +98,12 @@ export default function JobChatPage() {
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    setEmbed(params.get('embed') === '1')
   }, [])
 
   const sendMessage = async () => {
@@ -131,6 +161,8 @@ export default function JobChatPage() {
   }
 
   const isCustomer = userId === job.customer_id
+  const headerTitle =
+    otherName || (isCustomer ? 'Usta' : 'Müşteri')
 
   // DESKTOP: sağ altta küçük chat penceresi (overlay)
   if (isDesktop) {
@@ -138,22 +170,25 @@ export default function JobChatPage() {
       <div className="fixed inset-0 z-[120] pointer-events-none flex items-end justify-end pr-4 pb-4 bg-transparent">
         <div className="pointer-events-auto flex flex-col w-full max-w-sm h-[420px] max-h-[70vh] bg-slate-50 rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
           <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              className="text-slate-400 text-sm font-semibold"
-            >
-              ✕
-            </button>
+            {!embed && (
+              <button
+                onClick={() => router.back()}
+                className="text-slate-400 text-sm font-semibold"
+              >
+                ✕
+              </button>
+            )}
             <div className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-lg">
                 {job.service_categories?.icon || '💬'}
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-900 line-clamp-1">
-                  {job.title}
+                  {headerTitle}
                 </p>
-                <p className="text-[11px] text-slate-400">
-                  {isCustomer ? 'Usta ile sohbet' : 'Müşteri ile sohbet'}
+                <p className="text-[11px] text-slate-400 line-clamp-1">
+                  {isCustomer ? 'Usta ile sohbet' : 'Müşteri ile sohbet'} •{' '}
+                  {job.title}
                 </p>
               </div>
             </div>
@@ -226,22 +261,25 @@ export default function JobChatPage() {
   return (
     <div className="min-h-dvh bg-slate-50 flex flex-col">
       <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-3 sticky top-0 z-40">
-        <button
-          onClick={() => router.back()}
-          className="text-blue-600 text-sm font-semibold"
-        >
-          ← Geri
-        </button>
+        {!embed && (
+          <button
+            onClick={() => router.back()}
+            className="text-blue-600 text-sm font-semibold"
+          >
+            ← Geri
+          </button>
+        )}
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-lg">
             {job.service_categories?.icon || '💬'}
           </div>
           <div>
             <p className="text-sm font-bold text-slate-900 line-clamp-1">
-              {job.title}
+              {headerTitle}
             </p>
-            <p className="text-[11px] text-slate-400">
-              {isCustomer ? 'Usta ile sohbet' : 'Müşteri ile sohbet'}
+            <p className="text-[11px] text-slate-400 line-clamp-1">
+              {isCustomer ? 'Usta ile sohbet' : 'Müşteri ile sohbet'} •{' '}
+              {job.title}
             </p>
           </div>
         </div>
