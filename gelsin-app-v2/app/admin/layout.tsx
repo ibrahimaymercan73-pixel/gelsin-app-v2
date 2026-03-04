@@ -9,6 +9,7 @@ const navItems = [
   { href: '/admin/approvals', icon: '✅', label: 'Onay' },
   { href: '/admin/live', icon: '🗺️', label: 'Canlı' },
   { href: '/admin/finance', icon: '💰', label: 'Finans' },
+  { href: '/admin/messages', icon: '💬', label: 'Mesajlar' },
   { href: '/admin/users', icon: '👥', label: 'Kullanıcılar' },
 ]
 

@@ -185,10 +185,12 @@ CREATE POLICY "offers_update" ON offers FOR UPDATE USING (
 CREATE POLICY "notifications_select" ON notifications FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "notifications_update" ON notifications FOR UPDATE USING (auth.uid() = user_id);
 
--- Messages: sadece ilgili taraflar görebilir ve gönderebilir
+-- Messages: ilgili taraflar VE adminler görebilir, sadece gönderen ekleyebilir
 CREATE POLICY "messages_select" ON messages
 FOR SELECT USING (
-  auth.uid() = sender_id OR auth.uid() = receiver_id
+  auth.uid() = sender_id OR
+  auth.uid() = receiver_id OR
+  auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin')
 );
 
 CREATE POLICY "messages_insert" ON messages
