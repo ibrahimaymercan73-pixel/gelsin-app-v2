@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [emailConfirmMessage, setEmailConfirmMessage] = useState(false)
 
   const isProvider = selectedRole === 'provider'
 
@@ -21,9 +22,14 @@ export default function RegisterPage() {
     setLoading(true)
     const supabase = createClient()
 
+    const origin =
+      typeof window !== 'undefined' ? window.location.origin : ''
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${origin}/login`,
+      },
     })
 
     if (error || !data.user) {
@@ -34,15 +40,27 @@ export default function RegisterPage() {
 
     const user = data.user
 
-    // Profili oluştur / güncelle
+    // Profili oluştur / güncelle (trigger ile oluşan satırı rol ile güncelle; email sütunu yoksa sadece role yazılır)
     await supabase
       .from('profiles')
-      .upsert({ id: user.id, email: user.email, role: selectedRole })
+      .upsert({ id: user.id, role: selectedRole }, { onConflict: 'id' })
 
     if (selectedRole === 'provider') {
       await supabase
         .from('provider_profiles')
         .upsert({ id: user.id }, { onConflict: 'id' })
+    }
+
+    // E-posta onayı açıksa session gelmez; kullanıcıya "e-postayı doğrula, sonra giriş yap" de
+    const hasSession = !!data.session
+    if (!hasSession) {
+      setError('')
+      setLoading(false)
+      setEmailConfirmMessage(true)
+      return
+    }
+
+    if (selectedRole === 'provider') {
       router.replace('/usta/verify-email')
     } else {
       router.replace('/customer')
@@ -140,6 +158,18 @@ export default function RegisterPage() {
               onKeyDown={(e) => e.key === 'Enter' && register()}
             />
           </div>
+          {emailConfirmMessage && (
+            <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-green-800 text-sm font-medium">
+              Kayıt oluşturuldu. E-posta adresinize gelen doğrulama linkine tıklayın, ardından giriş yapın.
+              <button
+                type="button"
+                onClick={() => router.replace('/login')}
+                className="mt-3 block w-full rounded-xl bg-green-600 py-2.5 text-white font-bold hover:bg-green-700"
+              >
+                Giriş sayfasına git
+              </button>
+            </div>
+          )}
           {error && (
             <p className="text-red-600 text-sm font-medium bg-red-50 p-4 rounded-xl border border-red-100">
               {error}
@@ -148,7 +178,7 @@ export default function RegisterPage() {
           <button
             type="button"
             onClick={register}
-            disabled={loading || !email || password.length < 6}
+            disabled={loading || !email || password.length < 6 || emailConfirmMessage}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl text-base font-bold transition-all shadow-lg disabled:opacity-50"
           >
             {loading ? 'Kayıt oluşturuluyor...' : 'Kayıt Ol →'}

@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase'
 export default function RoleSelectionPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -22,7 +24,7 @@ export default function RoleSelectionPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, email')
+        .select('role')
         .eq('id', user.id)
         .single()
 
@@ -48,39 +50,50 @@ export default function RoleSelectionPage() {
   }, [router])
 
   const chooseRole = async (role: 'customer' | 'provider') => {
+    setError('')
+    setSubmitting(true)
     const supabase = createClient()
     const {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) {
       router.replace('/login')
+      setSubmitting(false)
       return
     }
 
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('id, role, email')
-      .eq('id', user.id)
-      .single()
-
-    if (!existing) {
-      await supabase
+    try {
+      const { data: existing } = await supabase
         .from('profiles')
-        .insert({ id: user.id, email: user.email, role })
-    } else {
-      await supabase
-        .from('profiles')
-        .update({ role, email: user.email })
+        .select('id, role')
         .eq('id', user.id)
-    }
+        .single()
 
-    if (role === 'provider') {
-      await supabase
-        .from('provider_profiles')
-        .upsert({ id: user.id }, { onConflict: 'id' })
-      router.replace('/provider/onboarding')
-    } else {
-      router.replace('/customer')
+      if (!existing) {
+        const { error: insertErr } = await supabase
+          .from('profiles')
+          .insert({ id: user.id, role })
+        if (insertErr) throw insertErr
+      } else {
+        const { error: updateErr } = await supabase
+          .from('profiles')
+          .update({ role })
+          .eq('id', user.id)
+        if (updateErr) throw updateErr
+      }
+
+      if (role === 'provider') {
+        await supabase
+          .from('provider_profiles')
+          .upsert({ id: user.id }, { onConflict: 'id' })
+        router.replace('/provider/onboarding')
+      } else {
+        router.replace('/customer')
+      }
+    } catch (e: unknown) {
+      const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: unknown }).message) : 'Rol kaydedilemedi.'
+      setError(msg)
+      setSubmitting(false)
     }
   }
 
@@ -107,11 +120,17 @@ export default function RoleSelectionPage() {
           </p>
         </div>
 
+        {error && (
+          <p className="text-red-400 text-sm font-medium bg-red-500/20 border border-red-400/50 rounded-xl px-4 py-3">
+            {error}
+          </p>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
             type="button"
+            disabled={submitting}
             onClick={() => chooseRole('customer')}
-            className="bg-white hover:bg-blue-50 border-2 border-white hover:border-blue-300 rounded-3xl p-6 flex flex-col gap-4 transition-all group text-left shadow-xl hover:shadow-blue-500/20 hover:-translate-y-1"
+            className="bg-white hover:bg-blue-50 border-2 border-white hover:border-blue-300 rounded-3xl p-6 flex flex-col gap-4 transition-all group text-left shadow-xl hover:shadow-blue-500/20 hover:-translate-y-1 disabled:opacity-60 disabled:pointer-events-none"
           >
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-4xl shrink-0 group-hover:scale-110 transition-transform">
@@ -130,8 +149,9 @@ export default function RoleSelectionPage() {
 
           <button
             type="button"
+            disabled={submitting}
             onClick={() => chooseRole('provider')}
-            className="bg-blue-600 hover:bg-blue-500 border-2 border-blue-500 rounded-3xl p-6 flex flex-col gap-4 transition-all group text-left shadow-xl shadow-blue-600/30 hover:-translate-y-1"
+            className="bg-blue-600 hover:bg-blue-500 border-2 border-blue-500 rounded-3xl p-6 flex flex-col gap-4 transition-all group text-left shadow-xl shadow-blue-600/30 hover:-translate-y-1 disabled:opacity-60 disabled:pointer-events-none"
           >
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center text-4xl shrink-0 group-hover:scale-110 transition-transform">

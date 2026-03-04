@@ -41,7 +41,7 @@ function LoginForm() {
     if (!profile) {
       await supabase
         .from('profiles')
-        .upsert({ id: userId, email: emailValue, role: intendedRole })
+        .upsert({ id: userId, role: intendedRole }, { onConflict: 'id' })
       if (intendedRole === 'provider') {
         await supabase.from('provider_profiles').upsert({ id: userId })
       }
@@ -51,7 +51,7 @@ function LoginForm() {
     if (!profile.role) {
       await supabase
         .from('profiles')
-        .update({ role: intendedRole, email: emailValue })
+        .update({ role: intendedRole })
         .eq('id', userId)
       if (intendedRole === 'provider') {
         await supabase.from('provider_profiles').upsert({ id: userId })

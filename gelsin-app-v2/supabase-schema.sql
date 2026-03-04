@@ -8,7 +8,7 @@ CREATE TABLE profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   phone TEXT UNIQUE,
   full_name TEXT,
-  role TEXT NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'provider', 'admin')),
+  role TEXT DEFAULT NULL CHECK (role IS NULL OR role IN ('customer', 'provider', 'admin')),
   avatar_url TEXT,
   is_verified BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -209,15 +209,17 @@ CREATE POLICY "transactions_select" ON transactions FOR SELECT USING (
 -- FONKSIYONLAR
 -- ============================================================
 
--- Yeni auth kullanıcısı için otomatik profil oluştur
+-- Yeni auth kullanıcısı için otomatik profil oluştur (role=NULL → kullanıcı /role-selection'a düşer)
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  r TEXT := NULLIF(TRIM(NEW.raw_user_meta_data->>'role'), '');
 BEGIN
   INSERT INTO profiles (id, phone, role)
   VALUES (
     NEW.id,
     NEW.phone,
-    COALESCE(NEW.raw_user_meta_data->>'role', 'customer')
+    CASE WHEN r IN ('customer', 'provider', 'admin') THEN r ELSE NULL END
   );
   RETURN NEW;
 END;
