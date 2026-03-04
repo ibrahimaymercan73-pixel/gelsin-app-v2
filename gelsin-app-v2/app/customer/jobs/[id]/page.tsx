@@ -93,55 +93,22 @@ export default function JobDetailPage() {
     setMounted(true)
   }, [])
 
+  // Hafif polling ile güncel tut (WebSocket yerine, client-side hataları önlemek için)
   useEffect(() => {
-    let isMounted = true
-    const supabase = createClient()
-    let channel: ReturnType<typeof supabase.channel> | null = null
+    let cancelled = false
 
-    try {
-      channel = supabase
-        .channel(`job-${id}-offers`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'offers',
-            filter: `job_id=eq.${id}`,
-          },
-          () => {
-            if (isMounted) {
-              load()
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'jobs',
-            filter: `id=eq.${id}`,
-          },
-          () => {
-            if (isMounted) {
-              load()
-            }
-          }
-        )
-        .subscribe()
-    } catch (error) {
-      // Realtime bağlantısı kurulamazsa sessizce devam et
-      console.error('Supabase realtime subscribe error', error)
+    const tick = async () => {
+      if (cancelled) return
+      await load()
     }
 
+    // İlk çağrı üstteki effect tarafından zaten yapılmış durumda;
+    // burada sadece periyodik güncelleme sağlıyoruz.
+    const interval = setInterval(tick, 7000)
+
     return () => {
-      isMounted = false
-      if (channel) {
-        supabase.removeChannel(channel).catch(() => {
-          // unsubscribe hatasını yut
-        })
-      }
+      cancelled = true
+      clearInterval(interval)
     }
   }, [id])
 
