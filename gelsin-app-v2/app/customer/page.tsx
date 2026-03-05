@@ -4,17 +4,17 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Search, MapPin, Wrench, Star, ChevronRight, Sparkles } from 'lucide-react'
+import { Search, MapPin, Wrench, Star, ChevronRight, Sparkles, Paintbrush, Droplets, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import dynamic from 'next/dynamic'
 
 const ProviderMap = dynamic(() => import('@/components/ProviderMap'), { ssr: false })
 
 const CATEGORIES = [
-  { icon: '🔧', label: 'Tamir', slug: 'repair' },
-  { icon: '🧹', label: 'Temizlik', slug: 'cleaning' },
-  { icon: '⚡', label: 'Elektrik', slug: 'repair' },
-  { icon: '🚰', label: 'Tesisat', slug: 'repair' },
+  { icon: Wrench, label: 'Tamir', slug: 'repair', color: 'bg-slate-100 text-slate-700' },
+  { icon: Sparkles, label: 'Temizlik', slug: 'cleaning', color: 'bg-slate-100 text-slate-700' },
+  { icon: Zap, label: 'Elektrik', slug: 'repair', color: 'bg-slate-100 text-slate-700' },
+  { icon: Droplets, label: 'Tesisat', slug: 'repair', color: 'bg-slate-100 text-slate-700' },
 ]
 
 const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } }
@@ -90,25 +90,22 @@ export default function CustomerHome() {
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-500 via-brand-600 to-stone-900 p-8 sm:p-10 lg:p-14 text-white shadow-xl shadow-brand-500/20 border border-brand-400/20"
+              className="relative overflow-hidden rounded-[2rem] bg-slate-900 p-8 sm:p-10 lg:p-14 text-white shadow-xl border border-slate-800"
             >
               <div className="relative z-10 max-w-md">
                 <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 leading-[1.1] tracking-tight">
-                  Eviniz için en iyi ustalar burada.
+                  Eviniz için doğru ustayı bulun.
                 </h2>
-                <p className="text-white/90 text-base sm:text-lg mb-8 font-medium">
-                  Hemen bir iş ilanı açın, teklifleri toplayın.
+                <p className="text-slate-200 text-base sm:text-lg mb-8 font-medium">
+                  Hemen bir iş ilanı açın, çevrenizdeki ustalardan teklifleri toplayın.
                 </p>
                 <Link
                   href="/customer/new-job"
-                  className="inline-flex items-center gap-2 bg-white text-brand-600 hover:bg-white/95 px-8 py-4 rounded-2xl font-bold text-base transition-all shadow-lg active:scale-[0.98]"
+                  className="inline-flex items-center gap-2 bg-white text-slate-900 hover:bg-slate-100 px-8 py-4 rounded-2xl font-bold text-base transition-all shadow-lg active:scale-[0.98]"
                 >
                   <Sparkles className="w-5 h-5" />
                   Yeni İş Talebi Oluştur
                 </Link>
-              </div>
-              <div className="absolute right-[-20px] top-[-20px] text-[220px] opacity-10 pointer-events-none select-none">
-                🏠
               </div>
             </motion.section>
 
@@ -121,21 +118,26 @@ export default function CustomerHome() {
             >
               <h3 className="font-bold text-stone-900 text-lg px-0.5">Popüler Hizmetler</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {CATEGORIES.map((c, i) => (
-                  <motion.div key={c.label} variants={itemUp}>
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/customer/providers?category=${c.slug}`)}
-                      className="w-full p-5 rounded-2xl bg-white border border-stone-100 shadow-sm hover:shadow-md hover:border-brand-100 hover:-translate-y-0.5 transition-all duration-200 text-left flex flex-col gap-2 active:scale-[0.98] group"
-                    >
-                      <span className="text-3xl group-hover:scale-110 transition-transform">{c.icon}</span>
-                      <span className="font-bold text-stone-800 text-sm uppercase tracking-wider">{c.label}</span>
-                      <span className="text-xs text-brand-600 font-semibold flex items-center gap-1">
-                        Ustaları gör <ChevronRight className="w-3.5 h-3.5" />
-                      </span>
-                    </button>
-                  </motion.div>
-                ))}
+                {CATEGORIES.map((c, i) => {
+                  const Icon = c.icon
+                  return (
+                    <motion.div key={c.label} variants={itemUp}>
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/customer/providers?category=${c.slug}`)}
+                        className="w-full p-5 rounded-2xl bg-white border border-stone-100 shadow-sm hover:shadow-md hover:border-slate-200 hover:-translate-y-0.5 transition-all duration-200 text-left flex flex-col gap-2 active:scale-[0.98] group"
+                      >
+                        <span className={`inline-flex p-2 rounded-full ${c.color} w-min`}>
+                          <Icon className="w-5 h-5" />
+                        </span>
+                        <span className="font-bold text-stone-800 text-sm uppercase tracking-wider">{c.label}</span>
+                        <span className="text-xs text-slate-800 font-semibold flex items-center gap-1">
+                          Ustaları gör <ChevronRight className="w-3.5 h-3.5" />
+                        </span>
+                      </button>
+                    </motion.div>
+                  )
+                })}
               </div>
             </motion.section>
 
@@ -162,7 +164,7 @@ export default function CustomerHome() {
                         className="block p-4 rounded-2xl bg-white border border-stone-100 shadow-sm hover:shadow-lg hover:border-brand-100 hover:-translate-y-0.5 transition-all duration-200 active:scale-[0.99]"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center text-lg font-bold text-brand-700 shrink-0">
+                          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-lg font-bold text-slate-800 shrink-0">
                             {(p.profiles?.full_name || p.profiles?.phone || 'U')[0]}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -194,7 +196,7 @@ export default function CustomerHome() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-stone-900 text-sm uppercase tracking-widest flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-brand-500" />
+                  <MapPin className="w-4 h-4 text-slate-900" />
                   Çevrendeki Ustalar
                 </h3>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -202,9 +204,9 @@ export default function CustomerHome() {
               <div className="h-[380px] rounded-xl overflow-hidden bg-stone-100">
                 <ProviderMap providers={providers} />
               </div>
-              <div className="mt-4 p-4 bg-brand-50/80 rounded-xl border border-brand-100 text-center">
+              <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-100 text-center">
                 <p className="text-sm text-stone-700 font-semibold">
-                  Bölgenizde <span className="text-brand-600">{providers.length}</span> aktif usta
+                  Bölgenizde <span className="text-slate-900">{providers.length}</span> aktif usta
                 </p>
               </div>
             </motion.div>

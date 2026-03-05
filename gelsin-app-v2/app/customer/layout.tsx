@@ -50,7 +50,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       <aside className="hidden lg:flex w-64 bg-white/80 backdrop-blur-md flex-col fixed h-full z-50 border-r border-stone-200/80 shadow-lg shadow-stone-200/50">
         <div className="px-6 py-6 border-b border-stone-200/60">
           <span className="text-xl font-black text-stone-900 tracking-tight">
-            GELSİN<span className="text-brand-500">.</span>
+            GELSİN<span className="text-slate-900">.</span>
           </span>
           <p className="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-widest">Müşteri Paneli</p>
         </div>
@@ -62,7 +62,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             return (
               <Link key={item.href} href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] ${
-                  isActive ? 'bg-brand-500/10 text-brand-600' : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+                  isActive ? 'bg-slate-900/5 text-slate-900' : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
                 }`}>
                 <Icon className="w-5 h-5 shrink-0" />
                 {item.label}
@@ -73,7 +73,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
 
         <div className="p-3 border-t border-stone-200/60">
           <Link href="/customer/new-job"
-            className="flex items-center justify-center gap-2 w-full bg-brand-500 hover:bg-brand-600 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-brand-500/25 active:scale-[0.98]">
+            className="flex items-center justify-center gap-2 w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-slate-900/25 active:scale-[0.98]">
             <Plus className="w-5 h-5" /> Yeni İş Talebi
           </Link>
         </div>
@@ -93,7 +93,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             return (
               <Link key={item.href} href={item.href}
                 className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all active:scale-95 ${
-                  isActive ? 'text-brand-500' : 'text-stone-500'
+                  isActive ? 'text-slate-900' : 'text-stone-500'
                 }`}>
                 <Icon className="w-6 h-6" />
                 <span className="text-[10px] font-bold">{item.label}</span>
@@ -111,7 +111,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       {/* FAB - Yeni İş */}
       <Link
         href="/customer/new-job"
-        className="fixed right-5 bottom-24 lg:bottom-8 z-[95] bg-brand-500 hover:bg-brand-600 text-white w-14 h-14 rounded-2xl shadow-lg shadow-brand-500/30 flex items-center justify-center text-2xl font-bold hover:scale-105 active:scale-95 transition-transform"
+        className="fixed right-5 bottom-24 lg:bottom-8 z-[95] bg-slate-900 hover:bg-slate-800 text-white w-14 h-14 rounded-2xl shadow-lg shadow-slate-900/30 flex items-center justify-center text-2xl font-bold hover:scale-105 active:scale-95 transition-transform"
         aria-label="Yeni iş oluştur"
       >
         <Plus className="w-7 h-7" />
