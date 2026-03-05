@@ -436,7 +436,7 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        <div className="px-4 py-4 space-y-4">
+        <div className="px-4 py-3 space-y-3">
         {/* Başlangıç QR — accepted durumunda */}
         {mounted && job?.status === 'accepted' && (
           <div className="card p-5 border-2 border-blue-200 animate-scale-in">
@@ -539,21 +539,21 @@ export default function JobDetailPage() {
 
         {/* Değerlendirme - iş tamamlandıysa */}
         {job?.status === 'completed' && (
-          <div className="card p-5 space-y-3 border border-emerald-200 bg-emerald-50/60">
-            <p className="text-sm font-bold text-emerald-900">
+          <div className="card p-4 space-y-2.5 border border-emerald-200 bg-emerald-50/60">
+            <p className="text-xs font-bold text-emerald-900">
               İşi nasıl buldunuz? Ustanızı değerlendirin.
             </p>
 
             {existingReview ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span
                       key={star}
                       className={
                         star <= (existingReview.rating || 0)
-                          ? 'text-yellow-400 text-xl'
-                          : 'text-gray-300 text-xl'
+                          ? 'text-yellow-400 text-lg'
+                          : 'text-gray-300 text-lg'
                       }
                     >
                       ★
@@ -573,8 +573,8 @@ export default function JobDetailPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-1.5">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
@@ -585,8 +585,8 @@ export default function JobDetailPage() {
                       <span
                         className={
                           star <= rating
-                            ? 'text-yellow-400 text-2xl'
-                            : 'text-gray-300 text-2xl'
+                            ? 'text-yellow-400 text-xl'
+                            : 'text-gray-300 text-xl'
                         }
                       >
                         ★
@@ -606,7 +606,7 @@ export default function JobDetailPage() {
                   disabled={reviewSubmitting}
                 />
                 <button
-                  className="btn-primary py-3 text-sm disabled:opacity-60"
+                  className="btn-primary py-2.5 text-sm disabled:opacity-60"
                   onClick={submitReview}
                   disabled={reviewSubmitting}
                 >
@@ -618,21 +618,21 @@ export default function JobDetailPage() {
         )}
 
         {/* İş detayları */}
-        <div className="card p-4 space-y-3">
+        <div className="card p-3.5 space-y-2.5">
           {job?.description && (
             <p className="text-gray-600 text-sm leading-relaxed">{job.description}</p>
           )}
           <div className="flex items-start gap-2">
             <span className="text-gray-400 text-sm mt-0.5">📍</span>
-            <p className="text-gray-700 text-sm flex-1">{job?.address}</p>
+            <p className="text-gray-700 text-[13px] flex-1">{job?.address}</p>
           </div>
           {job?.agreed_price && (
             <div className="space-y-1">
-              <div className="flex items-center justify-between bg-blue-50 px-4 py-3 rounded-xl">
+              <div className="flex items-center justify-between bg-blue-50 px-3.5 py-2.5 rounded-xl">
                 <span className="text-gray-600 text-sm font-medium">
                   Anlaşılan Fiyat
                 </span>
-                <span className="text-blue-700 font-black text-xl">
+                <span className="text-blue-700 font-black text-lg">
                   ₺{job.agreed_price}
                 </span>
               </div>
@@ -807,10 +807,10 @@ export default function JobDetailPage() {
         )}
 
         {offers.length === 0 && job?.status === 'open' && (
-          <div className="card p-8 text-center">
-            <div className="text-5xl mb-3">⏳</div>
-            <p className="font-bold text-gray-700">Teklif bekleniyor...</p>
-            <p className="text-xs text-gray-400 mt-1">Yakın ustalar bildirim aldı</p>
+          <div className="card p-4 text-center space-y-2">
+            <div className="text-3xl mb-1.5">⏳</div>
+            <p className="font-semibold text-gray-700 text-sm">Teklif bekleniyor...</p>
+            <p className="text-[11px] text-gray-400">Yakın ustalar bildirim aldı</p>
           </div>
         )}
         </div>
