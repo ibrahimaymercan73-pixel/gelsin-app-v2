@@ -32,7 +32,7 @@ export default function ProviderDashboard() {
         .eq('id', user.id)
         .single()
       setIsOnline(pp?.is_online || false)
-      const [active, pending, total] = await Promise.all([
+      const [active, pendingOffers, total, openJobs] = await Promise.all([
         supabase
           .from('jobs')
           .select('id', { count: 'exact' })
@@ -48,10 +48,15 @@ export default function ProviderDashboard() {
           .select('amount')
           .eq('to_id', user.id)
           .eq('type', 'provider_payout'),
+        supabase
+          .from('jobs')
+          .select('id', { count: 'exact' })
+          .eq('status', 'open'),
       ])
       setStats({
         active: active.count || 0,
-        pending: pending.count || 0,
+        // Bekleyen İş: Ustanın bölgesinde görebildiği açık işler
+        pending: openJobs.count || 0,
         wallet: pp?.wallet_balance || 0,
         total: total.data?.reduce((s, t) => s + t.amount, 0) || 0,
       })
@@ -77,7 +82,7 @@ export default function ProviderDashboard() {
 
   const statCards = [
     { label: 'Aktif İş', value: stats.active, icon: '🔨', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-100', href: '/provider/my-jobs' },
-    { label: 'Bekleyen Teklif', value: stats.pending, icon: '💬', color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-100', href: '/provider/jobs' },
+    { label: 'Bekleyen İş', value: stats.pending, icon: '💬', color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-100', href: '/provider/jobs' },
     { label: 'Cüzdan', value: `₺${stats.wallet.toFixed(1)}`, icon: '💰', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-100', href: '/provider/wallet' },
     { label: 'Toplam Kazanç', value: `₺${stats.total.toFixed(0)}`, icon: '📈', color: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-100', href: '/provider/wallet' },
   ]
