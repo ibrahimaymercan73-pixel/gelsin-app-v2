@@ -31,7 +31,7 @@ export default function CustomerProfile() {
 
   const logout = async () => {
     await createClient().auth.signOut()
-    router.replace('/onboarding')
+    router.replace('/')
   }
 
   const initial = name?.charAt(0)?.toUpperCase() || 'M'

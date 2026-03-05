@@ -49,11 +49,11 @@ export async function middleware(req: NextRequest) {
   // Giriş yapılmamış kullanıcılar için panel sayfalarını koru
   if (!user) {
     if (isCustomerArea || isProviderArea || isAdminArea) {
-      const redirectUrl = new URL('/onboarding', req.url)
+      const redirectUrl = new URL('/login', req.url)
       return NextResponse.redirect(redirectUrl)
     }
 
-    // Onboarding / login vs. için giriş gerekmiyor
+    // Landing (/), onboarding ve login sayfaları herkes için serbest
     return res
   }
 

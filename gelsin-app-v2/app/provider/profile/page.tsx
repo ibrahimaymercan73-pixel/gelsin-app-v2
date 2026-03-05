@@ -157,8 +157,13 @@ export default function ProviderProfile() {
           {saved ? '✅ Kaydedildi!' : saving ? 'Kaydediliyor...' : 'Kaydet'}
         </button>
 
-        <button className="btn-secondary py-4 text-red-500 border-red-100"
-          onClick={async () => { await createClient().auth.signOut(); router.replace('/onboarding') }}>
+        <button
+          className="btn-secondary py-4 text-red-500 border-red-100"
+          onClick={async () => {
+            await createClient().auth.signOut()
+            router.replace('/')
+          }}
+        >
           🚪 Çıkış Yap
         </button>
       </div>
