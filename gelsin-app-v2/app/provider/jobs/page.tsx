@@ -1,4 +1,4 @@
-'use client'
+ 'use client'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 
@@ -9,6 +9,7 @@ export default function ProviderJobsPage() {
   const [submitting, setSubmitting] = useState('')
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLng, setUserLng] = useState<number | null>(null)
+  const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(p => {
@@ -155,6 +156,51 @@ export default function ProviderJobsPage() {
                 {job.description}
               </p>
             )}
+
+            {(() => {
+              const media: string[] = Array.isArray(job.media_urls)
+                ? (job.media_urls as string[])
+                : Array.isArray(job.images)
+                ? (job.images as string[])
+                : []
+              if (!media.length) return null
+              return (
+                <div className="mb-3 space-y-1">
+                  <p className="text-[11px] font-semibold text-slate-300">Ekler / Görseller</p>
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                    {media.map((url: string) => {
+                      const isVideo = /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)
+                      return (
+                        <button
+                          key={url}
+                          type="button"
+                          onClick={() =>
+                            setLightbox({ url, type: isVideo ? 'video' : 'image' })
+                          }
+                          className="relative w-24 h-24 rounded-xl overflow-hidden border border-slate-700 bg-black/40 flex-shrink-0"
+                        >
+                          {isVideo ? (
+                            <video
+                              src={url}
+                              className="w-full h-full object-cover"
+                              muted
+                              playsInline
+                            />
+                          ) : (
+                            <img
+                              src={url}
+                              alt="Ek görsel"
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
             <p className="text-xs text-slate-400 mb-4">📍 {job.address}</p>
 
             {offering[job.id] && (
@@ -208,6 +254,34 @@ export default function ProviderJobsPage() {
           </div>
         )}
       </div>
+
+      {lightbox && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="relative max-w-3xl w-full">
+            <button
+              type="button"
+              onClick={() => setLightbox(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-black/80 text-white flex items-center justify-center text-lg"
+            >
+              ✕
+            </button>
+            {lightbox.type === 'video' ? (
+              <video
+                src={lightbox.url}
+                className="w-full max-h-[80vh] rounded-2xl"
+                controls
+                autoPlay
+              />
+            ) : (
+              <img
+                src={lightbox.url}
+                alt="Ek görsel"
+                className="w-full max-h-[80vh] rounded-2xl object-contain bg-black"
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
