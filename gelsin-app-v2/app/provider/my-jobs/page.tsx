@@ -29,8 +29,6 @@ export default function ProviderMyJobsPage() {
       return
     }
 
-    const statuses = ['accepted', 'started', 'completed', 'disputed', 'cancelled']
-
     // 1) Doğrudan provider_id üzerinden bu ustaya atanmış işleri çek
     const { data: jobsByProvider } = await supabase
       .from('jobs')
@@ -38,7 +36,6 @@ export default function ProviderMyJobsPage() {
         '*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone, hide_phone)'
       )
       .eq('provider_id', user.id)
-      .in('status', statuses)
       .order('created_at', { ascending: false })
 
     // 2) Ek olarak, bu ustanın accepted teklif verdiği işler üzerinden ID listesi çıkar
@@ -65,7 +62,6 @@ export default function ProviderMyJobsPage() {
           '*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone, hide_phone)'
         )
         .in('id', jobIds)
-        .in('status', statuses)
 
       if (jobsByOffers && jobsByOffers.length > 0) {
         const map = new Map<string, any>()
