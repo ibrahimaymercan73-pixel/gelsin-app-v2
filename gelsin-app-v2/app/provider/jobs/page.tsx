@@ -50,53 +50,105 @@ export default function ProviderJobsPage() {
       return
     }
 
-    // Aynı ustanın aynı işe ikinci kez teklif vermesini engelle
+    const newPrice = parseFloat(o.price)
+    if (Number.isNaN(newPrice) || newPrice <= 0) {
+      alert('Lütfen geçerli bir fiyat girin.')
+      setSubmitting('')
+      return
+    }
+
+    // Bu işe daha önce verilmiş teklif var mı? (varsa pazarlık sonrası güncelle)
     const { data: existing } = await supabase
       .from('offers')
-      .select('id')
+      .select('id, price')
       .eq('job_id', jobId)
       .eq('provider_id', user.id)
 
     if (existing && existing.length > 0) {
-      alert('Bu işe zaten teklif verdiniz.')
-      setSubmitting('')
-      return
-    }
-
-    // 1. Teklifi ekle
-    const { error } = await supabase.from('offers').insert({
-      job_id: jobId,
-      provider_id: user.id,
-      price: parseFloat(o.price),
-      estimated_duration: o.duration,
-      message: o.message,
-    })
-
-    if (error) {
-      if ((error as any).code === '23505') {
-        alert('Bu işe zaten teklif verdiniz.')
-      } else {
-        alert('Teklif kaydedilirken bir hata oluştu: ' + error.message)
+      const current = existing[0]
+      const currentPrice = Number(current.price || 0)
+      if (newPrice >= currentPrice) {
+        alert('Pazarlık için yeni fiyat mevcut fiyattan daha düşük olmalı.')
+        setSubmitting('')
+        return
       }
-      setSubmitting('')
-      return
+
+      const { error: updateError } = await supabase
+        .from('offers')
+        .update({
+          price: newPrice,
+          estimated_duration: o.duration,
+          message: o.message,
+        })
+        .eq('id', current.id)
+
+      if (updateError) {
+        alert('Teklif güncellenirken bir hata oluştu: ' + updateError.message)
+        setSubmitting('')
+        return
+      }
+    } else {
+      // İlk kez teklif veriliyorsa insert
+      const { error } = await supabase.from('offers').insert({
+        job_id: jobId,
+        provider_id: user.id,
+        price: newPrice,
+        estimated_duration: o.duration,
+        message: o.message,
+      })
+
+      if (error) {
+        if ((error as any).code === '23505') {
+          alert('Bu işe zaten teklif verdiniz.')
+        } else {
+          alert('Teklif kaydedilirken bir hata oluştu: ' + error.message)
+        }
+        setSubmitting('')
+        return
+      }
+
+      // Yeni teklif için bildirim gönder
+      const job = jobs.find(j => j.id === jobId)
+      await supabase.from('notifications').insert({
+        user_id: job?.customer_id,
+        title: '💬 Yeni Teklif!',
+        body: `"${job?.title}" işine yeni teklif geldi.`,
+        type: 'new_offer',
+        related_job_id: jobId
+      })
+
+      const next = new Set(Array.from(myOffers))
+      next.add(jobId)
+      setMyOffers(next)
     }
 
-    // 2. Bildirim gönder
-    const job = jobs.find(j => j.id === jobId)
-    await supabase.from('notifications').insert({
-      user_id: job?.customer_id,
-      title: '💬 Yeni Teklif!',
-      body: `"${job?.title}" işine yeni teklif geldi.`,
-      type: 'new_offer',
-      related_job_id: jobId
-    })
-
-    const next = new Set(Array.from(myOffers))
-    next.add(jobId)
-    setMyOffers(next)
     setOffering(p => { const n = {...p}; delete n[jobId]; return n })
     setSubmitting('')
+  }
+
+  const openEditOffer = async (jobId: string) => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data, error } = await supabase
+      .from('offers')
+      .select('price, estimated_duration, message')
+      .eq('job_id', jobId)
+      .eq('provider_id', user!.id)
+      .single()
+
+    if (error || !data) {
+      alert('Mevcut teklif bulunamadı.')
+      return
+    }
+
+    setOffering(p => ({
+      ...p,
+      [jobId]: {
+        price: data.price != null ? String(data.price) : '',
+        duration: data.estimated_duration || '',
+        message: data.message || '',
+      },
+    }))
   }
 
   const sorted = jobs.map(j => ({
@@ -235,7 +287,17 @@ export default function ProviderJobsPage() {
             )}
 
             {myOffers.has(job.id) ? (
-              <div className="badge-green w-full justify-center py-2.5 text-sm">✅ Teklif Verildi</div>
+              <div className="space-y-2">
+                <div className="badge-green w-full justify-center py-2.5 text-sm">
+                  ✅ Teklif Verildi
+                </div>
+                <button
+                  className="btn-secondary py-2.5 text-xs w-full"
+                  onClick={() => openEditOffer(job.id)}
+                >
+                  🤝 Pazarlık Sonrası Fiyatı Düşür
+                </button>
+              </div>
             ) : !offering[job.id] && (
               <button className="btn-primary py-3 text-sm w-full"
                 onClick={() => setOffering(p => ({ ...p, [job.id]: { price: '', duration: '', message: '' } }))}>

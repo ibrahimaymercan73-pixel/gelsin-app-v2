@@ -150,6 +150,32 @@ export default function JobDetailPage() {
     setAccepting('')
   }
 
+  const requestBargain = async (offer: any) => {
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      alert('Oturum bulunamadı. Lütfen tekrar giriş yapın.')
+      return
+    }
+
+    try {
+      await supabase.from('notifications').insert({
+        user_id: offer.provider_id,
+        title: '🤝 Pazarlık Talebi',
+        body: `"${job?.title ?? ''}" işi için müşteri pazarlık etmek istiyor. Mevcut teklif: ₺${offer.price}.`,
+        type: 'offer_negotiate',
+        related_job_id: id,
+      })
+      alert('Pazarlık talebin ustaya iletildi.')
+    } catch (e) {
+      console.error('PAZARLIK TALEBİ HATASI:', e)
+      alert('Pazarlık talebi gönderilemedi. Lütfen tekrar dene.')
+    }
+  }
+
   const generateEndQR = async () => {
     setGeneratingEnd(true)
     const supabase = createClient()
@@ -753,11 +779,22 @@ export default function JobDetailPage() {
                     <p className="text-xs text-gray-500 bg-gray-50 p-2.5 rounded-xl mb-3">{offer.message}</p>
                   )}
                   {offer.status === 'pending' && job?.status !== 'accepted' && job?.status !== 'started' && (
-                    <button className="btn-primary py-3 text-sm"
-                      onClick={() => acceptOffer(offer.id, offer.provider_id, offer.price)}
-                      disabled={!!accepting}>
-                      {accepting === offer.id ? 'İşleniyor...' : '✅ Bu Teklifi Kabul Et'}
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        className="btn-primary py-3 text-sm"
+                        onClick={() => acceptOffer(offer.id, offer.provider_id, offer.price)}
+                        disabled={!!accepting}
+                      >
+                        {accepting === offer.id ? 'İşleniyor...' : '✅ Bu Teklifi Kabul Et'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary py-2.5 text-xs"
+                        onClick={() => requestBargain(offer)}
+                      >
+                        🤝 Pazarlık Et
+                      </button>
+                    </div>
                   )}
                   {offer.status === 'accepted' && (
                     <div className="badge-green w-full justify-center py-2">✅ Kabul Edildi</div>
