@@ -218,14 +218,13 @@ export default function JobDetailPage() {
       </div>
     )
 
+  // QR payload'ı sade tut: sadece iş kimliği ve isteğe bağlı aksiyon bilgisi
   const startQrData = JSON.stringify({
-    job_id: job?.id ?? '',
-    token: job?.qr_token ?? '',
+    jobId: job?.id ?? '',
     action: 'start',
   })
   const endQrData = JSON.stringify({
-    job_id: job?.id ?? '',
-    token: job?.end_qr_token ?? '',
+    jobId: job?.id ?? '',
     action: 'end',
   })
 

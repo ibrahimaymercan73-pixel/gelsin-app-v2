@@ -9,6 +9,7 @@ export default function ChooseRolePage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [fullName, setFullName] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -24,10 +25,11 @@ export default function ChooseRolePage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, full_name')
         .eq('id', user.id)
         .single()
 
+      // Rolü zaten seçilmiş kullanıcıları doğrudan paneline gönder
       if (profile?.role === 'customer') {
         router.replace('/customer')
         return
@@ -43,6 +45,13 @@ export default function ChooseRolePage() {
         return
       }
 
+      const meta = (user as any).user_metadata || {}
+      const metaName =
+        (meta.full_name as string | undefined) ||
+        (meta.name as string | undefined) ||
+        ''
+
+      setFullName((profile?.full_name as string | null) || metaName || '')
       setLoading(false)
     }
 
@@ -51,6 +60,12 @@ export default function ChooseRolePage() {
 
   const chooseRole = async (role: 'customer' | 'provider') => {
     setError('')
+    const trimmedName = fullName.trim()
+    if (!trimmedName || trimmedName.length < 3) {
+      setError('Lütfen adınızı ve soyadınızı girin.')
+      return
+    }
+
     setSubmitting(true)
     const supabase = createClient()
     const {
@@ -72,12 +87,12 @@ export default function ChooseRolePage() {
       if (!existing) {
         const { error: insertErr } = await supabase
           .from('profiles')
-          .insert({ id: user.id, role })
+          .insert({ id: user.id, role, full_name: trimmedName })
         if (insertErr) throw insertErr
       } else {
         const { error: updateErr } = await supabase
           .from('profiles')
-          .update({ role })
+          .update({ role, full_name: trimmedName })
           .eq('id', user.id)
         if (updateErr) throw updateErr
       }
@@ -119,15 +134,31 @@ export default function ChooseRolePage() {
             Ne yapmak istiyorsun?
           </h1>
           <p className="text-slate-400 mt-2 text-sm md:text-base max-w-xl mx-auto">
-            Hesabının rolünü seç. Bu adım sadece bir kez gösterilir.
+            Rolünü ve adını seçerek profilini tamamla.
           </p>
         </div>
 
-        {error && (
-          <p className="text-red-400 text-sm font-medium bg-red-500/20 border border-red-400/50 rounded-xl px-4 py-3">
-            {error}
-          </p>
-        )}
+        <div className="space-y-4">
+          <div className="text-left">
+            <label className="block text-xs font-semibold text-slate-300 tracking-wide mb-1.5">
+              Adınız ve Soyadınız
+            </label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl bg-slate-900/40 border border-slate-700 text-sm md:text-base text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/80 focus:border-slate-300 transition"
+              placeholder="Örn: Ahmet Yılmaz"
+              disabled={submitting}
+            />
+          </div>
+
+          {error && (
+            <p className="text-red-400 text-sm font-medium bg-red-500/20 border border-red-400/50 rounded-xl px-4 py-3">
+              {error}
+            </p>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Müşteri kartı */}

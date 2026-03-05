@@ -50,12 +50,47 @@ export default function ProviderMyJobsPage() {
   const handleQRScan = async (jobId: string, action: 'start' | 'end', raw: string) => {
     setScanModal(null)
     try {
-      const parsed = JSON.parse(raw)
-      // Veritabanındaki en güncel token ile doğrula
-      const valid = await processToken(jobId, action, parsed.token || '')
-      if (!valid || parsed.job_id !== jobId || parsed.action !== action) return
+      const text = (raw || '').trim()
+      if (!text) {
+        setResult({ ok: false, msg: 'QR kod okunamadı.' })
+        return
+      }
+
+      let scannedJobId: string | null = null
+      let scannedAction: 'start' | 'end' | null = null
+
+      if (text.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(text)
+          scannedJobId = (parsed.jobId || parsed.job_id || '') as string
+          scannedAction = (parsed.action as 'start' | 'end' | undefined) || null
+        } catch (err) {
+          console.error('QR JSON parse hatası:', err)
+        }
+      }
+
+      if (!scannedJobId) {
+        scannedJobId = text
+      }
+
+      if (!scannedJobId) {
+        setResult({ ok: false, msg: 'QR kodu geçersiz.' })
+        return
+      }
+
+      if (scannedJobId !== jobId) {
+        setResult({ ok: false, msg: 'QR farklı bir işe ait.' })
+        return
+      }
+
+      if (scannedAction && scannedAction !== action) {
+        setResult({ ok: false, msg: 'Bu QR bu işlem için geçerli değil.' })
+        return
+      }
+
       await completeAction(jobId, action)
-    } catch {
+    } catch (err) {
+      console.error('QR işleme hatası:', err)
       setResult({ ok: false, msg: 'QR kod okunamadı.' })
     }
   }
@@ -170,7 +205,7 @@ export default function ProviderMyJobsPage() {
             <QrScanner onScan={(data) => handleQRScan(scanModal.jobId, scanModal.action, data)} />
             <button className="btn-secondary mt-3 py-3 text-sm"
               onClick={() => { setScanModal(null); setPinModal(scanModal); }}>
-              🔢 PIN ile Gir
+              🔢 Kodu Elle Gir
             </button>
           </div>
         </div>
