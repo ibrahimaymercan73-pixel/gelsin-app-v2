@@ -357,7 +357,7 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 w-full overflow-x-hidden pb-36">
+    <div className="min-h-dvh bg-gray-50 w-full overflow-x-hidden overflow-y-auto pb-40 mb-10">
       <div className="bg-white px-4 pt-12 pb-4 border-b border-sky-100 shadow-sm">
         <button onClick={() => router.back()} className="text-blue-600 font-semibold text-sm mb-4 flex items-center gap-1">
           ← Geri
