@@ -53,8 +53,8 @@ function LoginForm() {
 
   const ensureProfileEmail = async (
     userId: string,
-    emailValue: string,
-    intendedRole: 'customer' | 'provider'
+    _emailValue: string,
+    _intendedRole: 'customer' | 'provider'
   ) => {
     const supabase = createClient()
     const { data: profile } = await supabase
@@ -66,25 +66,11 @@ function LoginForm() {
     if (!profile) {
       await supabase
         .from('profiles')
-        .upsert({ id: userId, role: intendedRole }, { onConflict: 'id' })
-      if (intendedRole === 'provider') {
-        await supabase.from('provider_profiles').upsert({ id: userId })
-      }
-      return intendedRole
+        .upsert({ id: userId }, { onConflict: 'id' })
+      return null
     }
 
-    if (!profile.role) {
-      await supabase
-        .from('profiles')
-        .update({ role: intendedRole })
-        .eq('id', userId)
-      if (intendedRole === 'provider') {
-        await supabase.from('provider_profiles').upsert({ id: userId })
-      }
-      return intendedRole
-    }
-
-    return profile.role as 'customer' | 'provider' | 'admin'
+    return (profile.role as 'customer' | 'provider' | 'admin' | null) ?? null
   }
 
   const loginWithEmail = async () => {
@@ -109,7 +95,9 @@ function LoginForm() {
 
     // Giriş başarılıysa mevcut role'e göre yönlendir
     const r = await ensureProfileEmail(data.user.id, email, selectedRole)
-    if (r === 'provider') {
+    if (!r) {
+      router.replace('/choose-role')
+    } else if (r === 'provider') {
       router.replace('/provider')
     } else if (r === 'customer') {
       router.replace('/customer')

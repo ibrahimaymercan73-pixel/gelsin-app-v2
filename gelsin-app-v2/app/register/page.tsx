@@ -70,15 +70,10 @@ export default function RegisterPage() {
 
     const user = data.user
 
+    // Sadece profil satırını oluştur, rolü boş bırak (NULL kalsın)
     await supabase
       .from('profiles')
-      .upsert({ id: user.id, role: selectedRole }, { onConflict: 'id' })
-
-    if (selectedRole === 'provider') {
-      await supabase
-        .from('provider_profiles')
-        .upsert({ id: user.id }, { onConflict: 'id' })
-    }
+      .upsert({ id: user.id }, { onConflict: 'id' })
 
     const hasSession = !!data.session
     if (!hasSession) {
@@ -88,11 +83,8 @@ export default function RegisterPage() {
       return
     }
 
-    if (selectedRole === 'provider') {
-      router.replace('/usta/verify-email')
-    } else {
-      router.replace('/customer')
-    }
+    // İlk aktif oturumda rolü boş bırak, kullanıcıyı rol seçim ekranına gönder
+    router.replace('/choose-role')
 
     setLoading(false)
   }
