@@ -33,7 +33,7 @@ export default function ProviderMyJobsPage() {
     const { data: jobsByProvider } = await supabase
       .from('jobs')
       .select(
-        '*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone, hide_phone)'
+        'id, title, status, agreed_price, address, lat, lng, customer_id, service_categories(name, icon)'
       )
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false })
@@ -58,7 +58,7 @@ export default function ProviderMyJobsPage() {
       const { data: jobsByOffers } = await supabase
         .from('jobs')
         .select(
-          '*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone, hide_phone)'
+          'id, title, status, agreed_price, address, lat, lng, customer_id, service_categories(name, icon)'
         )
         .in('id', jobIds)
 
@@ -69,6 +69,34 @@ export default function ProviderMyJobsPage() {
         jobsCombined = Array.from(map.values())
       }
     }
+
+    // İlgili müşteri profillerini çek (isim/telefon için)
+    const customerIds = Array.from(
+      new Set(
+        jobsCombined
+          .map((j: any) => j.customer_id as string | null)
+          .filter((id): id is string => !!id)
+      )
+    )
+
+    let profilesById: Record<string, any> = {}
+    if (customerIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, phone, hide_phone')
+        .in('id', customerIds)
+
+      profilesById =
+        profiles?.reduce((acc: Record<string, any>, p: any) => {
+          acc[p.id] = p
+          return acc
+        }, {}) ?? {}
+    }
+
+    jobsCombined = jobsCombined.map((j: any) => ({
+      ...j,
+      profiles: profilesById[j.customer_id] || null,
+    }))
 
     // Tarihe göre yeniden sırala (en yeni üstte)
     jobsCombined.sort(
