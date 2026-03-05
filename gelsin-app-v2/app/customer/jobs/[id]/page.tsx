@@ -383,7 +383,7 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 w-full overflow-x-hidden overflow-y-auto pb-40 mb-10">
+    <div className="min-h-dvh bg-gray-50 w-full overflow-x-hidden overflow-y-auto pb-40">
       <div className="bg-white px-4 pt-12 pb-4 border-b border-sky-100 shadow-sm">
         <button onClick={() => router.back()} className="text-blue-600 font-semibold text-sm mb-4 flex items-center gap-1">
           ← Geri
@@ -401,41 +401,42 @@ export default function JobDetailPage() {
         </div>
       </div>
 
-      {/* Durum Stepper */}
-      <div className="px-4 pt-3">
-        <div className="bg-white rounded-2xl px-3 py-3 border border-sky-100 shadow-sm">
-          <div className="flex items-center gap-2 md:gap-6 w-full overflow-x-auto whitespace-nowrap scrollbar-hide py-2">
-            {stepItems.map((step, index) => {
-              const isActive = index <= activeStep
-              return (
-                <div key={step.label} className="flex items-center gap-2 md:gap-3">
-                  <div
-                    className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-bold ${
-                      isActive
-                        ? 'bg-gradient-to-br from-sky-500 to-emerald-500 text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-400'
-                    }`}
-                  >
-                    {step.icon}
+      <div className="max-w-2xl mx-auto w-full">
+        {/* Durum Stepper */}
+        <div className="px-4 pt-3">
+          <div className="bg-white rounded-2xl px-3 py-3 border border-sky-100 shadow-sm">
+            <div className="flex items-center gap-2 md:gap-6 w-full overflow-x-auto whitespace-nowrap scrollbar-hide py-2">
+              {stepItems.map((step, index) => {
+                const isActive = index <= activeStep
+                return (
+                  <div key={step.label} className="flex items-center gap-2 md:gap-3">
+                    <div
+                      className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-bold ${
+                        isActive
+                          ? 'bg-gradient-to-br from-sky-500 to-emerald-500 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-400'
+                      }`}
+                    >
+                      {step.icon}
+                    </div>
+                    <span
+                      className={`text-xs md:text-sm font-semibold ${
+                        isActive ? 'text-slate-800' : 'text-slate-400'
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                    {index < stepItems.length - 1 && (
+                      <div className="w-4 md:w-6 h-px bg-gradient-to-r from-slate-200 via-sky-200 to-slate-200" />
+                    )}
                   </div>
-                  <span
-                    className={`text-xs md:text-sm font-semibold ${
-                      isActive ? 'text-slate-800' : 'text-slate-400'
-                    }`}
-                  >
-                    {step.label}
-                  </span>
-                  {index < stepItems.length - 1 && (
-                    <div className="w-4 md:w-6 h-px bg-gradient-to-r from-slate-200 via-sky-200 to-slate-200" />
-                  )}
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="px-4 py-4 space-y-4">
+        <div className="px-4 py-4 space-y-4">
         {/* Başlangıç QR — accepted durumunda */}
         {mounted && job?.status === 'accepted' && (
           <div className="card p-5 border-2 border-blue-200 animate-scale-in">
@@ -812,6 +813,7 @@ export default function JobDetailPage() {
             <p className="text-xs text-gray-400 mt-1">Yakın ustalar bildirim aldı</p>
           </div>
         )}
+        </div>
       </div>
 
       {/* Dispute Modal */}
