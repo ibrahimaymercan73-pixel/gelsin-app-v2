@@ -205,12 +205,14 @@ export default function LandingPage() {
                 <motion.div key={c.slug} variants={itemUp} className="flex">
                   <Link
                     href={`/providers?category=${c.slug}`}
-                    className="flex-1 min-w-[160px] p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-slate-200 transition-all duration-200 active:scale-[0.98] text-center group"
+                    className="flex-1 w-36 min-w-[140px] py-6 px-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-slate-200 transition-all duration-200 active:scale-[0.98] text-center group"
                   >
                     <div className={`inline-flex p-3 rounded-full ${c.color} mb-3 group-hover:scale-110 transition-transform`}>
                       <Icon className="w-8 h-8" />
                     </div>
-                    <span className="text-sm font-bold text-slate-800 whitespace-nowrap">{c.label}</span>
+                    <span className="whitespace-nowrap text-center text-sm md:text-base font-bold text-slate-800">
+                      {c.label}
+                    </span>
                   </Link>
                 </motion.div>
               )
