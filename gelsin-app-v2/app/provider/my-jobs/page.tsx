@@ -38,12 +38,11 @@ export default function ProviderMyJobsPage() {
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false })
 
-    // 2) Ek olarak, bu ustanın accepted teklif verdiği işler üzerinden ID listesi çıkar
+    // 2) Ek olarak, bu ustanın herhangi bir teklif verdiği işler üzerinden ID listesi çıkar
     const { data: acceptedOffers } = await supabase
       .from('offers')
       .select('job_id')
       .eq('provider_id', user.id)
-      .eq('status', 'accepted')
 
     const jobIds = Array.from(
       new Set(
