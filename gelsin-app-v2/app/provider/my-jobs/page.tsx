@@ -22,7 +22,7 @@ export default function ProviderMyJobsPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const { data } = await supabase.from('jobs')
-      .select('*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone)')
+      .select('*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone, hide_phone)')
       .eq('provider_id', user!.id)
       .in('status', ['accepted', 'started', 'completed', 'disputed', 'cancelled'])
       .order('created_at', { ascending: false })
@@ -293,6 +293,17 @@ export default function ProviderMyJobsPage() {
               ? { cls: 'badge-orange', text: '⚠️ Uyuşmazlık' }
               : { cls: 'badge-red', text: '✖ İptal' }
 
+          const customerPhone =
+            job.profiles?.phone || 'Telefon yok'
+          const customerHide = !!job.profiles?.hide_phone
+          const canShowPhone =
+            !customerHide ||
+            job.status === 'accepted' ||
+            job.status === 'started' ||
+            job.status === 'completed'
+
+          const phoneDisplay = canShowPhone ? customerPhone : 'Numara Gizli'
+
           return (
             <div key={job.id} className="card p-4 animate-slide-up">
             <div className="flex items-start gap-3 mb-4">
@@ -302,7 +313,12 @@ export default function ProviderMyJobsPage() {
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-gray-900 truncate">{job.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5">📍 {job.address}</p>
-                <p className="text-xs text-gray-400">👤 {job.profiles?.full_name || job.profiles?.phone}</p>
+                <p className="text-xs text-gray-400">
+                  👤 {job.profiles?.full_name || (canShowPhone ? customerPhone : 'Müşteri')}
+                </p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  ☎ {phoneDisplay}
+                </p>
               </div>
               <div className="flex-shrink-0 text-right">
                 <p className="text-xl font-black text-blue-700">₺{job.agreed_price}</p>

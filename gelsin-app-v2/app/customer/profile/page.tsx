@@ -7,6 +7,8 @@ export default function CustomerProfile() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [hidePhone, setHidePhone] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -17,16 +19,33 @@ export default function CustomerProfile() {
       const { data } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
       setProfile(data)
       setName(data?.full_name || '')
+      setPhone(data?.phone || '')
+      setHidePhone(!!data?.hide_phone)
     }
     load()
   }, [])
 
   const save = async () => {
+    if (!profile) return
     setSaving(true)
     const supabase = createClient()
-    await supabase.from('profiles').update({ full_name: name }).eq('id', profile.id)
+    await supabase
+      .from('profiles')
+      .update({ full_name: name, phone })
+      .eq('id', profile.id)
     setSaved(true); setSaving(false)
     setTimeout(() => setSaved(false), 2500)
+  }
+
+  const toggleHidePhone = async () => {
+    if (!profile) return
+    const next = !hidePhone
+    setHidePhone(next)
+    const supabase = createClient()
+    await supabase
+      .from('profiles')
+      .update({ hide_phone: next })
+      .eq('id', profile.id)
   }
 
   const logout = async () => {
@@ -111,11 +130,34 @@ export default function CustomerProfile() {
                 <div>
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Telefon</label>
                   <input
-                    className="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 text-base font-medium cursor-not-allowed"
-                    value={profile?.phone || ''}
-                    disabled
+                    className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-white text-slate-900 text-base font-medium placeholder-slate-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                    placeholder="05xx xxx xx xx"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
                   />
-                  <p className="text-xs text-slate-400 mt-1.5 ml-1">Telefon numarası değiştirilemez</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={toggleHidePhone}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                          hidePhone ? 'bg-slate-900' : 'bg-slate-300'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                            hidePhone ? 'translate-x-4' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                      <span className="text-xs font-medium text-slate-600">
+                        Telefon Numaramı Gizle
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-400">
+                      Karşı taraf, gizliyken numaranızı göremez.
+                    </span>
+                  </div>
                 </div>
 
                 <button

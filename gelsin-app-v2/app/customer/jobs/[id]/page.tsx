@@ -58,7 +58,7 @@ export default function JobDetailPage() {
     if (providerIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, phone')
+        .select('id, full_name, phone, hide_phone')
         .in('id', providerIds)
 
       profilesById = Object.fromEntries(
@@ -337,8 +337,22 @@ export default function JobDetailPage() {
     setReviewSubmitting(false)
   }
 
+  const getOfferPhoneDisplay = (offer: any) => {
+    const phone = offer.profiles?.phone as string | undefined | null
+    const hidden = !!offer.profiles?.hide_phone
+    const status = job?.status as string | undefined
+    const canShow =
+      !hidden ||
+      status === 'accepted' ||
+      status === 'started' ||
+      status === 'completed'
+
+    if (!phone) return 'Telefon yok'
+    return canShow ? phone : 'Numara Gizli'
+  }
+
   return (
-    <div className="min-h-dvh bg-gray-50">
+    <div className="min-h-dvh bg-gray-50 w-full overflow-x-hidden pb-36">
       <div className="bg-white px-4 pt-12 pb-4 border-b border-sky-100 shadow-sm">
         <button onClick={() => router.back()} className="text-blue-600 font-semibold text-sm mb-4 flex items-center gap-1">
           ← Geri
@@ -659,22 +673,32 @@ export default function JobDetailPage() {
                             </span>
                             <span className="mx-1">•</span>
                             <span className="text-xs">
-                              {offer.profiles?.phone || 'Telefon yok'}
+                              {getOfferPhoneDisplay(offer)}
                             </span>
                           </div>
                           {Array.isArray(offer.provider_profiles?.service_categories) &&
                             offer.provider_profiles.service_categories.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-0.5">
-                                {offer.provider_profiles.service_categories.map(
-                                  (c: string) => (
+                              {offer.provider_profiles.service_categories.map(
+                                (c: string) => {
+                                  const labels: Record<string, string> = {
+                                    painting: 'Boya',
+                                    plumbing: 'Tesisat',
+                                    carpentry: 'Marangoz',
+                                    electric: 'Elektrik',
+                                    cleaning: 'Temizlik',
+                                    assembly: 'Montaj',
+                                  }
+                                  return (
                                     <span
                                       key={c}
                                       className="px-1.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-[9px] font-semibold text-blue-700"
                                     >
-                                      {c}
+                                      {labels[c] || c}
                                     </span>
                                   )
-                                )}
+                                }
+                              )}
                               </div>
                             )}
                         </div>

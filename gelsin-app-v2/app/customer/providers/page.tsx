@@ -13,6 +13,7 @@ type ProviderRow = {
   profiles?: {
     full_name: string | null
     phone: string | null
+    hide_phone: boolean | null
   } | null
 }
 
@@ -70,7 +71,7 @@ export default function CustomerProvidersPage() {
 
       let query = supabase
         .from('provider_profiles')
-        .select('id, bio, service_categories, rating, total_reviews, is_online, profiles(full_name, phone)')
+        .select('id, bio, service_categories, rating, total_reviews, is_online, profiles(full_name, phone, hide_phone)')
         .eq('status', 'approved')
 
       if (category) {
@@ -136,7 +137,10 @@ export default function CustomerProvidersPage() {
 
         <div className="grid gap-4 md:grid-cols-2">
           {items.map((p) => {
-            const name = p.profiles?.full_name || p.profiles?.phone || 'İsimsiz Usta'
+            const name =
+              p.profiles?.full_name ||
+              (!p.profiles?.hide_phone && p.profiles?.phone) ||
+              'İsimsiz Usta'
             const rating =
               typeof p.rating === 'number' && typeof p.total_reviews === 'number'
                 ? `${p.rating.toFixed(1)} / 5 • ${p.total_reviews} değerlendirme`

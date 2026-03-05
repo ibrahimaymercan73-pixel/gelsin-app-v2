@@ -19,6 +19,8 @@ export default function ProviderProfile() {
   const [name, setName] = useState('')
   const [bio, setBio] = useState('')
   const [cats, setCats] = useState<string[]>([])
+  const [phone, setPhone] = useState('')
+  const [hidePhone, setHidePhone] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [uploading, setUploading] = useState('')
@@ -30,8 +32,11 @@ export default function ProviderProfile() {
       const { data: p } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
       const { data: pData } = await supabase.from('provider_profiles').select('*').eq('id', user!.id).single()
       setProfile(p); setPp(pData)
-      setName(p?.full_name || ''); setBio(pData?.bio || '')
+      setName(p?.full_name || '')
+      setBio(pData?.bio || '')
       setCats(pData?.service_categories || [])
+      setPhone(p?.phone || '')
+      setHidePhone(!!p?.hide_phone)
     }
     load()
   }, [])
@@ -43,10 +48,24 @@ export default function ProviderProfile() {
   const save = async () => {
     setSaving(true)
     const supabase = createClient()
-    await supabase.from('profiles').update({ full_name: name }).eq('id', profile.id)
+    await supabase
+      .from('profiles')
+      .update({ full_name: name, phone })
+      .eq('id', profile.id)
     await supabase.from('provider_profiles').update({ bio, service_categories: cats }).eq('id', profile.id)
     setSaved(true); setSaving(false)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  const toggleHidePhone = async () => {
+    if (!profile) return
+    const next = !hidePhone
+    setHidePhone(next)
+    const supabase = createClient()
+    await supabase
+      .from('profiles')
+      .update({ hide_phone: next })
+      .eq('id', profile.id)
   }
 
   const uploadDoc = async (type: 'id_document_url' | 'criminal_record_url', file: File) => {
@@ -102,6 +121,38 @@ export default function ProviderProfile() {
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Ad Soyad</label>
             <input className="input" placeholder="Adınızı girin" value={name} onChange={e => setName(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Telefon</label>
+            <input
+              className="input"
+              placeholder="05xx xxx xx xx"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+            />
+            <div className="mt-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={toggleHidePhone}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    hidePhone ? 'bg-slate-900' : 'bg-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      hidePhone ? 'translate-x-4' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className="text-xs font-medium text-slate-600">
+                  Telefon Numaramı Gizle
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400">
+                Sadece kabul edilen işlerde numaranız görünür.
+              </span>
+            </div>
           </div>
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Hakkında</label>
