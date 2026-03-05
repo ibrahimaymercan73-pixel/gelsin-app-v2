@@ -383,18 +383,18 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 w-full flex flex-col flex-1 overflow-x-hidden overflow-y-auto">
-      <div className="bg-white px-4 pt-12 pb-4 border-b border-sky-100 shadow-sm shrink-0">
-        <button onClick={() => router.back()} className="text-blue-600 font-semibold text-sm mb-4 flex items-center gap-1">
+    <div className="min-h-dvh bg-gray-50 w-full flex flex-col flex-1 overflow-x-hidden overflow-y-auto pb-28">
+      <div className="bg-white px-3 pt-6 pb-2 border-b border-sky-100 shadow-sm shrink-0">
+        <button onClick={() => router.back()} className="text-blue-600 font-medium text-xs mb-2 flex items-center gap-1">
           ← Geri
         </button>
-        <div className="flex items-start gap-3">
-          <div className="w-12 h-12 bg-sky-50 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 bg-sky-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
             {job?.service_categories?.icon}
           </div>
-          <div className="flex-1">
-            <h1 className="font-black text-slate-900 text-lg">{job?.title}</h1>
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold mt-1 ${sc.bg} ${sc.color}`}>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-bold text-slate-900 text-sm truncate">{job?.title}</h1>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold mt-0.5 ${sc.bg} ${sc.color}`}>
               {sc.label}
             </span>
           </div>
@@ -402,16 +402,16 @@ export default function JobDetailPage() {
       </div>
 
       <div className="max-w-md mx-auto w-full">
-        {/* Durum Stepper */}
-        <div className="px-4 pt-3">
-          <div className="bg-white rounded-2xl px-3 py-3 border border-sky-100 shadow-sm">
-            <div className="flex items-center gap-2 md:gap-6 w-full overflow-x-auto whitespace-nowrap scrollbar-hide py-2">
+        {/* Durum Stepper — kompakt */}
+        <div className="px-3 pt-2">
+          <div className="bg-white rounded-xl px-2 py-1.5 border border-sky-100 shadow-sm">
+            <div className="flex items-center gap-1 md:gap-4 w-full overflow-x-auto whitespace-nowrap scrollbar-hide">
               {stepItems.map((step, index) => {
                 const isActive = index <= activeStep
                 return (
-                  <div key={step.label} className="flex items-center gap-2 md:gap-3">
+                  <div key={step.label} className="flex items-center gap-1 md:gap-2 flex-shrink-0">
                     <div
-                      className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-bold ${
+                      className={`w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
                         isActive
                           ? 'bg-gradient-to-br from-sky-500 to-emerald-500 text-white shadow-sm'
                           : 'bg-slate-100 text-slate-400'
@@ -419,15 +419,11 @@ export default function JobDetailPage() {
                     >
                       {step.icon}
                     </div>
-                    <span
-                      className={`text-xs md:text-sm font-semibold ${
-                        isActive ? 'text-slate-800' : 'text-slate-400'
-                      }`}
-                    >
+                    <span className={`text-[10px] md:text-xs font-medium ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>
                       {step.label}
                     </span>
                     {index < stepItems.length - 1 && (
-                      <div className="w-4 md:w-6 h-px bg-gradient-to-r from-slate-200 via-sky-200 to-slate-200" />
+                      <div className="w-2 md:w-4 h-px bg-slate-200 flex-shrink-0" />
                     )}
                   </div>
                 )
@@ -436,7 +432,7 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        <div className="px-4 py-3 space-y-3">
+        <div className="px-3 py-2 space-y-2">
         {/* Başlangıç QR — accepted durumunda */}
         {mounted && job?.status === 'accepted' && (
           <div className="card p-5 border-2 border-blue-200 animate-scale-in">
@@ -617,22 +613,22 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* İş detayları */}
-        <div className="card p-3.5 space-y-2.5">
+        {/* İş detayları + konum — tek kompakt kart */}
+        <div className="card p-2.5 space-y-2">
           {job?.description && (
-            <p className="text-gray-600 text-sm leading-relaxed">{job.description}</p>
+            <p className="text-gray-600 text-xs leading-snug line-clamp-3">{job.description}</p>
           )}
-          <div className="flex items-start gap-2">
-            <span className="text-gray-400 text-sm mt-0.5">📍</span>
-            <p className="text-gray-700 text-[13px] flex-1">{job?.address}</p>
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-400 text-xs">📍</span>
+            <p className="text-gray-700 text-xs flex-1 truncate">{job?.address}</p>
           </div>
           {job?.agreed_price && (
-            <div className="space-y-1">
-              <div className="flex items-center justify-between bg-blue-50 px-3.5 py-2.5 rounded-xl">
-                <span className="text-gray-600 text-sm font-medium">
+            <div className="space-y-0.5">
+              <div className="flex items-center justify-between bg-blue-50 px-2.5 py-2 rounded-lg">
+                <span className="text-gray-600 text-xs font-medium">
                   Anlaşılan Fiyat
                 </span>
-                <span className="text-blue-700 font-black text-lg">
+                <span className="text-blue-700 font-bold text-base">
                   ₺{job.agreed_price}
                 </span>
               </div>
@@ -648,9 +644,9 @@ export default function JobDetailPage() {
             </div>
           )}
           {mediaUrls.length > 0 && (
-            <div className="pt-3 space-y-2">
-              <p className="text-sm font-bold text-gray-800">Ekler / Görseller</p>
-              <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+            <div className="pt-2 space-y-1">
+              <p className="text-xs font-bold text-gray-800">Ekler / Görseller</p>
+              <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-1 px-1">
                 {mediaUrls.map((url) => {
                   const isVideo = /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)
                   return (
@@ -658,7 +654,7 @@ export default function JobDetailPage() {
                       key={url}
                       type="button"
                       onClick={() => setLightbox({ url, type: isVideo ? 'video' : 'image' })}
-                      className="relative w-28 h-28 rounded-2xl overflow-hidden border border-gray-200 bg-black/5 flex-shrink-0"
+                      className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-black/5 flex-shrink-0"
                     >
                       {isVideo ? (
                         <video
@@ -682,17 +678,17 @@ export default function JobDetailPage() {
           )}
         </div>
 
-        {/* Sorun Bildir / Uyuşmazlık Talebi */}
+        {/* Sorun Bildir */}
         {canOpenDispute && (
-          <div className="card p-4 space-y-2 border border-amber-200 bg-amber-50/60">
-            <p className="text-sm font-bold text-amber-800">
-              Bir sorun mu var? Usta ile anlaşamadıysanız uyuşmazlık talebi oluşturabilirsiniz.
+          <div className="rounded-xl p-2.5 border border-amber-200 bg-amber-50/60">
+            <p className="text-[11px] font-semibold text-amber-800 mb-1.5">
+              Sorun mu var? Uyuşmazlık talebi oluşturabilirsiniz.
             </p>
             <button
-              className="btn-secondary py-3 text-sm border-amber-300 text-amber-800"
+              className="btn-secondary py-2 text-xs w-full border-amber-300 text-amber-800"
               onClick={() => setShowDispute(true)}
             >
-              ⚠️ Sorun Bildir / İptal Talebi
+              ⚠️ Sorun Bildir
             </button>
           </div>
         )}
@@ -700,7 +696,7 @@ export default function JobDetailPage() {
         {/* Mesajlaşma */}
         {job?.provider_id && (
           <button
-            className="btn-secondary py-3 text-sm"
+            className="btn-secondary py-2 text-xs w-full"
             onClick={() => openChat(job.id)}
           >
             💬 Ustayla Mesajlaş
@@ -710,7 +706,7 @@ export default function JobDetailPage() {
         {/* Teklifler */}
         {offers.length > 0 && (
           <div>
-            <p className="font-bold text-gray-800 mb-3">Teklifler ({offers.length})</p>
+            <p className="font-bold text-gray-800 text-xs mb-2">Teklifler ({offers.length})</p>
             <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:block lg:space-y-2">
               {offers.map(offer => (
                 <div
@@ -807,17 +803,19 @@ export default function JobDetailPage() {
         )}
 
         {offers.length === 0 && job?.status === 'open' && (
-          <div className="card p-4 text-center space-y-2">
-            <div className="text-3xl mb-1.5">⏳</div>
-            <p className="font-semibold text-gray-700 text-sm">Teklif bekleniyor...</p>
-            <p className="text-[11px] text-gray-400">Yakın ustalar bildirim aldı</p>
+          <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 flex items-center gap-2.5">
+            <span className="text-xl flex-shrink-0">⏳</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-700 text-xs">Teklif bekleniyor...</p>
+              <p className="text-[10px] text-gray-500">Yakın ustalar bildirim aldı</p>
+            </div>
           </div>
         )}
         </div>
       </div>
 
-      {/* Spacer: alt menü / + butonunun altında kalmaması için fiziksel boşluk */}
-      <div className="h-36 md:h-12 w-full shrink-0 pointer-events-none" aria-hidden />
+      {/* Spacer: alt menü + FAB altında kalmaması için yeterli fiziksel boşluk */}
+      <div className="h-44 md:h-16 w-full shrink-0 pointer-events-none" aria-hidden />
 
       {/* Dispute Modal */}
       {showDispute && (
