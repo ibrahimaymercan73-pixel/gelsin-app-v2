@@ -253,20 +253,20 @@ export default function ProviderMyJobsPage() {
   }
 
   return (
-    <div>
-      <div className="bg-white px-5 pt-14 pb-5 border-b border-gray-100">
-        <h1 className="text-2xl font-black text-gray-900">Kabul Ettiğim İşler</h1>
-        <p className="text-gray-500 text-sm mt-0.5">QR okutarak başlat ve bitir</p>
+    <div className="min-h-dvh bg-[#F4F7FA] w-full flex flex-col flex-1 overflow-x-hidden overflow-y-auto pb-28">
+      <div className="bg-white px-3 pt-6 pb-2 border-b border-gray-100 shadow-sm shrink-0">
+        <h1 className="text-base font-black text-gray-900">Kabul Ettiğim İşler</h1>
+        <p className="text-gray-500 text-[11px] mt-0.5">QR okutarak başlat ve bitir</p>
       </div>
 
       {result && (
-        <div className={`mx-4 mt-4 p-4 rounded-2xl flex items-center gap-3 animate-scale-in ${
+        <div className={`mx-3 mt-2 p-3 rounded-xl flex items-center gap-2 animate-scale-in shrink-0 ${
           result.ok ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'
         }`}>
-          <p className={`font-semibold text-sm flex-1 ${result.ok ? 'text-emerald-800' : 'text-red-700'}`}>
+          <p className={`font-semibold text-xs flex-1 ${result.ok ? 'text-emerald-800' : 'text-red-700'}`}>
             {result.msg}
           </p>
-          <button onClick={() => setResult(null)} className="text-gray-400 text-lg">✕</button>
+          <button onClick={() => setResult(null)} className="text-gray-400 text-sm">✕</button>
         </div>
       )}
 
@@ -358,7 +358,7 @@ export default function ProviderMyJobsPage() {
         </div>
       )}
 
-      <div className="px-4 py-4 space-y-3">
+      <div className="px-3 py-2 space-y-2 max-w-md mx-auto w-full">
         {jobs.map(job => {
           const statusLabel =
             job.status === 'started'
@@ -383,60 +383,60 @@ export default function ProviderMyJobsPage() {
           const phoneDisplay = canShowPhone ? customerPhone : 'Numara Gizli'
 
           return (
-            <div key={job.id} className="card p-4 animate-slide-up">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">
+            <div key={job.id} className="card p-2.5 animate-slide-up">
+            <div className="flex items-start gap-2 mb-2.5">
+              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
                 {job.service_categories?.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-gray-900 truncate">{job.title}</p>
-                <p className="text-xs text-gray-500 mt-0.5">📍 {job.address}</p>
-                <p className="text-xs text-gray-400">
+                <p className="font-bold text-gray-900 text-sm truncate">{job.title}</p>
+                <p className="text-[11px] text-gray-500 mt-0.5 truncate">📍 {job.address}</p>
+                <p className="text-[11px] text-gray-400">
                   👤 {job.profiles?.full_name || (canShowPhone ? customerPhone : 'Müşteri')}
                 </p>
-                <p className="text-[11px] text-gray-500 mt-0.5">
+                <p className="text-[10px] text-gray-500 mt-0.5">
                   ☎ {phoneDisplay}
                 </p>
               </div>
               <div className="flex-shrink-0 text-right">
-                <p className="text-xl font-black text-blue-700">₺{job.agreed_price}</p>
-                <span className={statusLabel.cls}>{statusLabel.text}</span>
+                <p className="text-base font-black text-blue-700">₺{job.agreed_price}</p>
+                <span className={`${statusLabel.cls} text-[10px]`}>{statusLabel.text}</span>
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {job.status === 'accepted' && (
-                <button className="btn-primary py-3.5"
+                <button className="btn-primary py-2.5 text-xs w-full"
                   onClick={() => setScanModal({ jobId: job.id, action: 'start' })}>
                   📷 Başlangıç QR Okut
                 </button>
               )}
               {job.status === 'started' && (
-                <button className="btn-success py-3.5"
+                <button className="btn-success py-2.5 text-xs w-full"
                   onClick={() => setScanModal({ jobId: job.id, action: 'end' })}>
                   🏁 Bitiş QR Okut
                 </button>
               )}
               {(job.status === 'accepted' || job.status === 'started') && (
                 <button
-                  className="btn-secondary py-3 text-sm border-amber-300 text-amber-800"
+                  className="btn-secondary py-2 text-xs w-full border-amber-300 text-amber-800"
                   onClick={() => setDisputeModal({ jobId: job.id })}
                 >
-                  ⚠️ Sorun Bildir / İptal Talebi
+                  ⚠️ Sorun Bildir
                 </button>
               )}
               {(job.status === 'accepted' || job.status === 'started' || job.status === 'completed') && (
                 <button
                   type="button"
                   onClick={() => openChat(job.id)}
-                  className="btn-secondary py-3 text-sm text-center w-full"
+                  className="btn-secondary py-2 text-xs text-center w-full"
                 >
                   💬 Müşteriyle Mesajlaş
                 </button>
               )}
               <a href={`https://maps.google.com/?q=${job.lat},${job.lng}`}
                 target="_blank" rel="noopener noreferrer"
-                className="btn-secondary py-3 text-sm text-center block">
+                className="btn-secondary py-2 text-xs text-center block w-full">
                 🗺️ Yol Tarifi Al
               </a>
             </div>
@@ -445,15 +445,18 @@ export default function ProviderMyJobsPage() {
         })}
 
         {jobs.length === 0 && (
-          <div className="flex flex-col items-center py-16 text-center">
-            <div className="text-5xl mb-4">📭</div>
-            <p className="font-bold text-gray-700">Kabul edilen iş yok</p>
-            <Link href="/provider/jobs" className="btn-primary mt-4 px-8 inline-block w-auto py-3 text-sm">
+          <div className="flex flex-col items-center py-10 text-center">
+            <div className="text-3xl mb-2">📭</div>
+            <p className="font-semibold text-gray-700 text-sm">Kabul edilen iş yok</p>
+            <Link href="/provider/jobs" className="btn-primary mt-3 px-6 inline-block w-auto py-2.5 text-xs">
               İşlere Bak
             </Link>
           </div>
         )}
       </div>
+
+      {/* Spacer: alt menü altında kalmaması için */}
+      <div className="h-44 md:h-16 w-full shrink-0 pointer-events-none" aria-hidden />
     </div>
   )
 }
