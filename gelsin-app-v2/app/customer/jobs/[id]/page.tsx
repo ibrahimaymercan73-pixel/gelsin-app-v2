@@ -23,6 +23,7 @@ export default function JobDetailPage() {
   const [comment, setComment] = useState('')
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
 
   const load = async () => {
     const supabase = createClient()
@@ -233,6 +234,24 @@ export default function JobDetailPage() {
   const hasEndToken =
     typeof job?.end_qr_token === 'string' && job.end_qr_token.length >= 1
 
+  const getOfferPhoneDisplay = (offer: any) => {
+    const phone = offer.profiles?.phone as string | undefined | null
+    const hidden = !!offer.profiles?.hide_phone
+    const status = job?.status as string | undefined
+    const canShow =
+      !hidden ||
+      status === 'accepted' ||
+      status === 'started' ||
+      status === 'completed'
+
+    if (!phone) return 'Telefon yok'
+    return canShow ? phone : 'Numara Gizli'
+  }
+
+  const mediaUrls: string[] = Array.isArray(job?.media_urls)
+    ? (job.media_urls as string[])
+    : []
+
   const statusConfig: Record<string, { label: string; bg: string; color: string }> = {
     open: { label: '📢 Teklif Bekleniyor', bg: 'bg-blue-50', color: 'text-blue-700' },
     offered: { label: '💬 Teklif Geldi', bg: 'bg-orange-50', color: 'text-orange-700' },
@@ -335,20 +354,6 @@ export default function JobDetailPage() {
 
     setExistingReview({ rating, comment })
     setReviewSubmitting(false)
-  }
-
-  const getOfferPhoneDisplay = (offer: any) => {
-    const phone = offer.profiles?.phone as string | undefined | null
-    const hidden = !!offer.profiles?.hide_phone
-    const status = job?.status as string | undefined
-    const canShow =
-      !hidden ||
-      status === 'accepted' ||
-      status === 'started' ||
-      status === 'completed'
-
-    if (!phone) return 'Telefon yok'
-    return canShow ? phone : 'Numara Gizli'
   }
 
   return (
@@ -615,6 +620,39 @@ export default function JobDetailPage() {
               )}
             </div>
           )}
+          {mediaUrls.length > 0 && (
+            <div className="pt-3 space-y-2">
+              <p className="text-sm font-bold text-gray-800">Ekler / Görseller</p>
+              <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+                {mediaUrls.map((url) => {
+                  const isVideo = /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)
+                  return (
+                    <button
+                      key={url}
+                      type="button"
+                      onClick={() => setLightbox({ url, type: isVideo ? 'video' : 'image' })}
+                      className="relative w-28 h-28 rounded-2xl overflow-hidden border border-gray-200 bg-black/5 flex-shrink-0"
+                    >
+                      {isVideo ? (
+                        <video
+                          src={url}
+                          className="w-full h-full object-cover"
+                          muted
+                          playsInline
+                        />
+                      ) : (
+                        <img
+                          src={url}
+                          alt="Ek görsel"
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sorun Bildir / Uyuşmazlık Talebi */}
@@ -741,7 +779,7 @@ export default function JobDetailPage() {
 
       {/* Dispute Modal */}
       {showDispute && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto animate-slide-up space-y-4">
             <div className="flex items-center justify-between">
               <p className="font-black text-gray-900 text-sm">
@@ -772,6 +810,34 @@ export default function JobDetailPage() {
             >
               {disputeSubmitting ? 'Gönderiliyor...' : 'Uyuşmazlık Talebi Oluştur'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {lightbox && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="relative max-w-3xl w-full">
+            <button
+              type="button"
+              onClick={() => setLightbox(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-black/80 text-white flex items-center justify-center text-lg"
+            >
+              ✕
+            </button>
+            {lightbox.type === 'video' ? (
+              <video
+                src={lightbox.url}
+                className="w-full max-h-[80vh] rounded-2xl"
+                controls
+                autoPlay
+              />
+            ) : (
+              <img
+                src={lightbox.url}
+                alt="Ek görsel"
+                className="w-full max-h-[80vh] rounded-2xl object-contain bg-black"
+              />
+            )}
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, ChangeEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -24,6 +24,8 @@ function NewJobForm() {
   const [lat, setLat] = useState(41.0082)
   const [lng, setLng] = useState(28.9784)
   const [loading, setLoading] = useState(false)
+  const [files, setFiles] = useState<File[]>([])
+  const [previews, setPreviews] = useState<{ url: string; type: 'image' | 'video'; name: string }[]>([])
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(p => {
@@ -31,6 +33,63 @@ function NewJobForm() {
       setLng(p.coords.longitude)
     })
   }, [])
+
+  const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || [])
+    if (!selected.length) return
+
+    const maxFiles = 3
+    const remainingSlots = maxFiles - files.length
+    if (remainingSlots <= 0) {
+      alert('En fazla 3 adet dosya ekleyebilirsiniz.')
+      return
+    }
+
+    const allowed: File[] = []
+    for (const file of selected) {
+      if (allowed.length >= remainingSlots) break
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`"${file.name}" 10MB sınırını aşıyor ve eklenmedi.`)
+        continue
+      }
+      allowed.push(file)
+    }
+
+    if (!allowed.length) {
+      e.target.value = ''
+      return
+    }
+
+    const nextFiles = [...files, ...allowed].slice(0, maxFiles)
+    const nextPreviews = [...previews]
+
+    for (const file of allowed) {
+      const url = URL.createObjectURL(file)
+      const isVideo = file.type.startsWith('video/')
+      nextPreviews.push({
+        url,
+        type: isVideo ? 'video' : 'image',
+        name: file.name,
+      })
+    }
+
+    setFiles(nextFiles)
+    setPreviews(nextPreviews.slice(0, maxFiles))
+    e.target.value = ''
+  }
+
+  const removeFileAt = (index: number) => {
+    const nextFiles = files.filter((_, i) => i !== index)
+    const nextPreviews = previews.filter((p, i) => {
+      if (i === index) {
+        URL.revokeObjectURL(p.url)
+        return false
+      }
+      return true
+    })
+    setFiles(nextFiles)
+    setPreviews(nextPreviews)
+  }
 
   const selectCat = async (slug: string) => {
     setCat(slug)
@@ -54,17 +113,58 @@ function NewJobForm() {
     }
     const qrToken = crypto.randomUUID()
 
-    const { data: job, error } = await supabase.from('jobs').insert({
-      customer_id: user.id,
-      category_id: catId || null,
-      title, description: desc, address,
-      lat, lng, job_type: jobType,
-      qr_token: qrToken, status: 'open'
-    }).select().single()
+    let mediaUrls: string[] = []
+    if (files.length > 0) {
+      try {
+        const uploads = await Promise.all(
+          files.map(async (file, index) => {
+            const ext = file.name.split('.').pop() || 'file'
+            const path = `${user.id}/${Date.now()}-${index}.${ext}`
+            const { error: uploadError } = await supabase.storage
+              .from('job-media')
+              .upload(path, file)
+            if (uploadError) throw uploadError
+            const { data } = supabase.storage.from('job-media').getPublicUrl(path)
+            return data.publicUrl
+          })
+        )
+        mediaUrls = uploads
+      } catch (err: any) {
+        console.error('MEDYA YÜKLEME HATASI:', err)
+        alert('Medya yüklenemedi: ' + (err?.message || 'Bilinmeyen hata'))
+        setLoading(false)
+        return
+      }
+    }
+
+    const { data: job, error } = await supabase
+      .from('jobs')
+      .insert({
+        customer_id: user.id,
+        category_id: catId || null,
+        title,
+        description: desc,
+        address,
+        lat,
+        lng,
+        job_type: jobType,
+        qr_token: qrToken,
+        status: 'open',
+        media_urls: mediaUrls.length ? mediaUrls : null,
+      })
+      .select()
+      .single()
 
     if (error || !job) {
       console.error('INSERT HATASI:', error)
-      alert('İş oluşturulamadı: ' + error?.message)
+      if (error && typeof error.message === 'string' && error.message.includes('media_urls')) {
+        alert(
+          'İş oluşturulamadı: Veritabanında jobs.media_urls (text[]) kolonu bulunamadı. ' +
+            'Lütfen Supabase üzerinde jobs tablosuna media_urls text[] sütununu ekleyin.'
+        )
+      } else {
+        alert('İş oluşturulamadı: ' + error?.message)
+      }
       setLoading(false)
       return
     }
@@ -138,6 +238,61 @@ function NewJobForm() {
               <textarea className="input resize-none" rows={3}
                 placeholder="Sorunu kısaca açıklayın..."
                 value={desc} onChange={e => setDesc(e.target.value)} />
+            </div>
+
+            <div>
+              <label className="text-sm font-bold text-gray-700 mb-1.5 block">
+                Fotoğraf / Video Ekle{' '}
+                <span className="text-xs text-gray-400">(En fazla 3 adet, max 10MB)</span>
+              </label>
+              <div className="border-2 border-dashed border-blue-200 rounded-2xl p-4 bg-blue-50/40">
+                <label className="flex flex-col items-center justify-center gap-2 text-center text-sm text-gray-600 cursor-pointer">
+                  <span className="text-3xl">📎</span>
+                  <span className="font-semibold">Dosya seç veya sürükle bırak</span>
+                  <span className="text-[11px] text-gray-400">
+                    Desteklenen: JPEG, PNG, MP4, MOV (max 10MB)
+                  </span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    className="hidden"
+                    onChange={handleFilesChange}
+                  />
+                </label>
+                {previews.length > 0 && (
+                  <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+                    {previews.map((p, index) => (
+                      <div
+                        key={p.url}
+                        className="relative w-24 h-24 rounded-xl overflow-hidden border border-blue-100 bg-black/5 flex-shrink-0"
+                      >
+                        {p.type === 'video' ? (
+                          <video
+                            src={p.url}
+                            className="w-full h-full object-cover"
+                            muted
+                            playsInline
+                          />
+                        ) : (
+                          <img
+                            src={p.url}
+                            alt={p.name}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeFileAt(index)}
+                          className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-black/70 text-white text-xs flex items-center justify-center"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
