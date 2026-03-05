@@ -401,7 +401,7 @@ export default function JobDetailPage() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto w-full">
+      <div className="max-w-md mx-auto w-full">
         {/* Durum Stepper */}
         <div className="px-4 pt-3">
           <div className="bg-white rounded-2xl px-3 py-3 border border-sky-100 shadow-sm">
