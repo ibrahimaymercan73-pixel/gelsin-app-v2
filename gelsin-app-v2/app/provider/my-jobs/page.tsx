@@ -195,16 +195,30 @@ export default function ProviderMyJobsPage() {
       {/* QR Scanner Modal */}
       {scanModal && (
         <div className="fixed inset-0 bg-black/85 z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 w-full max-w-sm animate-slide-up">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-3xl p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto flex flex-col animate-slide-up pb-8">
+            <div className="flex items-center justify-between mb-4 shrink-0">
               <p className="font-black text-gray-900">
                 {scanModal.action === 'start' ? '📱 Başlangıç QR Okut' : '🏁 Bitiş QR Okut'}
               </p>
-              <button onClick={() => setScanModal(null)} className="text-gray-400 text-2xl leading-none">✕</button>
+              <button
+                onClick={() => setScanModal(null)}
+                className="text-gray-400 text-2xl leading-none"
+              >
+                ✕
+              </button>
             </div>
-            <QrScanner onScan={(data) => handleQRScan(scanModal.jobId, scanModal.action, data)} />
-            <button className="btn-secondary mt-3 py-3 text-sm"
-              onClick={() => { setScanModal(null); setPinModal(scanModal); }}>
+            <div className="shrink-0">
+              <QrScanner
+                onScan={(data) => handleQRScan(scanModal.jobId, scanModal.action, data)}
+              />
+            </div>
+            <button
+              className="btn-secondary mt-4 py-3 text-sm w-full shrink-0"
+              onClick={() => {
+                setScanModal(null)
+                setPinModal(scanModal)
+              }}
+            >
               🔢 Kodu Elle Gir
             </button>
           </div>

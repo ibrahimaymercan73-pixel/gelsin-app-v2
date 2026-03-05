@@ -29,9 +29,12 @@ export default function QrScanner({ onScan }: Props) {
   }, [onScan])
 
   return (
-    <div>
-      <div id={divId} className="rounded-xl overflow-hidden" />
-      <p className="text-xs text-surface-400 text-center mt-3">
+    <div className="w-full flex flex-col items-center">
+      <div
+        id={divId}
+        className="w-full max-w-sm aspect-square md:aspect-video rounded-2xl overflow-hidden bg-black/90"
+      />
+      <p className="text-xs text-surface-400 text-center mt-3 px-2">
         Kameranızı müşterinin QR koduna tutun
       </p>
     </div>
