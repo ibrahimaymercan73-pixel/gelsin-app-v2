@@ -20,12 +20,44 @@ export default function ProviderMyJobsPage() {
 
   const load = async () => {
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data } = await supabase.from('jobs')
-      .select('*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone, hide_phone)')
-      .eq('provider_id', user!.id)
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      setJobs([])
+      return
+    }
+
+    // Önce bu usta için kabul edilmiş teklifler üzerinden iş ID'lerini topla
+    const { data: acceptedOffers } = await supabase
+      .from('offers')
+      .select('job_id')
+      .eq('provider_id', user.id)
+      .eq('status', 'accepted')
+
+    const jobIds = Array.from(
+      new Set(
+        (acceptedOffers || [])
+          .map((o: any) => o.job_id as string | null)
+          .filter((id): id is string => !!id)
+      )
+    )
+
+    if (jobIds.length === 0) {
+      setJobs([])
+      return
+    }
+
+    const { data } = await supabase
+      .from('jobs')
+      .select(
+        '*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone, hide_phone)'
+      )
+      .in('id', jobIds)
       .in('status', ['accepted', 'started', 'completed', 'disputed', 'cancelled'])
       .order('created_at', { ascending: false })
+
     setJobs(data || [])
   }
 
