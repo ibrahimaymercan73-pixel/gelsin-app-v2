@@ -383,8 +383,8 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 w-full overflow-x-hidden overflow-y-auto pb-40">
-      <div className="bg-white px-4 pt-12 pb-4 border-b border-sky-100 shadow-sm">
+    <div className="min-h-dvh bg-gray-50 w-full flex flex-col flex-1 overflow-x-hidden overflow-y-auto">
+      <div className="bg-white px-4 pt-12 pb-4 border-b border-sky-100 shadow-sm shrink-0">
         <button onClick={() => router.back()} className="text-blue-600 font-semibold text-sm mb-4 flex items-center gap-1">
           ← Geri
         </button>
@@ -815,6 +815,9 @@ export default function JobDetailPage() {
         )}
         </div>
       </div>
+
+      {/* Spacer: alt menü / + butonunun altında kalmaması için fiziksel boşluk */}
+      <div className="h-36 md:h-12 w-full shrink-0 pointer-events-none" aria-hidden />
 
       {/* Dispute Modal */}
       {showDispute && (
