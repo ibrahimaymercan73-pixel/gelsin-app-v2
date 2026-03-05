@@ -148,7 +148,9 @@ export default function LandingPage() {
             className="text-4xl sm:text-5xl md:text-6xl font-bold text-slate-900 tracking-tight leading-[1.15] mb-5"
           >
             <span className="text-slate-900">Aradığın ustayı </span>
-            <span className="text-slate-800 font-extrabold">hemen bul</span>
+            <span className="bg-gradient-to-r from-orange-500 to-indigo-600 bg-clip-text text-transparent font-extrabold">
+              hemen bul
+            </span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -280,25 +282,34 @@ export default function LandingPage() {
                   <motion.div key={p.id} variants={itemUp}>
                     <Link
                       href="/providers"
-                      className="flex items-center gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-slate-200 transition-all duration-200 active:scale-[0.99] group"
+                      className="flex flex-col gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-slate-200 transition-all duration-200 active:scale-[0.99] group"
                     >
-                      <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-lg font-bold text-slate-800 shrink-0 ring-2 ring-white ring-offset-2 shadow-sm">
-                        {initial}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-bold text-slate-900 truncate">{name}</p>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold shrink-0">
-                            <BadgeCheck className="w-3.5 h-3.5" />
-                            Onaylı Usta
-                          </span>
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-lg font-bold text-slate-800 shrink-0 ring-2 ring-white ring-offset-2 shadow-sm">
+                          {initial}
                         </div>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <StarRating value={rating} />
-                          <span className="text-xs text-slate-500">({reviews} iş)</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold text-slate-900 truncate">{name}</p>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold shrink-0">
+                              <BadgeCheck className="w-3.5 h-3.5" />
+                              Onaylı Usta
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <StarRating value={rating} />
+                            <span className="text-xs text-slate-500">({reviews} iş)</span>
+                          </div>
                         </div>
+                        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all shrink-0" />
                       </div>
-                      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all shrink-0" />
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <span className="text-xs text-slate-400">Profesyonel hizmet</span>
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-900 text-white group-hover:bg-slate-800 transition-colors">
+                          Hemen Teklif İste
+                          <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </div>
                     </Link>
                   </motion.div>
                 )
