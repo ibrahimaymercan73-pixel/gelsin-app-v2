@@ -359,14 +359,14 @@ export default function JobDetailPage() {
 
       {/* Durum Stepper */}
       <div className="px-4 pt-3">
-        <div className="bg-white rounded-2xl px-3 py-3 border border-sky-100 shadow-sm overflow-x-auto">
-          <div className="flex items-center gap-3 min-w-max">
+        <div className="bg-white rounded-2xl px-3 py-3 border border-sky-100 shadow-sm">
+          <div className="flex items-center gap-2 md:gap-6 w-full overflow-x-auto whitespace-nowrap scrollbar-hide py-2">
             {stepItems.map((step, index) => {
               const isActive = index <= activeStep
               return (
-                <div key={step.label} className="flex items-center gap-2">
+                <div key={step.label} className="flex items-center gap-2 md:gap-3">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-bold ${
                       isActive
                         ? 'bg-gradient-to-br from-sky-500 to-emerald-500 text-white shadow-sm'
                         : 'bg-slate-100 text-slate-400'
@@ -375,14 +375,14 @@ export default function JobDetailPage() {
                     {step.icon}
                   </div>
                   <span
-                    className={`text-[11px] font-semibold ${
+                    className={`text-xs md:text-sm font-semibold ${
                       isActive ? 'text-slate-800' : 'text-slate-400'
                     }`}
                   >
                     {step.label}
                   </span>
                   {index < stepItems.length - 1 && (
-                    <div className="w-6 h-px bg-gradient-to-r from-slate-200 via-sky-200 to-slate-200" />
+                    <div className="w-4 md:w-6 h-px bg-gradient-to-r from-slate-200 via-sky-200 to-slate-200" />
                   )}
                 </div>
               )
