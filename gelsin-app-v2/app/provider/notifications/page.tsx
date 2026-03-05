@@ -84,10 +84,12 @@ export default function ProviderNotificationsPage() {
 
         {items.map((n) => {
           const isChat = n.type === 'chat_message' && n.related_job_id
-          const clickable = isChat
+          const isBargain = n.type === 'offer_negotiate' && n.related_job_id
+          const clickable = isChat || isBargain
 
           const handleClick = () => {
-            if (isChat && n.related_job_id) {
+            if ((isChat || isBargain) && n.related_job_id) {
+              // Hem mesajlaşma hem pazarlık için ilgili iş sohbetini aç
               openChat(n.related_job_id)
             }
           }
