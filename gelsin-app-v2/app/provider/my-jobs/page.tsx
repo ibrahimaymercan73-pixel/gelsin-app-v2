@@ -272,8 +272,8 @@ export default function ProviderMyJobsPage() {
 
       {/* QR Scanner Modal */}
       {scanModal && (
-        <div className="fixed inset-0 bg-black/85 z-50 flex items-end justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto flex flex-col animate-slide-up pb-8">
+        <div className="fixed inset-0 bg-black/85 z-[120] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-5 w-full max-w-sm max-h-[85vh] overflow-y-auto flex flex-col animate-slide-up pb-6">
             <div className="flex items-center justify-between mb-4 shrink-0">
               <p className="font-black text-gray-900">
                 {scanModal.action === 'start' ? '📱 Başlangıç QR Okut' : '🏁 Bitiş QR Okut'}
@@ -305,7 +305,7 @@ export default function ProviderMyJobsPage() {
 
       {/* PIN Modal */}
       {pinModal && (
-        <div className="fixed inset-0 bg-black/85 z-50 flex items-end justify-center p-4">
+        <div className="fixed inset-0 bg-black/85 z-[120] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-5 w-full max-w-sm animate-slide-up space-y-4">
             <p className="font-black text-gray-900 text-center">6 Haneli PIN Gir</p>
             <input className="input text-center text-4xl tracking-[0.5em] font-black py-6"
