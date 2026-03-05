@@ -202,15 +202,15 @@ export default function LandingPage() {
             {CATEGORIES.map((c) => {
               const Icon = c.icon
               return (
-                <motion.div key={c.slug} variants={itemUp}>
+                <motion.div key={c.slug} variants={itemUp} className="flex">
                   <Link
                     href={`/providers?category=${c.slug}`}
-                    className="block p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-slate-200 transition-all duration-200 active:scale-[0.98] text-center group"
+                    className="flex-1 min-w-[150px] p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-slate-200 transition-all duration-200 active:scale-[0.98] text-center group"
                   >
                     <div className={`inline-flex p-3 rounded-full ${c.color} mb-3 group-hover:scale-110 transition-transform`}>
-                      <Icon className="w-6 h-6" />
+                      <Icon className="w-8 h-8" />
                     </div>
-                    <span className="text-sm font-bold text-slate-800">{c.label}</span>
+                    <span className="text-sm font-bold text-slate-800 whitespace-nowrap">{c.label}</span>
                   </Link>
                 </motion.div>
               )
@@ -220,7 +220,7 @@ export default function LandingPage() {
       </section>
 
       {/* How it works - Lucide ikonlar */}
-      <section className="py-24 px-4 bg-white border-y border-slate-200/80">
+      <section className="py-20 px-4 bg-white border-y border-slate-200/80">
         <div className="max-w-4xl mx-auto">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
@@ -235,13 +235,13 @@ export default function LandingPage() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
-            className="grid sm:grid-cols-3 gap-10"
+            className="grid sm:grid-cols-3 gap-8"
           >
             {HOW_IT_WORKS.map((h) => {
               const Icon = h.icon
               return (
                 <motion.div key={h.step} variants={itemUp} className="text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center mx-auto mb-5">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 text-slate-700 mx-auto mb-5">
                     <Icon className="w-8 h-8" />
                   </div>
                   <div className="text-slate-800 font-bold text-sm mb-1">Adım {h.step}</div>
@@ -256,7 +256,7 @@ export default function LandingPage() {
 
       {/* Usta kartları - avatar, Onaylı rozet, 5 yıldız, Profili İncele */}
       {providers.length > 0 && (
-        <section className="py-24 px-4">
+        <section className="py-20 px-4">
           <div className="max-w-6xl mx-auto">
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
@@ -282,7 +282,7 @@ export default function LandingPage() {
                   <motion.div key={p.id} variants={itemUp}>
                     <Link
                       href="/providers"
-                      className="flex flex-col gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-slate-200 transition-all duration-200 active:scale-[0.99] group"
+                      className="flex flex-col gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-md hover:shadow-lg hover:-translate-y-0.5 hover:border-slate-200 transition-all duration-200 active:scale-[0.99] group"
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-lg font-bold text-slate-800 shrink-0 ring-2 ring-white ring-offset-2 shadow-sm">
