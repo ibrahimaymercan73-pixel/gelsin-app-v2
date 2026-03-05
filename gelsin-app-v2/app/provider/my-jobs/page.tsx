@@ -29,7 +29,19 @@ export default function ProviderMyJobsPage() {
       return
     }
 
-    // Önce bu usta için kabul edilmiş teklifler üzerinden iş ID'lerini topla
+    const statuses = ['accepted', 'started', 'completed', 'disputed', 'cancelled']
+
+    // 1) Doğrudan provider_id üzerinden bu ustaya atanmış işleri çek
+    const { data: jobsByProvider } = await supabase
+      .from('jobs')
+      .select(
+        '*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone, hide_phone)'
+      )
+      .eq('provider_id', user.id)
+      .in('status', statuses)
+      .order('created_at', { ascending: false })
+
+    // 2) Ek olarak, bu ustanın accepted teklif verdiği işler üzerinden ID listesi çıkar
     const { data: acceptedOffers } = await supabase
       .from('offers')
       .select('job_id')
@@ -44,21 +56,32 @@ export default function ProviderMyJobsPage() {
       )
     )
 
-    if (jobIds.length === 0) {
-      setJobs([])
-      return
+    let jobsCombined = jobsByProvider || []
+
+    if (jobIds.length > 0) {
+      const { data: jobsByOffers } = await supabase
+        .from('jobs')
+        .select(
+          '*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone, hide_phone)'
+        )
+        .in('id', jobIds)
+        .in('status', statuses)
+
+      if (jobsByOffers && jobsByOffers.length > 0) {
+        const map = new Map<string, any>()
+        for (const j of jobsCombined) map.set(j.id, j)
+        for (const j of jobsByOffers) map.set(j.id, j)
+        jobsCombined = Array.from(map.values())
+      }
     }
 
-    const { data } = await supabase
-      .from('jobs')
-      .select(
-        '*, service_categories(name, icon), profiles!jobs_customer_id_fkey(full_name, phone, hide_phone)'
-      )
-      .in('id', jobIds)
-      .in('status', ['accepted', 'started', 'completed', 'disputed', 'cancelled'])
-      .order('created_at', { ascending: false })
+    // Tarihe göre yeniden sırala (en yeni üstte)
+    jobsCombined.sort(
+      (a: any, b: any) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
 
-    setJobs(data || [])
+    setJobs(jobsCombined)
   }
 
   useEffect(() => { load() }, [])
