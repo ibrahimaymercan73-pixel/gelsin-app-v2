@@ -108,19 +108,13 @@ function LoginForm() {
     }
 
     // Giriş başarılıysa mevcut role'e göre yönlendir
-    const r = await ensureProfileEmail(
-      data.user.id,
-      email,
-      selectedRole // sadece profil boşsa kullanılacak
-    )
+    const r = await ensureProfileEmail(data.user.id, email, selectedRole)
     if (r === 'provider') {
       router.replace('/provider')
     } else if (r === 'customer') {
       router.replace('/customer')
     } else if (r === 'admin') {
       router.replace('/admin')
-    } else {
-      router.replace('/role-selection')
     }
     setLoading(false)
   }
@@ -160,7 +154,7 @@ function LoginForm() {
         .single()
 
       if (!profile || !profile.role) {
-        router.replace('/role-selection')
+        router.replace('/choose-role')
       }
     }
     check()

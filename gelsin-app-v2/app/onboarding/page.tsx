@@ -36,7 +36,7 @@ export default function OnboardingPage() {
       if (!user) return
 
       if (user && !role) {
-        router.replace('/role-selection')
+        router.replace('/choose-role')
         return
       }
 

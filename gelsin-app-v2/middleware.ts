@@ -66,10 +66,10 @@ export async function middleware(req: NextRequest) {
 
   const role = (profile?.role as UserRole | null) ?? null
 
-  // Rol yoksa: sadece role-selection'a izin ver, diğer her yeri role-selection'a yönlendir
+  // Rol yoksa: sadece choose-role'a izin ver, diğer her yeri choose-role'a yönlendir
   if (!role) {
-    if (pathname !== '/role-selection') {
-      return NextResponse.redirect(new URL('/role-selection', req.url))
+    if (pathname !== '/choose-role') {
+      return NextResponse.redirect(new URL('/choose-role', req.url))
     }
     return res
   }
@@ -138,6 +138,7 @@ export const config = {
     '/provider/:path*',
     '/admin/:path*',
     '/role-selection',
+    '/choose-role',
     '/onboarding',
     '/login',
     '/',

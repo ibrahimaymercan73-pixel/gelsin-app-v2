@@ -86,7 +86,7 @@ export default function LandingPage() {
       const { user, role } = await getCurrentUserAndRole()
       if (!user) return
       if (!role) {
-        router.replace('/role-selection')
+        router.replace('/choose-role')
         return
       }
       if (role === 'customer') router.replace('/customer')
