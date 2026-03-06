@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { getCurrentUserAndRole, getProviderStatus } from '@/lib/auth'
+import { getCurrentUserAndRole } from '@/lib/auth'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 
 const navItems = [
@@ -17,7 +17,6 @@ const navItems = [
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [pending, setPending] = useState(false)
 
   useEffect(() => {
     const check = async () => {
@@ -37,9 +36,6 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
         router.replace('/admin')
         return
       }
-
-      const status = await getProviderStatus(user.id)
-      setPending(status === 'pending')
     }
     check()
   }, [router])
@@ -56,12 +52,6 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
           </span>
           <p className="text-slate-500 text-xs font-semibold mt-1 uppercase tracking-widest">Usta Paneli</p>
         </div>
-        {pending && (
-          <div className="mx-4 mt-4 px-4 py-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
-            <p className="text-amber-400 text-xs font-bold">Onay Bekleniyor</p>
-            <p className="text-amber-400/70 text-xs mt-0.5">Profil belgelerinizi yukleyin</p>
-          </div>
-        )}
         <nav className="p-4 space-y-1 mt-2 flex-1">
           {navItems.map(item => {
             const isActive = pathname === item.href
@@ -84,11 +74,6 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
       </aside>
 
       <main className="flex-1 lg:ml-64 pb-24 lg:pb-0">
-        {pending && (
-          <div className="lg:hidden bg-amber-500 text-white text-xs font-semibold text-center py-2.5 px-4">
-            Hesabiniz onay bekliyor - Profil belgelerinizi yukleyin
-          </div>
-        )}
         {children}
       </main>
 
