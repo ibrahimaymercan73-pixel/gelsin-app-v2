@@ -230,10 +230,10 @@ export default function ProviderJobsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <header className="px-6 lg:px-10 py-6 sticky top-0 bg-slate-950/90 backdrop-blur-md z-40 border-b border-slate-800">
-        <h1 className="text-xl lg:text-2xl font-black text-slate-50">🔍 Radar</h1>
-        <p className="text-slate-400 text-sm mt-0.5">Yakınımdaki açık işler — en yakın önce</p>
+    <div className="min-h-screen bg-[#f8fafc]">
+      <header className="px-6 lg:px-10 py-6 sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200">
+        <h1 className="text-xl lg:text-2xl font-black text-slate-900">🔍 Radar</h1>
+        <p className="text-slate-600 text-sm mt-0.5">Yakınımdaki açık işler — en yakın önce</p>
 
         {/* Filters */}
         <div className="mt-4 -mx-2 px-2 flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide pb-1">
@@ -246,8 +246,8 @@ export default function ProviderJobsPage() {
                 onClick={() => setFilter(c.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 ${
                   active
-                    ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-600/20'
-                    : 'bg-slate-900/60 text-slate-200 border-slate-800 hover:border-blue-500/70 hover:text-white'
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 {c.label}
@@ -258,7 +258,7 @@ export default function ProviderJobsPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-6 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
           {filtered.map((job, i) => {
             const urgent = job.job_type === 'urgent'
             const badgeText = urgent
@@ -273,7 +273,7 @@ export default function ProviderJobsPage() {
             return (
               <div
                 key={job.id}
-                className="animate-slide-up"
+                className="animate-slide-up h-full"
                 style={{ animationDelay: `${Math.min(i, 6) * 0.05}s` }}
               >
                 <div
@@ -283,24 +283,24 @@ export default function ProviderJobsPage() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') setSelectedJobId(job.id)
                   }}
-                  className="group bg-slate-800 rounded-2xl p-4 border border-slate-700/60 shadow-md shadow-black/30 hover:shadow-lg hover:border-slate-500 transition-all cursor-pointer outline-none"
+                  className="group flex flex-col h-full bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-500 transition-all cursor-pointer outline-none overflow-hidden"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-xl text-sky-400 flex-shrink-0">
+                      <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-xl text-blue-600 flex-shrink-0">
                         {job.service_categories?.icon}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold text-slate-50 text-sm truncate">{job.title}</p>
-                        <p className="text-[11px] text-slate-400 truncate">{job.service_categories?.name}</p>
+                        <p className="font-semibold text-slate-900 text-sm truncate">{job.title}</p>
+                        <p className="text-[11px] text-slate-500 truncate">{job.service_categories?.name}</p>
                       </div>
                     </div>
 
                     <span
                       className={`px-2 py-1 rounded-full text-[10px] font-semibold border ${
                         urgent
-                          ? 'bg-rose-500/15 text-rose-200 border-rose-500/30'
-                          : 'bg-slate-800/60 text-slate-200 border-slate-700'
+                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          : 'bg-slate-100 text-slate-700 border-slate-200'
                       }`}
                     >
                       {badgeText}
@@ -308,17 +308,17 @@ export default function ProviderJobsPage() {
                   </div>
 
                   {job.description && (
-                    <p className="mt-3 text-[12px] text-slate-400 leading-snug line-clamp-2">
+                    <p className="mt-2 text-[13px] text-slate-600 leading-snug line-clamp-2">
                       {job.description}
                     </p>
                   )}
 
-                  <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="mt-auto pt-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       {time && (
-                        <p className="text-[11px] text-slate-400 font-medium">{time}</p>
+                        <p className="text-[11px] text-slate-500 font-medium">{time}</p>
                       )}
-                      <p className="text-[11px] text-slate-400 truncate">📍 {job.address}</p>
+                      <p className="text-[11px] text-slate-500 truncate">📍 {job.address}</p>
                     </div>
 
                     <button
@@ -347,15 +347,15 @@ export default function ProviderJobsPage() {
       {/* Job Detail / Offer Modal */}
       {selectedJob && (
         <div className="fixed inset-0 z-[120] bg-black/70 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-slate-950 border border-slate-800 rounded-3xl p-4 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-lg bg-white border border-gray-200 rounded-3xl p-4 max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/20">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-xl text-sky-400 flex-shrink-0">
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-xl text-blue-600 flex-shrink-0">
                   {selectedJob.service_categories?.icon}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-black text-slate-50 text-base truncate">{selectedJob.title}</p>
-                  <p className="text-xs text-slate-400 truncate">{selectedJob.service_categories?.name}</p>
+                  <p className="font-black text-slate-900 text-base truncate">{selectedJob.title}</p>
+                  <p className="text-xs text-slate-600 truncate">{selectedJob.service_categories?.name}</p>
                 </div>
               </div>
               <button
@@ -375,21 +375,21 @@ export default function ProviderJobsPage() {
             </div>
 
             {selectedJob.description && (
-              <p className="text-sm text-slate-200/90 bg-white/5 border border-white/10 rounded-2xl p-3 leading-relaxed">
+              <p className="text-sm text-slate-700 bg-gray-50 border border-gray-200 rounded-2xl p-3 leading-relaxed">
                 {selectedJob.description}
               </p>
             )}
 
             <div className="mt-3 space-y-1">
               {whenLabel(selectedJob) && (
-                <p className="text-xs text-slate-400">{whenLabel(selectedJob)}</p>
+                <p className="text-xs text-slate-600">{whenLabel(selectedJob)}</p>
               )}
-              <p className="text-xs text-slate-400">📍 {selectedJob.address}</p>
+              <p className="text-xs text-slate-600">📍 {selectedJob.address}</p>
             </div>
 
             {selectedMedia.length > 0 && (
               <div className="mt-4 space-y-1.5">
-                <p className="text-xs font-bold text-slate-200">Ekler / Görseller</p>
+                <p className="text-xs font-bold text-slate-800">Ekler / Görseller</p>
                 <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
                   {selectedMedia.map((url: string) => {
                     const isVideo = /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)
@@ -401,7 +401,7 @@ export default function ProviderJobsPage() {
                           e.stopPropagation()
                           setLightbox({ url, type: isVideo ? 'video' : 'image' })
                         }}
-                        className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-700 bg-black/40 flex-shrink-0"
+                        className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0"
                       >
                         {isVideo ? (
                           <video src={url} className="w-full h-full object-cover" muted playsInline />
@@ -415,8 +415,8 @@ export default function ProviderJobsPage() {
               </div>
             )}
 
-            <div className="mt-4 rounded-2xl border border-slate-800 bg-white/5 p-3">
-              <p className="text-xs font-bold text-slate-100 mb-2">
+            <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-3">
+              <p className="text-xs font-bold text-slate-900 mb-2">
                 {myOffers.has(selectedJob.id) ? 'Teklifin' : 'Teklif Ver'}
               </p>
 
@@ -434,9 +434,9 @@ export default function ProviderJobsPage() {
                 <>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[11px] font-bold text-slate-300 mb-1 block">Fiyat (₺) *</label>
+                      <label className="text-[11px] font-bold text-slate-700 mb-1 block">Fiyat (₺) *</label>
                       <input
-                        className="input text-sm py-2"
+                        className="input text-sm py-2 bg-gray-50 border border-gray-200"
                         type="number"
                         placeholder="250"
                         value={offering[selectedJob.id]?.price || ''}
@@ -449,9 +449,9 @@ export default function ProviderJobsPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-slate-300 mb-1 block">Süre</label>
+                      <label className="text-[11px] font-bold text-slate-700 mb-1 block">Süre</label>
                       <input
-                        className="input text-sm py-2"
+                        className="input text-sm py-2 bg-gray-50 border border-gray-200"
                         placeholder="2 saat"
                         value={offering[selectedJob.id]?.duration || ''}
                         onChange={(e) =>
@@ -464,7 +464,7 @@ export default function ProviderJobsPage() {
                     </div>
                   </div>
                   <textarea
-                    className="input text-sm py-2 mt-2 resize-none"
+                    className="input text-sm py-2 mt-2 resize-none bg-gray-50 border border-gray-200"
                     rows={2}
                     placeholder="Müşteriye not..."
                     value={offering[selectedJob.id]?.message || ''}
