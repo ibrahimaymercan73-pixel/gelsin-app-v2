@@ -230,13 +230,13 @@ export default function ProviderJobsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] overflow-x-hidden">
-      <header className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200">
+    <div className="min-h-screen bg-[#f8fafc] overflow-x-hidden w-full">
+      <header className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200">
         <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-900">🔍 Radar</h1>
         <p className="text-slate-600 text-xs sm:text-sm mt-0.5">Yakınımdaki açık işler</p>
 
         {/* Filters */}
-        <div className="mt-3 sm:mt-4 -mx-1 px-1 flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide pb-1">
+        <div className="mt-3 sm:mt-4 flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide pb-1">
           {chips.map((c) => {
             const active = filter === c.id
             return (
@@ -244,7 +244,7 @@ export default function ProviderJobsPage() {
                 key={c.id}
                 type="button"
                 onClick={() => setFilter(c.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 ${
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 flex-shrink-0 ${
                   active
                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                     : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -257,8 +257,8 @@ export default function ProviderJobsPage() {
         </div>
       </header>
 
-      <div className="px-3 sm:px-6 lg:px-10 py-4 sm:py-6 pb-28 lg:pb-6 overflow-hidden">
-        <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-5xl mx-auto overflow-hidden">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-32 lg:pb-6">
+        <div className="flex flex-col gap-3 sm:gap-4 w-full">
           {filtered.map((job, i) => {
             const urgent = job.job_type === 'urgent'
             const distText = job.dist != null
