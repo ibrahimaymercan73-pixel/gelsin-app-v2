@@ -55,14 +55,16 @@ const categoryMeta: Record<
 
 export default function CustomerProvidersPage() {
   const [items, setItems] = useState<ProviderRow[]>([])
+  const [allItems, setAllItems] = useState<ProviderRow[]>([])
   const [loading, setLoading] = useState(true)
   const [category, setCategory] = useState<string | null>(null)
+  const [searchQ, setSearchQ] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
-    const slug = params.get('category')
-    setCategory(slug)
+    setCategory(params.get('category'))
+    setSearchQ(params.get('q'))
   }, [])
 
   useEffect(() => {
@@ -79,15 +81,33 @@ export default function CustomerProvidersPage() {
       }
 
       const { data } = await query
-
-      setItems(((data || []) as unknown) as ProviderRow[])
+      const list = ((data || []) as unknown) as ProviderRow[]
+      setAllItems(list)
       setLoading(false)
     }
 
     load()
   }, [category])
 
+  useEffect(() => {
+    if (!searchQ?.trim()) {
+      setItems(allItems)
+      return
+    }
+    const q = searchQ.trim().toLowerCase()
+    setItems(
+      allItems.filter((p) => {
+        const name = (p.profiles?.full_name || p.profiles?.phone || '').toLowerCase()
+        const bio = (p.bio || '').toLowerCase()
+        return name.includes(q) || bio.includes(q)
+      })
+    )
+  }, [searchQ, allItems])
+
   const meta = category ? categoryMeta[category] : null
+  const titleFromQ = searchQ?.trim()
+    ? `"${searchQ}" araması`
+    : null
 
   if (loading) {
     return (
@@ -105,7 +125,9 @@ export default function CustomerProvidersPage() {
             Ustalar
           </p>
           <h1 className="text-xl lg:text-2xl font-black text-slate-900 mt-0.5 flex items-center gap-2">
-            {meta ? (
+            {titleFromQ ? (
+              <span>{titleFromQ}</span>
+            ) : meta ? (
               <>
                 <span className="text-2xl">{meta.icon}</span>
                 <span>{meta.label} Ustaları</span>
