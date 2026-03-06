@@ -257,76 +257,105 @@ export default function ProviderJobsPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-6 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+      <div className="px-4 sm:px-6 lg:px-10 py-6">
+        <div className="flex flex-col gap-4 w-full max-w-5xl mx-auto">
           {filtered.map((job, i) => {
             const urgent = job.job_type === 'urgent'
-            const badgeText = urgent
-              ? '⚡ Acil'
-              : job.dist != null
+            const distText = job.dist != null
               ? job.dist < 1
                 ? `${(job.dist * 1000).toFixed(0)}m`
                 : `${job.dist.toFixed(1)}km`
-              : 'İş'
+              : null
             const time = whenLabel(job)
 
             return (
               <div
                 key={job.id}
-                className="animate-slide-up h-full"
-                style={{ animationDelay: `${Math.min(i, 6) * 0.05}s` }}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedJobId(job.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') setSelectedJobId(job.id)
+                }}
+                className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer overflow-hidden animate-slide-up"
+                style={{ animationDelay: `${Math.min(i, 8) * 0.04}s` }}
               >
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedJobId(job.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') setSelectedJobId(job.id)
-                  }}
-                  className="group flex flex-col h-full bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-500 transition-all cursor-pointer outline-none overflow-hidden"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-xl text-blue-600 flex-shrink-0">
-                        {job.service_categories?.icon}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-900 text-sm truncate">{job.title}</p>
-                        <p className="text-[11px] text-slate-500 truncate">{job.service_categories?.name}</p>
-                      </div>
+                {/* Yatay kart: Mobilde dikey, bilgisayarda yatay */}
+                <div className="flex flex-col md:flex-row md:items-center p-4 md:p-5 gap-4">
+                  
+                  {/* SOL: Büyük hizmet ikonu */}
+                  <div className="flex-shrink-0 flex items-center justify-center">
+                    <div className="w-14 h-14 md:w-16 md:h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-2xl md:text-3xl text-blue-600 shadow-sm">
+                      {job.service_categories?.icon || '🔧'}
                     </div>
-
-                    <span
-                      className={`px-2 py-1 rounded-full text-[10px] font-semibold border ${
-                        urgent
-                          ? 'bg-rose-50 text-rose-700 border-rose-200'
-                          : 'bg-slate-100 text-slate-700 border-slate-200'
-                      }`}
-                    >
-                      {badgeText}
-                    </span>
                   </div>
 
-                  {job.description && (
-                    <p className="mt-2 text-[13px] text-slate-600 leading-snug line-clamp-2">
-                      {job.description}
-                    </p>
-                  )}
+                  {/* ORTA: İçerik (esnek genişlik) */}
+                  <div className="flex-1 min-w-0">
+                    {/* Başlık ve kategori */}
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <h3 className="font-bold text-slate-900 text-base md:text-lg leading-snug">
+                        {job.title}
+                      </h3>
+                      {/* Mobilde rozet burada gösterilsin */}
+                      <div className="md:hidden flex-shrink-0">
+                        {urgent && (
+                          <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200">
+                            🔥 Acil
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 mb-2">{job.service_categories?.name}</p>
 
-                  <div className="mt-auto pt-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      {time && (
-                        <p className="text-[11px] text-slate-500 font-medium">{time}</p>
+                    {/* Açıklama - 2 satır */}
+                    {job.description && (
+                      <p className="text-sm text-slate-600 leading-relaxed line-clamp-2 mb-3">
+                        {job.description}
+                      </p>
+                    )}
+
+                    {/* Lokasyon ve Zaman */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                      {job.address && (
+                        <span className="flex items-center gap-1">
+                          <span>📍</span>
+                          <span className="truncate max-w-[200px]">{job.address}</span>
+                        </span>
                       )}
-                      <p className="text-[11px] text-slate-500 truncate">📍 {job.address}</p>
+                      {time && (
+                        <span className="flex items-center gap-1">
+                          <span>🕒</span>
+                          <span>{time.replace(/^[📅⏱]\s*/, '')}</span>
+                        </span>
+                      )}
+                      {distText && (
+                        <span className="flex items-center gap-1 text-blue-600 font-medium">
+                          <span>📏</span>
+                          <span>{distText}</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* SAĞ: Aksiyon bölümü */}
+                  <div className="flex-shrink-0 flex flex-col items-stretch md:items-end gap-2 pt-2 md:pt-0 border-t border-gray-100 md:border-0">
+                    {/* Bilgisayarda rozet */}
+                    <div className="hidden md:flex justify-end">
+                      {urgent && (
+                        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200">
+                          🔥 Acil
+                        </span>
+                      )}
                     </div>
 
+                    {/* Kibar, lüks buton */}
                     <button
                       type="button"
-                      className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-medium shadow-sm flex items-center gap-1 flex-shrink-0 transition-colors"
+                      className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-semibold text-sm transition-all active:scale-[0.98]"
                     >
-                      <span>İşi İncele</span>
-                      <span>➔</span>
+                      <span>Detayları İncele</span>
+                      <span className="text-gray-400">➔</span>
                     </button>
                   </div>
                 </div>
