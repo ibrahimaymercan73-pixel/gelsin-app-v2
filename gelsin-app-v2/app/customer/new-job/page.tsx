@@ -84,6 +84,26 @@ function NewJobForm() {
     }
   }, [defaultCatId])
 
+  // State Reset: Kategori değiştiğinde form alanlarını temizle
+  const resetFormFields = () => {
+    setTitle('')
+    setDesc('')
+    setAddress('')
+    setJobType('urgent')
+    setFiles([])
+    setPreviews(prev => {
+      prev.forEach(p => URL.revokeObjectURL(p.url))
+      return []
+    })
+  }
+
+  useEffect(() => {
+    if (selectedCategory && step === 1) {
+      resetFormFields()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory?.id])
+
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || [])
     if (!selected.length) return
@@ -145,11 +165,12 @@ function NewJobForm() {
 
   const goBack = () => {
     if (step === 2) {
+      resetFormFields()
       setStep(1)
     } else if (step === 1) {
-      setStep(0)
-      setSelectedCategory(null)
       setSelectedSubService('')
+      setSelectedCategory(null)
+      setStep(0)
     } else {
       router.back()
     }
@@ -164,7 +185,22 @@ function NewJobForm() {
   }
 
   const submit = async () => {
-    if (!title || !address || !selectedCategory) return
+    if (!selectedCategory) {
+      alert('Lütfen bir kategori seçin.')
+      return
+    }
+    if (!selectedSubService) {
+      alert('Lütfen bir hizmet türü seçin.')
+      return
+    }
+    if (!title.trim()) {
+      alert('Lütfen iş başlığı girin.')
+      return
+    }
+    if (!address.trim()) {
+      alert('Lütfen adres girin.')
+      return
+    }
     setLoading(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -201,6 +237,7 @@ function NewJobForm() {
       .from('jobs')
       .insert({
         customer_id: user.id,
+        category_id: selectedCategory.id,
         main_category: selectedCategory.id,
         sub_service: selectedSubService,
         title,
