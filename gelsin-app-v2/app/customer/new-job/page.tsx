@@ -2,21 +2,17 @@
 import { useState, useEffect, Suspense, ChangeEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-
-const categories = [
-  { slug: 'repair', name: 'Acil Tamir', icon: '🔧', desc: 'Su tesisatı, elektrik, mobilya...' },
-  { slug: 'cleaning', name: 'Temizlik', icon: '🧹', desc: 'Ev, ofis, işyeri temizliği' },
-  { slug: 'carpet', name: 'Halı Yıkama', icon: '🏠', desc: 'Halı, kilim, koltuk yıkama' },
-]
+import { SERVICE_CATEGORIES, type ServiceCategory } from '@/lib/constants'
+import { ChevronLeft, ChevronDown } from 'lucide-react'
 
 function NewJobForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const defaultCat = searchParams.get('cat') || ''
+  const defaultCatId = searchParams.get('cat') || ''
 
-  const [step, setStep] = useState(defaultCat ? 1 : 0)
-  const [cat, setCat] = useState(defaultCat)
-  const [catId, setCatId] = useState('')
+  const [step, setStep] = useState(0)
+  const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null)
+  const [selectedSubService, setSelectedSubService] = useState('')
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
   const [address, setAddress] = useState('')
@@ -32,7 +28,14 @@ function NewJobForm() {
       setLat(p.coords.latitude)
       setLng(p.coords.longitude)
     })
-  }, [])
+    if (defaultCatId) {
+      const cat = SERVICE_CATEGORIES.find(c => c.id === defaultCatId)
+      if (cat) {
+        setSelectedCategory(cat)
+        setStep(1)
+      }
+    }
+  }, [defaultCatId])
 
   const handleFilesChange = (e: ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || [])
@@ -66,11 +69,7 @@ function NewJobForm() {
     for (const file of allowed) {
       const url = URL.createObjectURL(file)
       const isVideo = file.type.startsWith('video/')
-      nextPreviews.push({
-        url,
-        type: isVideo ? 'video' : 'image',
-        name: file.name,
-      })
+      nextPreviews.push({ url, type: isVideo ? 'video' : 'image', name: file.name })
     }
 
     setFiles(nextFiles)
@@ -91,21 +90,37 @@ function NewJobForm() {
     setPreviews(nextPreviews)
   }
 
-  const selectCat = async (slug: string) => {
-    setCat(slug)
-    const supabase = createClient()
-    const { data } = await supabase.from('service_categories').select('id').eq('slug', slug).single()
-    setCatId(data?.id || '')
+  const selectMainCategory = (cat: ServiceCategory) => {
+    setSelectedCategory(cat)
+    setSelectedSubService('')
     setStep(1)
   }
 
+  const goBack = () => {
+    if (step === 2) {
+      setStep(1)
+    } else if (step === 1) {
+      setStep(0)
+      setSelectedCategory(null)
+      setSelectedSubService('')
+    } else {
+      router.back()
+    }
+  }
+
+  const proceedToDetails = () => {
+    if (!selectedSubService) {
+      alert('Lütfen bir hizmet türü seçin.')
+      return
+    }
+    setStep(2)
+  }
+
   const submit = async () => {
-    if (!title || !address) return
+    if (!title || !address || !selectedCategory) return
     setLoading(true)
     const supabase = createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       alert('Oturum bulunamadı. Lütfen tekrar giriş yapın.')
       setLoading(false)
@@ -120,9 +135,7 @@ function NewJobForm() {
           files.map(async (file, index) => {
             const ext = file.name.split('.').pop() || 'file'
             const path = `${user.id}/${Date.now()}-${index}.${ext}`
-            const { error: uploadError } = await supabase.storage
-              .from('job-media')
-              .upload(path, file)
+            const { error: uploadError } = await supabase.storage.from('job-media').upload(path, file)
             if (uploadError) throw uploadError
             const { data } = supabase.storage.from('job-media').getPublicUrl(path)
             return data.publicUrl
@@ -141,7 +154,8 @@ function NewJobForm() {
       .from('jobs')
       .insert({
         customer_id: user.id,
-        category_id: catId || null,
+        main_category: selectedCategory.id,
+        sub_service: selectedSubService,
         title,
         description: desc,
         address,
@@ -157,14 +171,7 @@ function NewJobForm() {
 
     if (error || !job) {
       console.error('INSERT HATASI:', error)
-      if (error && typeof error.message === 'string' && error.message.includes('media_urls')) {
-        alert(
-          'İş oluşturulamadı: Veritabanında jobs.media_urls (text[]) kolonu bulunamadı. ' +
-            'Lütfen Supabase üzerinde jobs tablosuna media_urls text[] sütununu ekleyin.'
-        )
-      } else {
-        alert('İş oluşturulamadı: ' + error?.message)
-      }
+      alert('İş oluşturulamadı: ' + error?.message)
       setLoading(false)
       return
     }
@@ -172,86 +179,186 @@ function NewJobForm() {
     router.replace(`/customer/jobs/${job.id}`)
   }
 
-  const selectedCat = categories.find(c => c.slug === cat)
+  const totalSteps = 3
 
   return (
-    <div className="min-h-dvh bg-white max-w-7xl mx-auto">
-      <div className="bg-gradient-to-br from-blue-700 to-blue-900 px-5 pt-14 pb-6 text-white">
-        <button onClick={() => step > 0 ? setStep(s => s - 1) : router.back()}
-          className="text-blue-300 text-sm mb-4 flex items-center gap-1">← Geri</button>
-        <h1 className="text-2xl font-black">
-          {step === 0 ? 'Kategori Seç' : 'İş Detayları'}
+    <div className="min-h-dvh bg-white">
+      <div className="bg-gradient-to-br from-blue-700 to-blue-900 px-4 sm:px-5 pt-10 sm:pt-14 pb-5 sm:pb-6 text-white">
+        <button
+          onClick={goBack}
+          className="text-blue-300 hover:text-white text-sm mb-3 sm:mb-4 flex items-center gap-1 transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Geri
+        </button>
+        <h1 className="text-xl sm:text-2xl font-black">
+          {step === 0 && 'Neye İhtiyacın Var?'}
+          {step === 1 && 'Hangi Hizmeti İstiyorsun?'}
+          {step === 2 && 'İş Detayları'}
         </h1>
         <div className="flex gap-2 mt-3">
-          {[0, 1].map(i => (
-            <div key={i} className={`h-1 flex-1 rounded-full transition-all ${i <= step ? 'bg-white' : 'bg-white/30'}`} />
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className={`h-1.5 flex-1 rounded-full transition-all ${
+                i <= step ? 'bg-white' : 'bg-white/30'
+              }`}
+            />
           ))}
         </div>
       </div>
 
-      <div className="px-5 py-6 space-y-4">
+      <div className="px-4 sm:px-5 py-5 sm:py-6 pb-32 max-w-3xl mx-auto">
+        {/* STEP 0: Ana Kategori Seçimi */}
         {step === 0 && (
           <div className="space-y-3 animate-slide-up">
-            {categories.map(c => (
-              <button key={c.slug} onClick={() => selectCat(c.slug)}
-                className="w-full card p-4 flex items-center gap-4 text-left active:scale-98 transition-transform">
-                <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
-                  {c.icon}
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">{c.name}</p>
-                  <p className="text-sm text-gray-500 mt-0.5">{c.desc}</p>
-                </div>
-                <span className="text-gray-300 ml-auto text-xl">›</span>
-              </button>
-            ))}
+            <p className="text-sm text-slate-500 mb-4">Önce ana kategori seçin:</p>
+            {SERVICE_CATEGORIES.map((cat) => {
+              const Icon = cat.icon
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => selectMainCategory(cat)}
+                  className="w-full bg-white border border-slate-200 hover:border-blue-500 hover:shadow-md rounded-2xl p-4 flex items-center gap-4 text-left active:scale-[0.99] transition-all"
+                >
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 flex-shrink-0">
+                    <Icon className="w-6 h-6 sm:w-7 sm:h-7" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-slate-900 text-sm sm:text-base">{cat.name}</p>
+                    <p className="text-xs text-slate-500 mt-0.5 truncate">
+                      {cat.sub.slice(0, 3).join(', ')}
+                      {cat.sub.length > 3 && '...'}
+                    </p>
+                  </div>
+                  <span className="text-slate-300 text-xl">›</span>
+                </button>
+              )
+            })}
           </div>
         )}
 
-        {step === 1 && (
+        {/* STEP 1: Alt Hizmet Seçimi */}
+        {step === 1 && selectedCategory && (
           <div className="space-y-4 animate-slide-up">
-            <div className="flex items-center gap-3 bg-blue-50 p-3.5 rounded-2xl">
-              <span className="text-2xl">{selectedCat?.icon}</span>
-              <p className="font-semibold text-blue-900">{selectedCat?.name}</p>
+            <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 p-3 sm:p-4 rounded-2xl">
+              {(() => {
+                const Icon = selectedCategory.icon
+                return (
+                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white flex-shrink-0">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                )
+              })()}
+              <div>
+                <p className="font-bold text-blue-900 text-sm">{selectedCategory.name}</p>
+                <p className="text-xs text-blue-700">Ana kategori</p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-bold text-slate-700 mb-3">Hangi hizmete ihtiyacın var?</p>
+              <div className="space-y-2">
+                {selectedCategory.sub.map((service) => {
+                  const isSelected = selectedSubService === service
+                  return (
+                    <button
+                      key={service}
+                      type="button"
+                      onClick={() => setSelectedSubService(service)}
+                      className={`w-full p-3 sm:p-4 rounded-xl border-2 text-left transition-all flex items-center justify-between ${
+                        isSelected
+                          ? 'border-blue-600 bg-blue-50'
+                          : 'border-slate-200 bg-white hover:border-blue-300'
+                      }`}
+                    >
+                      <span className={`text-sm font-medium ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>
+                        {service}
+                      </span>
+                      {isSelected && (
+                        <span className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs">✓</span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <button
+              onClick={proceedToDetails}
+              disabled={!selectedSubService}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-3.5 rounded-2xl text-sm transition-all"
+            >
+              Devam Et →
+            </button>
+          </div>
+        )}
+
+        {/* STEP 2: İş Detayları */}
+        {step === 2 && selectedCategory && (
+          <div className="space-y-4 animate-slide-up">
+            <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 p-3 rounded-2xl">
+              {(() => {
+                const Icon = selectedCategory.icon
+                return (
+                  <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                )
+              })()}
+              <div className="min-w-0">
+                <p className="font-bold text-blue-900 text-sm truncate">{selectedCategory.name}</p>
+                <p className="text-xs text-blue-700 truncate">{selectedSubService}</p>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              {(['urgent', 'scheduled'] as const).map(t => (
-                <button key={t} onClick={() => setJobType(t)}
-                  className={`p-4 rounded-2xl border-2 text-center transition-all ${
-                    jobType === t ? 'border-blue-600 bg-blue-50' : 'border-gray-200 bg-white'
-                  }`}>
-                  <div className="text-2xl mb-1">{t === 'urgent' ? '⚡' : '📅'}</div>
-                  <p className="font-bold text-sm text-gray-900">{t === 'urgent' ? 'Acil' : 'Randevulu'}</p>
+              {(['urgent', 'scheduled'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setJobType(t)}
+                  className={`p-3 sm:p-4 rounded-2xl border-2 text-center transition-all ${
+                    jobType === t ? 'border-blue-600 bg-blue-50' : 'border-slate-200 bg-white'
+                  }`}
+                >
+                  <div className="text-xl sm:text-2xl mb-1">{t === 'urgent' ? '⚡' : '📅'}</div>
+                  <p className="font-bold text-xs sm:text-sm text-slate-900">
+                    {t === 'urgent' ? 'Acil' : 'Randevulu'}
+                  </p>
                 </button>
               ))}
             </div>
 
             <div>
-              <label className="text-sm font-bold text-gray-700 mb-1.5 block">İş Başlığı *</label>
-              <input className="input" placeholder="ör: Mutfak musluğu damlatıyor"
-                value={title} onChange={e => setTitle(e.target.value)} />
+              <label className="text-sm font-bold text-slate-700 mb-1.5 block">İş Başlığı *</label>
+              <input
+                className="input"
+                placeholder="ör: Mutfak musluğu damlatıyor"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
             </div>
 
             <div>
-              <label className="text-sm font-bold text-gray-700 mb-1.5 block">Açıklama</label>
-              <textarea className="input resize-none" rows={3}
+              <label className="text-sm font-bold text-slate-700 mb-1.5 block">Açıklama</label>
+              <textarea
+                className="input resize-none"
+                rows={3}
                 placeholder="Sorunu kısaca açıklayın..."
-                value={desc} onChange={e => setDesc(e.target.value)} />
+                value={desc}
+                onChange={(e) => setDesc(e.target.value)}
+              />
             </div>
 
             <div>
-              <label className="text-sm font-bold text-gray-700 mb-1.5 block">
-                Fotoğraf / Video Ekle{' '}
-                <span className="text-xs text-gray-400">(En fazla 3 adet, max 10MB)</span>
+              <label className="text-sm font-bold text-slate-700 mb-1.5 block">
+                Fotoğraf / Video Ekle <span className="text-xs text-slate-400">(En fazla 3 adet, max 10MB)</span>
               </label>
               <div className="border-2 border-dashed border-blue-200 rounded-2xl p-4 bg-blue-50/40">
-                <label className="flex flex-col items-center justify-center gap-2 text-center text-sm text-gray-600 cursor-pointer">
+                <label className="flex flex-col items-center justify-center gap-2 text-center text-sm text-slate-600 cursor-pointer">
                   <span className="text-3xl">📎</span>
                   <span className="font-semibold">Dosya seç veya sürükle bırak</span>
-                  <span className="text-[11px] text-gray-400">
-                    Desteklenen: JPEG, PNG, MP4, MOV (max 10MB)
-                  </span>
+                  <span className="text-[11px] text-slate-400">Desteklenen: JPEG, PNG, MP4, MOV (max 10MB)</span>
                   <input
                     type="file"
                     multiple
@@ -265,21 +372,12 @@ function NewJobForm() {
                     {previews.map((p, index) => (
                       <div
                         key={p.url}
-                        className="relative w-24 h-24 rounded-xl overflow-hidden border border-blue-100 bg-black/5 flex-shrink-0"
+                        className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-blue-100 bg-black/5 flex-shrink-0"
                       >
                         {p.type === 'video' ? (
-                          <video
-                            src={p.url}
-                            className="w-full h-full object-cover"
-                            muted
-                            playsInline
-                          />
+                          <video src={p.url} className="w-full h-full object-cover" muted playsInline />
                         ) : (
-                          <img
-                            src={p.url}
-                            alt={p.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={p.url} alt={p.name} className="w-full h-full object-cover" />
                         )}
                         <button
                           type="button"
@@ -296,13 +394,20 @@ function NewJobForm() {
             </div>
 
             <div>
-              <label className="text-sm font-bold text-gray-700 mb-1.5 block">Adres *</label>
-              <input className="input" placeholder="Mahalle, sokak, bina no..."
-                value={address} onChange={e => setAddress(e.target.value)} />
+              <label className="text-sm font-bold text-slate-700 mb-1.5 block">Adres *</label>
+              <input
+                className="input"
+                placeholder="Mahalle, sokak, bina no..."
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
             </div>
 
-            <button className="btn-primary" onClick={submit}
-              disabled={loading || !title || !address}>
+            <button
+              className="btn-primary"
+              onClick={submit}
+              disabled={loading || !title || !address}
+            >
               {loading ? 'Yayınlanıyor...' : '🚀 İşi Yayınla'}
             </button>
           </div>
@@ -313,5 +418,9 @@ function NewJobForm() {
 }
 
 export default function NewJobPage() {
-  return <Suspense><NewJobForm /></Suspense>
+  return (
+    <Suspense>
+      <NewJobForm />
+    </Suspense>
+  )
 }
