@@ -401,7 +401,7 @@ export default function JobDetailPage() {
         </div>
       </div>
 
-      <div className="max-w-md mx-auto w-full">
+      <div className="w-full max-w-7xl mx-auto">
         {/* Durum Stepper — kompakt */}
         <div className="px-3 pt-2">
           <div className="bg-white rounded-xl px-2 py-1.5 border border-sky-100 shadow-sm">
@@ -711,7 +711,7 @@ export default function JobDetailPage() {
               {offers.map(offer => (
                 <div
                   key={offer.id}
-                  className={`card p-4 w-72 flex-shrink-0 lg:w-full ${
+                  className={`card p-4 w-full sm:w-72 flex-shrink-0 lg:w-full ${
                   offer.status === 'accepted' ? 'border-2 border-emerald-400' :
                   offer.status === 'rejected' ? 'opacity-50' : ''
                 }`}>

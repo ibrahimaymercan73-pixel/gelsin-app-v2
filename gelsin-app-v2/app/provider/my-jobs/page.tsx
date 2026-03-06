@@ -358,7 +358,7 @@ export default function ProviderMyJobsPage() {
         </div>
       )}
 
-      <div className="px-3 py-2 space-y-2 max-w-md mx-auto w-full">
+      <div className="px-3 py-2 space-y-2 w-full max-w-7xl mx-auto">
         {jobs.map(job => {
           const statusLabel =
             job.status === 'started'

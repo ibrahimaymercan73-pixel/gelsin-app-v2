@@ -156,7 +156,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08, duration: 0.4 }}
-            className="text-lg sm:text-xl text-slate-500 mb-12 max-w-2xl mx-auto font-medium"
+            className="text-lg sm:text-xl text-slate-500 mb-12 max-w-3xl mx-auto font-medium"
           >
             Tamir, temizlik, boya, tesisat… Güvenilir ustalardan anında teklif al.
           </motion.p>
@@ -164,11 +164,11 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.4 }}
-            className="max-w-2xl mx-auto"
+            className="max-w-3xl mx-auto w-full px-4"
           >
             <Link
               href="/providers"
-              className="flex items-center justify-center gap-3 w-full sm:min-w-[480px] mx-auto h-16 sm:h-[4.25rem] px-6 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/60 hover:shadow-xl hover:border-slate-300 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none transition-all text-left"
+              className="flex items-center justify-center gap-3 w-full mx-auto h-16 sm:h-[4.25rem] px-6 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/60 hover:shadow-xl hover:border-slate-300 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none transition-all text-left"
             >
               <Search className="w-6 h-6 text-slate-500 shrink-0" />
               <span className="text-slate-500 flex-1 text-base sm:text-lg">{searchPlaceholder}...</span>
@@ -205,7 +205,7 @@ export default function LandingPage() {
                 <motion.div key={c.slug} variants={itemUp} className="flex">
                   <Link
                     href={`/providers?category=${c.slug}`}
-                    className="flex flex-col items-center justify-center gap-3 flex-1 w-36 min-w-[140px] p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-slate-200 transition-all duration-200 active:scale-[0.98] text-center group"
+                    className="flex flex-col items-center justify-center gap-3 flex-1 w-full min-w-0 p-4 sm:p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-slate-200 transition-all duration-200 active:scale-[0.98] text-center group"
                   >
                     <div className={`inline-flex p-3 rounded-full ${c.color} group-hover:scale-110 transition-transform`}>
                       <Icon className="w-8 h-8" />

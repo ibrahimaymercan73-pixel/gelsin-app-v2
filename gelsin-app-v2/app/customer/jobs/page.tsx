@@ -242,7 +242,7 @@ export default function CustomerJobsPage() {
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex-1 min-w-[120px] px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+              className={`flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all ${
                 activeTab === key
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-500 hover:bg-slate-50'

@@ -78,7 +78,7 @@ export default function CustomerHome() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12">
         {/* Hero - Kişiselleştirilmiş karşılama */}
         <section className="text-center sm:text-left mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
@@ -172,7 +172,7 @@ export default function CustomerHome() {
                 key={s.category}
                 type="button"
                 onClick={() => handlePopularClick(s.category)}
-                className="aspect-square max-w-[180px] mx-auto w-full rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:scale-105 transition-all flex flex-col items-center justify-center gap-3 p-4"
+                className="aspect-square w-full rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:scale-105 transition-all flex flex-col items-center justify-center gap-3 p-4"
               >
                 <span className="text-4xl">{s.icon}</span>
                 <span className="font-semibold text-slate-800 text-sm text-center leading-tight">
@@ -186,7 +186,7 @@ export default function CustomerHome() {
 
       {/* Nasıl Çalışır? - Güven bandı */}
       <section className="bg-slate-50 border-t border-slate-200">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-14">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-14">
           <h3 className="text-lg font-bold text-slate-900 text-center mb-8">Nasıl Çalışır?</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
             {HOW_IT_WORKS.map((step, i) => (
