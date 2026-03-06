@@ -19,150 +19,138 @@ export const useNotifications = () => useContext(NotificationContext)
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [unreadCount, setUnreadCount] = useState(0)
-  const [userId, setUserId] = useState<string | null>(null)
-  const [isReady, setIsReady] = useState(false)
   const userIdRef = useRef<string | null>(null)
+  const [initialized, setInitialized] = useState(false)
 
   const fetchUnreadCount = useCallback(async () => {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
+    
     if (!user) {
       setUnreadCount(0)
-      setUserId(null)
       userIdRef.current = null
-      setIsReady(false)
       return
     }
     
-    setUserId(user.id)
     userIdRef.current = user.id
-    setIsReady(true)
 
-    const { count: notifCount } = await supabase
+    const { count } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('is_read', false)
 
-    setUnreadCount(notifCount ?? 0)
+    setUnreadCount(count ?? 0)
   }, [])
 
   useEffect(() => {
-    fetchUnreadCount()
+    const init = async () => {
+      await fetchUnreadCount()
+      setInitialized(true)
+    }
+    init()
   }, [fetchUnreadCount])
 
   useEffect(() => {
-    if (!isReady || !userId) return
+    if (!initialized || !userIdRef.current) return
 
     const supabase = createClient()
     const currentUserId = userIdRef.current
 
-    const channel = supabase
-      .channel('notifications-realtime-' + currentUserId)
+    console.log('[NotificationProvider] Setting up realtime for user:', currentUserId)
+
+    const notifChannel = supabase
+      .channel('db-notifications')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${currentUserId}`,
         },
-        async (payload) => {
-          const newNotification = payload.new as any
+        (payload) => {
+          console.log('[NotificationProvider] New notification:', payload)
+          const newNotif = payload.new as any
           
-          setUnreadCount((prev) => prev + 1)
+          if (newNotif.user_id === currentUserId) {
+            console.log('[NotificationProvider] Notification is for this user!')
+            setUnreadCount(prev => prev + 1)
 
-          const title = newNotification.title || 'Yeni Bildirim'
-          const body = newNotification.body || ''
-          const jobId = newNotification.related_job_id
-
-          toast(title, {
-            description: body.length > 60 ? body.slice(0, 60) + '...' : body,
-            action: jobId ? {
-              label: 'Görüntüle',
-              onClick: () => {
-                const notifType = newNotification.type || ''
-                if (notifType.includes('offer') || notifType.includes('job')) {
-                  router.push(`/customer/jobs/${jobId}`)
-                } else {
-                  router.push(`/chat/${jobId}`)
-                }
-              },
-            } : undefined,
-            duration: 5000,
-          })
+            toast(newNotif.title || 'Yeni Bildirim', {
+              description: newNotif.body?.slice(0, 60) || '',
+              action: newNotif.related_job_id ? {
+                label: 'Görüntüle',
+                onClick: () => router.push(`/customer/jobs/${newNotif.related_job_id}`),
+              } : undefined,
+              duration: 6000,
+            })
+          }
         }
       )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${currentUserId}`,
-        },
-        async () => {
-          fetchUnreadCount()
-        }
-      )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('[NotificationProvider] Notifications channel status:', status)
+      })
 
-    const messagesChannel = supabase
-      .channel('messages-realtime-' + currentUserId)
+    const msgChannel = supabase
+      .channel('db-messages')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
-          filter: `receiver_id=eq.${currentUserId}`,
         },
         async (payload) => {
-          const newMessage = payload.new as any
+          console.log('[NotificationProvider] New message:', payload)
+          const msg = payload.new as any
           
-          setUnreadCount((prev) => prev + 1)
+          if (msg.receiver_id === currentUserId) {
+            console.log('[NotificationProvider] Message is for this user!')
+            
+            const { data: sender } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', msg.sender_id)
+              .single()
 
-          const { data: sender } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', newMessage.sender_id)
-            .single()
+            const senderName = sender?.full_name || 'Birisi'
 
-          const senderName = sender?.full_name || 'Birisi'
-          const preview = newMessage.body?.slice(0, 40) || 'Yeni mesaj'
-
-          toast(`💬 ${senderName}`, {
-            description: preview + (newMessage.body?.length > 40 ? '...' : ''),
-            action: {
-              label: 'Yanıtla',
-              onClick: () => {
-                router.push(`/chat/${newMessage.job_id}`)
+            toast(`💬 ${senderName}`, {
+              description: msg.body?.slice(0, 50) || 'Yeni mesaj',
+              action: {
+                label: 'Yanıtla',
+                onClick: () => router.push(`/chat/${msg.job_id}`),
               },
-            },
-            duration: 5000,
-          })
+              duration: 6000,
+            })
+          }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('[NotificationProvider] Messages channel status:', status)
+      })
 
     return () => {
-      supabase.removeChannel(channel)
-      supabase.removeChannel(messagesChannel)
+      console.log('[NotificationProvider] Cleaning up channels')
+      supabase.removeChannel(notifChannel)
+      supabase.removeChannel(msgChannel)
     }
-  }, [isReady, userId, fetchUnreadCount, router])
+  }, [initialized, router])
 
   return (
     <NotificationContext.Provider value={{ unreadCount, refreshUnreadCount: fetchUnreadCount }}>
       <Toaster 
         position="top-center"
+        expand={true}
+        richColors
         toastOptions={{
           style: {
             background: '#1e293b',
             color: '#fff',
-            border: '1px solid #334155',
+            border: '1px solid #475569',
+            fontSize: '14px',
           },
         }}
-        richColors
       />
       {children}
     </NotificationContext.Provider>
