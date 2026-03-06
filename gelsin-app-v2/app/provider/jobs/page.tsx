@@ -273,11 +273,7 @@ export default function ProviderJobsPage() {
             return (
               <div
                 key={job.id}
-                className={`rounded-3xl p-[1px] animate-slide-up ${
-                  urgent
-                    ? 'bg-gradient-to-r from-rose-500 via-orange-400 to-amber-300'
-                    : 'bg-slate-800/60'
-                }`}
+                className="animate-slide-up"
                 style={{ animationDelay: `${Math.min(i, 6) * 0.05}s` }}
               >
                 <div
@@ -287,7 +283,7 @@ export default function ProviderJobsPage() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') setSelectedJobId(job.id)
                   }}
-                  className="group bg-slate-950/90 lg:bg-slate-900 rounded-3xl p-4 border border-slate-800 shadow-xl shadow-black/40 hover:shadow-2xl hover:border-blue-500 transition-all cursor-pointer outline-none"
+                  className="group bg-slate-800 rounded-2xl p-4 border border-slate-700/60 shadow-md shadow-black/30 hover:shadow-lg hover:border-slate-500 transition-all cursor-pointer outline-none"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
@@ -295,13 +291,13 @@ export default function ProviderJobsPage() {
                         {job.service_categories?.icon}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-slate-50 text-sm truncate">{job.title}</p>
+                        <p className="font-semibold text-slate-50 text-sm truncate">{job.title}</p>
                         <p className="text-[11px] text-slate-400 truncate">{job.service_categories?.name}</p>
                       </div>
                     </div>
 
                     <span
-                      className={`px-2 py-1 rounded-full text-[10px] font-bold border ${
+                      className={`px-2 py-1 rounded-full text-[10px] font-semibold border ${
                         urgent
                           ? 'bg-rose-500/15 text-rose-200 border-rose-500/30'
                           : 'bg-slate-800/60 text-slate-200 border-slate-700'
@@ -312,7 +308,7 @@ export default function ProviderJobsPage() {
                   </div>
 
                   {job.description && (
-                    <p className="mt-3 text-[12px] text-slate-300/90 leading-snug line-clamp-2">
+                    <p className="mt-3 text-[12px] text-slate-400 leading-snug line-clamp-2">
                       {job.description}
                     </p>
                   )}
@@ -325,9 +321,13 @@ export default function ProviderJobsPage() {
                       <p className="text-[11px] text-slate-400 truncate">📍 {job.address}</p>
                     </div>
 
-                    <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/5 border border-white/10 text-slate-100 group-hover:bg-blue-600 group-hover:border-blue-500 transition-all flex-shrink-0">
-                      İşi İncele ➔
-                    </span>
+                    <button
+                      type="button"
+                      className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-medium shadow-sm flex items-center gap-1 flex-shrink-0 transition-colors"
+                    >
+                      <span>İşi İncele</span>
+                      <span>➔</span>
+                    </button>
                   </div>
                 </div>
               </div>
