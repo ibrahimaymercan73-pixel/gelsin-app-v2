@@ -1,16 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-
-const skills = [
-  { slug: 'painting', name: 'Boya & Badana', icon: '🎨' },
-  { slug: 'plumbing', name: 'Su Tesisatı', icon: '🚰' },
-  { slug: 'electric', name: 'Elektrik', icon: '⚡' },
-  { slug: 'carpentry', name: 'Marangoz', icon: '🪚' },
-  { slug: 'cleaning', name: 'Temizlik', icon: '🧹' },
-  { slug: 'assembly', name: 'Montaj', icon: '🔩' },
-]
+import { SERVICE_CATEGORIES } from '@/lib/constants'
 
 export default function ProviderProfile() {
   const router = useRouter()
@@ -19,6 +12,7 @@ export default function ProviderProfile() {
   const [name, setName] = useState('')
   const [bio, setBio] = useState('')
   const [cats, setCats] = useState<string[]>([])
+  const [mainCategory, setMainCategory] = useState<string | null>(null)
   const [phone, setPhone] = useState('')
   const [hidePhone, setHidePhone] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -35,15 +29,12 @@ export default function ProviderProfile() {
       setName(p?.full_name || '')
       setBio(pData?.bio || '')
       setCats(pData?.service_categories || [])
+      setMainCategory(pData?.main_category || null)
       setPhone(p?.phone || '')
       setHidePhone(!!p?.hide_phone)
     }
     load()
   }, [])
-
-  const toggleCat = (slug: string) => {
-    setCats(prev => prev.includes(slug) ? prev.filter(c => c !== slug) : [...prev, slug])
-  }
 
   const save = async () => {
     setSaving(true)
@@ -52,10 +43,13 @@ export default function ProviderProfile() {
       .from('profiles')
       .update({ full_name: name, phone })
       .eq('id', profile.id)
-    await supabase.from('provider_profiles').update({ bio, service_categories: cats }).eq('id', profile.id)
+    await supabase.from('provider_profiles').update({ bio }).eq('id', profile.id)
     setSaved(true); setSaving(false)
     setTimeout(() => setSaved(false), 2000)
   }
+
+  // Ana kategori bilgisini bul
+  const mainCategoryInfo = SERVICE_CATEGORIES.find(c => c.id === mainCategory)
 
   const toggleHidePhone = async () => {
     if (!profile) return
@@ -162,18 +156,47 @@ export default function ProviderProfile() {
         </div>
 
         <div className="card p-5">
-          <p className="font-bold text-gray-800 mb-3">Uzmanlık Alanları</p>
-          <div className="grid grid-cols-3 gap-2">
-            {skills.map(s => (
-              <button key={s.slug} onClick={() => toggleCat(s.slug)}
-                className={`p-3.5 rounded-2xl border-2 text-center transition-all ${
-                  cats.includes(s.slug) ? 'border-blue-600 bg-blue-50' : 'border-gray-200'
-                }`}>
-                <div className="text-2xl mb-1">{s.icon}</div>
-                <div className="text-xs font-bold text-gray-700">{s.name}</div>
-              </button>
-            ))}
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-bold text-gray-800">Uzmanlık Alanları</p>
+            <Link 
+              href="/provider/onboarding"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+            >
+              ✏️ Düzenle
+            </Link>
           </div>
+          
+          {/* Ana Kategori */}
+          {mainCategoryInfo && (
+            <div className="flex items-center gap-2 mb-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+              <mainCategoryInfo.icon className="w-5 h-5 text-blue-600" />
+              <span className="font-semibold text-blue-900 text-sm">{mainCategoryInfo.name}</span>
+            </div>
+          )}
+          
+          {/* Alt Hizmetler - Dinamik Chips */}
+          {cats.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {cats.map((service, idx) => (
+                <span
+                  key={idx}
+                  className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium border border-blue-100"
+                >
+                  {service}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 bg-gray-50 rounded-xl">
+              <p className="text-sm text-gray-500 mb-2">Henüz uzmanlık alanı seçilmedi</p>
+              <Link 
+                href="/provider/onboarding"
+                className="text-sm font-semibold text-blue-600 hover:underline"
+              >
+                Uzmanlık alanlarını seç →
+              </Link>
+            </div>
+          )}
         </div>
 
         <div className="card p-5">

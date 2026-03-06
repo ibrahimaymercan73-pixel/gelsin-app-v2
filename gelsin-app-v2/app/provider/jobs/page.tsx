@@ -44,15 +44,31 @@ export default function ProviderJobsPage() {
 
     const { data: pp } = await supabase
       .from('provider_profiles')
-      .select('service_categories')
+      .select('service_categories, main_category')
       .eq('id', user.id)
       .single()
     setSkills(Array.isArray(pp?.service_categories) ? (pp!.service_categories as string[]) : [])
+    
+    // pp'yi local scope'ta kullanmak için sakla
+    const providerProfile = pp
 
+    // Açık işleri çek
     const { data: j } = await supabase.from('jobs')
       .select('*, service_categories(name, icon, slug)')
       .eq('status', 'open').order('created_at', { ascending: false })
-    setJobs(j || [])
+    
+    // SMART FEED: Sadece uzmanın yetenekleriyle eşleşen işleri göster
+    const providerSkills = Array.isArray(providerProfile?.service_categories) ? (providerProfile!.service_categories as string[]) : []
+    const filteredJobs = (j || []).filter((job: any) => {
+      // Eğer uzmanın hiç yeteneği yoksa tüm işleri göster (onboarding yapmamış olabilir)
+      if (providerSkills.length === 0) return true
+      // İşin sub_service'i uzmanın yeteneklerinde var mı?
+      if (job.sub_service && providerSkills.includes(job.sub_service)) return true
+      // İşin main_category'si uzmanın main_category'siyle eşleşiyor mu?
+      if (job.main_category && providerProfile?.main_category === job.main_category) return true
+      return false
+    })
+    setJobs(filteredJobs)
     const { data: o } = await supabase.from('offers').select('job_id').eq('provider_id', user.id)
     const ids = new Set(Array.from((o || []).map((x: any) => x.job_id as string)))
     setMyOffers(ids)
@@ -230,8 +246,8 @@ export default function ProviderJobsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] overflow-x-hidden w-full">
-      <header className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200">
+    <div className="min-h-screen bg-[#f8fafc] overflow-x-hidden w-full max-w-full">
+      <header className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200 overflow-hidden">
         <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-900">🔍 Radar</h1>
         <p className="text-slate-600 text-xs sm:text-sm mt-0.5">Yakınımdaki açık işler</p>
 
@@ -257,8 +273,8 @@ export default function ProviderJobsPage() {
         </div>
       </header>
 
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-32 lg:pb-6">
-        <div className="flex flex-col gap-3 sm:gap-4 w-full">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-32 lg:pb-6 overflow-hidden">
+        <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full">
           {filtered.map((job, i) => {
             const urgent = job.job_type === 'urgent'
             const distText = job.dist != null
@@ -277,12 +293,12 @@ export default function ProviderJobsPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') setSelectedJobId(job.id)
                 }}
-                className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer overflow-hidden animate-slide-up w-full"
+                className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer overflow-hidden animate-slide-up w-full max-w-full"
                 style={{ animationDelay: `${Math.min(i, 8) * 0.04}s` }}
               >
-                <div className="p-3 sm:p-4 md:p-5">
+                <div className="p-3 sm:p-4 md:p-5 overflow-hidden">
                   {/* Mobil: Kompakt üst satır (ikon + başlık + rozet) */}
-                  <div className="flex items-start gap-3 mb-2">
+                  <div className="flex items-start gap-3 mb-2 overflow-hidden">
                     {/* İkon */}
                     <div className="w-11 h-11 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-blue-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl md:text-3xl text-blue-600 flex-shrink-0">
                       {job.service_categories?.icon || '🔧'}
@@ -292,7 +308,7 @@ export default function ProviderJobsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <h3 className="font-bold text-slate-900 text-sm sm:text-base md:text-lg leading-snug line-clamp-2">
+                          <h3 className="font-bold text-slate-900 text-sm sm:text-base md:text-lg leading-snug line-clamp-2 break-words">
                             {job.title}
                           </h3>
                           <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">{job.service_categories?.name}</p>
@@ -309,15 +325,15 @@ export default function ProviderJobsPage() {
 
                   {/* Açıklama - 2 satır */}
                   {job.description && (
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-2 mb-2 sm:mb-3">
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-2 mb-2 sm:mb-3 break-words overflow-hidden">
                       {job.description}
                     </p>
                   )}
 
                   {/* Alt satır: Lokasyon ve zaman */}
-                  <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-[11px] text-slate-500 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-[11px] text-slate-500 pt-2 border-t border-gray-100 overflow-hidden">
                     {job.address && (
-                      <span className="inline-flex items-center gap-1 max-w-full">
+                      <span className="inline-flex items-center gap-1 max-w-[60%] overflow-hidden">
                         <span className="flex-shrink-0">📍</span>
                         <span className="truncate">{job.address}</span>
                       </span>
