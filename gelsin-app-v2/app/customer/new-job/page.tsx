@@ -237,7 +237,6 @@ function NewJobForm() {
       .from('jobs')
       .insert({
         customer_id: user.id,
-        category_id: selectedCategory.id,
         main_category: selectedCategory.id,
         sub_service: selectedSubService,
         title,
