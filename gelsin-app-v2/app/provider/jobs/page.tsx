@@ -314,38 +314,26 @@ export default function ProviderJobsPage() {
                     </p>
                   )}
 
-                  {/* Alt satır: Lokasyon, zaman ve buton */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 pt-2 border-t border-gray-100">
-                    {/* Lokasyon ve Zaman */}
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] sm:text-xs text-slate-500">
-                      {job.address && (
-                        <span className="flex items-center gap-1 min-w-0">
-                          <span>📍</span>
-                          <span className="truncate">{job.address}</span>
-                        </span>
-                      )}
-                      {time && (
-                        <span className="flex items-center gap-1">
-                          <span>🕒</span>
-                          <span>{time.replace(/^[📅⏱]\s*/, '')}</span>
-                        </span>
-                      )}
-                      {distText && (
-                        <span className="flex items-center gap-1 text-blue-600 font-medium">
-                          <span>📏</span>
-                          <span>{distText}</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Buton */}
-                    <button
-                      type="button"
-                      className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-xl bg-slate-900 sm:bg-white text-white sm:text-gray-700 sm:border sm:border-gray-300 hover:bg-slate-800 sm:hover:bg-gray-50 sm:hover:border-gray-400 font-semibold text-xs sm:text-sm transition-all active:scale-[0.98] flex-shrink-0"
-                    >
-                      <span>Detayları İncele</span>
-                      <span className="sm:text-gray-400">➔</span>
-                    </button>
+                  {/* Alt satır: Lokasyon ve zaman */}
+                  <div className="flex items-center gap-2 flex-wrap text-[11px] text-slate-500 pt-2 border-t border-gray-100">
+                    {job.address && (
+                      <span className="inline-flex items-center gap-1">
+                        <span>📍</span>
+                        <span>{job.address}</span>
+                      </span>
+                    )}
+                    {time && (
+                      <span className="inline-flex items-center gap-1">
+                        <span>🕒</span>
+                        <span>{time.replace(/^[📅⏱]\s*/, '')}</span>
+                      </span>
+                    )}
+                    {distText && (
+                      <span className="inline-flex items-center gap-1 text-blue-600 font-semibold">
+                        <span>📏</span>
+                        <span>{distText}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
