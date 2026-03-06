@@ -69,7 +69,7 @@ export default function AdminFinancePage() {
           <p className="text-xs text-surface-400 mt-1">%2 oranında</p>
         </div>
         <div className="card p-5 border-l-4 border-l-emerald-400">
-          <p className="text-surface-500 text-sm">Usta Ödemeleri</p>
+          <p className="text-surface-500 text-sm">Uzman Ödemeleri</p>
           <p className="text-3xl font-extrabold text-emerald-600 mt-1">₺{stats.totalPayout.toFixed(0)}</p>
           <p className="text-xs text-surface-400 mt-1">Toplam ödenen</p>
         </div>
@@ -121,7 +121,7 @@ export default function AdminFinancePage() {
                       <p className="font-bold text-brand-600">₺{commission.toFixed(0)}</p>
                     </div>
                     <div>
-                      <p className="text-surface-400 text-xs">Ustaya Ödenecek</p>
+                      <p className="text-surface-400 text-xs">Uzmana Ödenecek</p>
                       <p className="font-bold text-emerald-600">₺{providerAmount.toFixed(0)}</p>
                     </div>
                   </div>
@@ -156,7 +156,7 @@ export default function AdminFinancePage() {
                 <div>
                   <p className="text-sm font-medium text-surface-800">
                     {tx.type === 'commission' ? 'Platform Komisyonu' :
-                     tx.type === 'provider_payout' ? 'Usta Ödemesi' : 'Escrow'}
+                     tx.type === 'provider_payout' ? 'Uzman Ödemesi' : 'Escrow'}
                   </p>
                   <p className="text-xs text-surface-400">
                     {new Date(tx.created_at).toLocaleString('tr-TR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}

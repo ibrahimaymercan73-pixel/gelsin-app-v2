@@ -44,7 +44,7 @@ export default function JobDetailPage() {
 
     const offersList = (offerRows || []) as any[]
 
-    // Teklif veren ustalarin profil ID'lerini netlestir (stringe zorla, boslari at)
+    // Teklif veren uzmanlarin profil ID'lerini netlestir (stringe zorla, boslari at)
     const providerIds = Array.from(
       new Set(
         offersList
@@ -169,7 +169,7 @@ export default function JobDetailPage() {
         type: 'offer_negotiate',
         related_job_id: id,
       })
-      alert('Pazarlık talebin ustaya iletildi.')
+      alert('Pazarlık talebin uzmana iletildi.')
     } catch (e) {
       console.error('PAZARLIK TALEBİ HATASI:', e)
       alert('Pazarlık talebi gönderilemedi. Lütfen tekrar dene.')
@@ -200,7 +200,7 @@ export default function JobDetailPage() {
 
     await supabase.from('jobs').update({ status: 'disputed' }).eq('id', id)
 
-    // Adminleri ve ustayı bilgilendir
+    // Adminleri ve uzmanı bilgilendir
     const notifications: any[] = []
 
     if (job?.provider_id) {
@@ -281,7 +281,7 @@ export default function JobDetailPage() {
   const statusConfig: Record<string, { label: string; bg: string; color: string }> = {
     open: { label: '📢 Teklif Bekleniyor', bg: 'bg-blue-50', color: 'text-blue-700' },
     offered: { label: '💬 Teklif Geldi', bg: 'bg-orange-50', color: 'text-orange-700' },
-    accepted: { label: '🚗 Usta Yolda', bg: 'bg-emerald-50', color: 'text-emerald-700' },
+    accepted: { label: '🚗 Uzman Yolda', bg: 'bg-emerald-50', color: 'text-emerald-700' },
     started: { label: '🔨 İş Devam Ediyor', bg: 'bg-orange-50', color: 'text-orange-700' },
     completed: { label: '✅ Tamamlandı', bg: 'bg-gray-50', color: 'text-gray-600' },
     disputed: { label: '⚠️ Uyuşmazlık Açıldı', bg: 'bg-amber-50', color: 'text-amber-700' },
@@ -325,7 +325,7 @@ export default function JobDetailPage() {
 
   const submitReview = async () => {
     if (!job?.id || !job?.provider_id) {
-      alert('Bu iş için usta bulunamadı.')
+      alert('Bu iş için uzman bulunamadı.')
       return
     }
     if (!rating || rating < 1 || rating > 5) {
@@ -361,7 +361,7 @@ export default function JobDetailPage() {
       return
     }
 
-    // Ustanın ortalama puanını güncelle
+    // Uzmanın ortalama puanını güncelle
     const { data: pp } = await supabase
       .from('provider_profiles')
       .select('rating, total_reviews')
@@ -440,7 +440,7 @@ export default function JobDetailPage() {
               <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl">📱</div>
               <div>
                 <p className="font-bold text-gray-900">Başlangıç QR Kodu</p>
-                <p className="text-xs text-gray-500">Usta gelince gösterin — kodu okutmadan iş başlamaz</p>
+                <p className="text-xs text-gray-500">Uzman gelince gösterin — kodu okutmadan iş başlamaz</p>
               </div>
             </div>
             {showStartQR ? (
@@ -470,7 +470,7 @@ export default function JobDetailPage() {
                   </div>
                 )}
                 <p className="text-xs text-gray-400 text-center">
-                  QR veya PIN'i ustayla paylaşın
+                  QR veya PIN'i uzmanla paylaşın
                 </p>
                 {job?.qr_scanned_at && (
                   <div className="badge-green w-full justify-center py-2.5 text-sm">
@@ -494,7 +494,7 @@ export default function JobDetailPage() {
               <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">🏁</div>
               <div>
                 <p className="font-bold text-gray-900">İş Tamamlandı mı?</p>
-                <p className="text-xs text-gray-500">Onaylayın, bitiş QR'ı üretin, ustayla taratın</p>
+                <p className="text-xs text-gray-500">Onaylayın, bitiş QR'ı üretin, uzmanla taratın</p>
               </div>
             </div>
             {showEndQR && hasEndToken ? (
@@ -522,7 +522,7 @@ export default function JobDetailPage() {
                   {job?.end_qr_token?.slice(-6).toUpperCase()}
                 </div>
                 <p className="text-xs text-gray-400 text-center">
-                  Usta okutunca ödeme cüzdanına aktarılır
+                  Uzman okutunca ödeme cüzdanına aktarılır
                 </p>
               </div>
             ) : (
@@ -537,7 +537,7 @@ export default function JobDetailPage() {
         {job?.status === 'completed' && (
           <div className="card p-4 space-y-2.5 border border-emerald-200 bg-emerald-50/60">
             <p className="text-xs font-bold text-emerald-900">
-              İşi nasıl buldunuz? Ustanızı değerlendirin.
+              İşi nasıl buldunuz? Uzmanınızı değerlendirin.
             </p>
 
             {existingReview ? (
@@ -565,7 +565,7 @@ export default function JobDetailPage() {
                   </p>
                 )}
                 <p className="text-[11px] text-emerald-700 font-medium">
-                  Değerlendirmeniz ustanın profil puanına yansıtıldı.
+                  Değerlendirmeniz uzmanın profil puanına yansıtıldı.
                 </p>
               </div>
             ) : (
@@ -634,7 +634,7 @@ export default function JobDetailPage() {
               </div>
               {providerNetAmount !== null && (
                 <p className="text-[11px] text-slate-400 text-right">
-                  Platform hizmet bedeli: %2 &nbsp;•&nbsp; Ustaya geçecek net
+                  Platform hizmet bedeli: %2 &nbsp;•&nbsp; Uzmana geçecek net
                   tutar ≈{' '}
                   <span className="font-semibold text-slate-600">
                     ₺{providerNetAmount.toFixed(2)}
@@ -699,7 +699,7 @@ export default function JobDetailPage() {
             className="btn-secondary py-2 text-xs w-full"
             onClick={() => openChat(job.id)}
           >
-            💬 Ustayla Mesajlaş
+            💬 Uzmanla Mesajlaş
           </button>
         )}
 
@@ -718,13 +718,13 @@ export default function JobDetailPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5">
                       <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-lg">
-                        {(offer.profiles?.full_name || offer.profiles?.phone || 'Usta')
+                        {(offer.profiles?.full_name || offer.profiles?.phone || 'Uzman')
                           .charAt(0)
                           .toUpperCase() || '👷'}
                       </div>
                       <div>
                         <p className="font-bold text-sm text-gray-900">
-                          {offer.profiles?.full_name || offer.profiles?.phone || 'İsimsiz Usta'}
+                          {offer.profiles?.full_name || offer.profiles?.phone || 'İsimsiz Uzman'}
                         </p>
                         <div className="flex flex-col gap-0.5">
                           <div className="flex items-center gap-1 text-[11px] text-gray-500">
@@ -807,7 +807,7 @@ export default function JobDetailPage() {
             <span className="text-xl flex-shrink-0">⏳</span>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-700 text-xs">Teklif bekleniyor...</p>
-              <p className="text-[10px] text-gray-500">Yakın ustalar bildirim aldı</p>
+              <p className="text-[10px] text-gray-500">Yakın uzmanlar bildirim aldı</p>
             </div>
           </div>
         )}
@@ -833,12 +833,12 @@ export default function JobDetailPage() {
               </button>
             </div>
             <p className="text-xs text-gray-500">
-              Kısaca neyin yanlış gittiğini yazın. Bu bilgi admin ekibine ve ustaya iletilecektir.
+              Kısaca neyin yanlış gittiğini yazın. Bu bilgi admin ekibine ve uzmana iletilecektir.
             </p>
             <textarea
               className="input text-sm py-2.5 resize-none"
               rows={3}
-              placeholder="Örn: Usta fiyatta anlaşmadı, iş şartları değişti..."
+              placeholder="Örn: Uzman fiyatta anlaşmadı, iş şartları değişti..."
               value={disputeReason}
               onChange={(e) => setDisputeReason(e.target.value)}
               disabled={disputeSubmitting}

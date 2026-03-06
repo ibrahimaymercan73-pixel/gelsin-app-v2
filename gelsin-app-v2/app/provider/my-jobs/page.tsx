@@ -29,7 +29,7 @@ export default function ProviderMyJobsPage() {
       return
     }
 
-    // 1) Doğrudan provider_id üzerinden bu ustaya atanmış işleri çek
+    // 1) Doğrudan provider_id üzerinden bu uzmana atanmış işleri çek
     const { data: jobsByProvider } = await supabase
       .from('jobs')
       .select(
@@ -38,7 +38,7 @@ export default function ProviderMyJobsPage() {
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false })
 
-    // 2) Ek olarak, bu ustanın herhangi bir teklif verdiği işler üzerinden ID listesi çıkar
+    // 2) Ek olarak, bu uzmanın herhangi bir teklif verdiği işler üzerinden ID listesi çıkar
     const { data: acceptedOffers } = await supabase
       .from('offers')
       .select('job_id')
@@ -187,7 +187,7 @@ export default function ProviderMyJobsPage() {
     if (action === 'start') {
       await supabase.from('jobs').update({ status: 'started', qr_scanned_at: new Date().toISOString() }).eq('id', jobId)
       await supabase.from('notifications').insert({
-        user_id: job.customer_id, title: '🔨 Usta İşe Başladı!',
+        user_id: job.customer_id, title: '🔨 Uzman İşe Başladı!',
         body: `"${job.title}" işi başladı.`, type: 'job_started', related_job_id: jobId
       })
       setResult({ ok: true, msg: '✅ İş başlatıldı! Göreve devam edin.' })
@@ -220,7 +220,7 @@ export default function ProviderMyJobsPage() {
       notifications.push({
         user_id: job.customer_id,
         title: '⚠️ İşte Uyuşmazlık Açıldı',
-        body: `"${job.title}" işi için usta uyuşmazlık talebi oluşturdu: ${disputeReason}`,
+        body: `"${job.title}" işi için uzman uyuşmazlık talebi oluşturdu: ${disputeReason}`,
         type: 'job_disputed',
         related_job_id: disputeModal.jobId,
       })
@@ -235,7 +235,7 @@ export default function ProviderMyJobsPage() {
       notifications.push({
         user_id: admin.id,
         title: '⚠️ Yeni Uyuşmazlık Talebi',
-        body: `"${job?.title}" işi için usta uyuşmazlık talebi oluşturdu: ${disputeReason}`,
+        body: `"${job?.title}" işi için uzman uyuşmazlık talebi oluşturdu: ${disputeReason}`,
         type: 'job_disputed_admin',
         related_job_id: disputeModal.jobId,
       })

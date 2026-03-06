@@ -50,7 +50,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
           <span className="text-xl font-black text-white italic tracking-tighter">
             GELSİN<span className="text-blue-500">.</span>
           </span>
-          <p className="text-slate-500 text-xs font-semibold mt-1 uppercase tracking-widest">Usta Paneli</p>
+          <p className="text-slate-500 text-xs font-semibold mt-1 uppercase tracking-widest">Uzman Paneli</p>
         </div>
         <nav className="p-4 space-y-1 mt-2 flex-1">
           {navItems.map(item => {
@@ -68,7 +68,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
         </nav>
         <div className="p-4 border-t border-white/5">
           <div className="px-4 py-3 rounded-2xl bg-blue-600/10 text-center">
-            <p className="text-xs text-blue-400 font-bold">Usta Hesabi</p>
+            <p className="text-xs text-blue-400 font-bold">Uzman Hesabı</p>
           </div>
         </div>
       </aside>

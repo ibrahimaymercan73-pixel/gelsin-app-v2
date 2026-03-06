@@ -26,11 +26,11 @@ const tabConfig: Record<TabKey, { label: string; description: string }> = {
   },
   offers: {
     label: 'Teklif Gelenler',
-    description: 'Ustalardan teklif bekleyen işler',
+    description: 'Uzmanlardan teklif bekleyen işler',
   },
   progress: {
     label: 'Devam Edenler',
-    description: 'Usta ataması yapılmış aktif işler',
+    description: 'Uzman ataması yapılmış aktif işler',
   },
   done: {
     label: 'Tamamlananlar',
@@ -53,7 +53,7 @@ const statusBadge: Record<
     color: 'text-orange-700',
   },
   accepted: {
-    label: 'Usta Yolda',
+    label: 'Uzman Yolda',
     bg: 'bg-emerald-50',
     color: 'text-emerald-700',
   },
@@ -283,7 +283,7 @@ export default function CustomerJobsPage() {
               Bu kategoride iş bulunmuyor
             </p>
             <p className="text-xs text-slate-400 mb-4">
-              Yeni bir iş talebi oluşturarak ustalardan teklif isteyebilirsiniz.
+              Yeni bir iş talebi oluşturarak uzmanlardan teklif isteyebilirsiniz.
             </p>
             <button
               onClick={() => router.push('/customer/new-job')}

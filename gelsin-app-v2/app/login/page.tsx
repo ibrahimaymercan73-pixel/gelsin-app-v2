@@ -156,7 +156,7 @@ function LoginForm() {
           Hesabına güvenle giriş yap.
         </h1>
         <p className="text-slate-200 text-base font-medium leading-relaxed max-w-md">
-          Müşteri veya usta olarak kayıt olup, işlerini tek panelden yönet.
+          Müşteri veya uzman olarak kayıt olup, işlerini tek panelden yönet.
         </p>
       </div>
 
@@ -185,7 +185,7 @@ function LoginForm() {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Usta
+              Uzman
             </button>
           </div>
 
@@ -214,7 +214,7 @@ function LoginForm() {
               <h2 className="text-2xl font-black text-slate-900">Email ile Giriş</h2>
               <p className="text-slate-400 text-sm mt-1">
                 {isProvider
-                  ? 'Usta hesabınıza giriş yapın veya yeni usta hesabı oluşturun.'
+                  ? 'Uzman hesabınıza giriş yapın veya yeni uzman hesabı oluşturun.'
                   : 'Müşteri hesabınıza giriş yapın veya yeni hesap oluşturun.'}
               </p>
             </div>

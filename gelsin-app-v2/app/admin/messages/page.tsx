@@ -69,7 +69,7 @@ export default function AdminMessagesPage() {
         const provider =
           job && profilesById[job.provider_id as string]
             ? profilesById[job.provider_id as string].full_name
-            : 'Usta'
+            : 'Uzman'
 
         return {
           id: m.id,
@@ -108,7 +108,7 @@ export default function AdminMessagesPage() {
             Mesaj Kayıtları
           </h1>
           <p className="text-surface-500 mt-1">
-            Müşteri ve ustalar arasındaki son {rows.length} mesaj
+            Müşteri ve uzmanlar arasındaki son {rows.length} mesaj
           </p>
         </div>
       </div>
@@ -124,7 +124,7 @@ export default function AdminMessagesPage() {
                 Müşteri
               </th>
               <th className="text-left px-4 py-3 font-medium text-surface-500">
-                Usta
+                Uzman
               </th>
               <th className="text-left px-4 py-3 font-medium text-surface-500">
                 Mesaj

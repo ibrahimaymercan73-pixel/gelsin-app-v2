@@ -32,7 +32,7 @@ export default function UstaVerifyEmailPage() {
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 space-y-4 text-center">
         <div className="text-4xl mb-2">🔐</div>
         <h1 className="text-xl font-black text-white">
-          Usta Hesabı Doğrulaması
+          Uzman Hesabı Doğrulaması
         </h1>
         <p className="text-slate-400 text-sm">
           Email doğrulama akışı henüz tam bağlanmadı. Şimdilik test amaçlı

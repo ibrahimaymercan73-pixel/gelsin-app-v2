@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Gelsin.app - Kapınıza Kadar Hizmet',
-  description: 'Tamir, temizlik ve halı yıkama için güvenilir ustalar',
+  description: 'Tamir, temizlik, güzellik ve daha fazlası için güvenilir uzmanlar',
   icons: { icon: '/favicon.ico' },
 }
 

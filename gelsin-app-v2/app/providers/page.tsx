@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase'
 import { ArrowLeft } from 'lucide-react'
 
 const categoryMeta: Record<string, { label: string; icon: string; description: string }> = {
-  painting: { label: 'Boya & Badana', icon: '🎨', description: 'Daire boyama, alçı ve tadilat işleri için ustalar' },
+  painting: { label: 'Boya & Badana', icon: '🎨', description: 'Daire boyama, alçı ve tadilat işleri için uzmanlar' },
   plumbing: { label: 'Su Tesisatı', icon: '🚰', description: 'Musluk, gider, petek ve tesisat tamiri' },
   electric: { label: 'Elektrik', icon: '⚡', description: 'Elektrik arızaları, aydınlatma ve sigorta işleri' },
   carpentry: { label: 'Marangoz', icon: '🪚', description: 'Dolap, kapı, parke ve ahşap uygulamalar' },
@@ -75,10 +75,10 @@ export default function PublicProvidersPage() {
             {meta ? (
               <>
                 <span className="text-3xl">{meta.icon}</span>
-                {meta.label} Ustaları
+                {meta.label} Uzmanları
               </>
             ) : (
-              'Tüm Ustalar'
+              'Tüm Uzmanlar'
             )}
           </h1>
           {meta && (
@@ -95,7 +95,7 @@ export default function PublicProvidersPage() {
         ) : items.length === 0 ? (
           <div className="bg-white rounded-2xl p-10 text-center border border-slate-100 shadow-sm">
             <div className="text-5xl mb-4">👷</div>
-            <p className="font-bold text-slate-800 text-lg mb-1">Bu kategoride henüz usta yok</p>
+            <p className="font-bold text-slate-800 text-lg mb-1">Bu kategoride henüz uzman yok</p>
             <p className="text-slate-500 text-sm">Farklı bir kategori deneyin veya <Link href="/" className="text-slate-800 font-semibold underline">ana sayfadan</Link> arayın.</p>
           </div>
         ) : (
@@ -104,7 +104,7 @@ export default function PublicProvidersPage() {
               const name =
                 p.profiles?.full_name ||
                 (!p.profiles?.hide_phone && p.profiles?.phone) ||
-                'Usta'
+                'Uzman'
               const ratingStr =
                 typeof p.rating === 'number' && typeof p.total_reviews === 'number'
                   ? `${p.rating.toFixed(1)} / 5 · ${p.total_reviews} değerlendirme`

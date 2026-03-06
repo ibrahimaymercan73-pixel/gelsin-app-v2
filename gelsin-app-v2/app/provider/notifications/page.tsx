@@ -66,7 +66,7 @@ export default function ProviderNotificationsPage() {
             Bildirimler
           </p>
           <h1 className="text-xl lg:text-2xl font-black text-slate-800 mt-0.5">
-            Usta Bildirimleri
+            Uzman Bildirimleri
           </h1>
         </div>
       </header>

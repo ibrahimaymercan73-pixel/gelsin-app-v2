@@ -18,7 +18,7 @@ const CTA_CARDS = [
   {
     title: 'Yeni İş Talebi Oluştur',
     icon: '➕',
-    description: 'Ustalardan hemen teklif al',
+    description: 'Uzmanlardan hemen teklif al',
     href: '/customer/new-job',
   },
   {
@@ -44,7 +44,7 @@ const POPULAR_SERVICES = [
 
 const HOW_IT_WORKS = [
   { icon: '📝', title: 'İhtiyacını Belirt', desc: 'Detayları ve konumu yaz' },
-  { icon: '💬', title: 'Teklifleri Karşılaştır', desc: 'Ustalardan gelen fiyatları gör' },
+  { icon: '💬', title: 'Teklifleri Karşılaştır', desc: 'Uzmanlardan gelen fiyatları gör' },
   { icon: '✅', title: 'İşin Çözülsün', desc: 'Onayla ve arkanı yaslan' },
 ]
 
@@ -93,7 +93,7 @@ export default function CustomerHome() {
         <section className="mb-8">
           <div className="flex items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
             <p className="text-sm sm:text-base font-semibold leading-snug flex-1">
-              Evinizdeki eksikleri ertelemeyin! Türkiye&apos;nin en iyi ustalarından hemen teklif alın.
+              Evinizdeki eksikleri ertelemeyin! Türkiye&apos;nin en iyi uzmanlarından hemen teklif alın.
             </p>
             <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/20 flex items-center justify-center">
               <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
@@ -106,7 +106,7 @@ export default function CustomerHome() {
           <div className="flex flex-col sm:flex-row gap-3 p-2 bg-white rounded-2xl border border-gray-200 shadow-md">
             <input
               type="text"
-              placeholder="Hangi ustaya ihtiyacın var? (Örn: Musluk tamiri, Boya...)"
+              placeholder="Hangi uzmana ihtiyacın var? (Örn: Musluk tamiri, Boya...)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}

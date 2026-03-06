@@ -141,7 +141,7 @@ export default function RoleSelectionPage() {
                   Hizmet Almak İstiyorum
                 </p>
                 <p className="text-slate-500 text-sm mt-0.5">
-                  Usta bul, iş talebi oluştur, teklifleri karşılaştır.
+                  Uzman bul, iş talebi oluştur, teklifleri karşılaştır.
                 </p>
               </div>
             </div>

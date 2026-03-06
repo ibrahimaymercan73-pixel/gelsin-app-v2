@@ -7,14 +7,14 @@ import { getCurrentUserAndRole } from '@/lib/auth'
 const slides = [
   {
     icon: '🏠',
-    title: 'Aradığın Usta\nAnında Kapında',
-    desc: 'Tamir, temizlik, halı yıkama... Pursaklar\'ın en güvenilir profesyonelleri sadece bir tık uzağınızda.',
+    title: 'Aradığın Uzman\nAnında Kapında',
+    desc: 'Tamir, temizlik, güzellik, eğitim... Türkiye\'nin en güvenilir uzmanları sadece bir tık uzağınızda.',
     bg: 'from-blue-600 to-blue-900',
   },
   {
     icon: '⚡',
     title: 'Hızlı ve Şeffaf\nTeklif Sistemi',
-    desc: 'İhtiyacınızı belirtin, çevrenizdeki ustalardan anında fiyat teklifi alın. Puanları karşılaştırın, en iyi seçimi yapın.',
+    desc: 'İhtiyacınızı belirtin, çevrenizdeki uzmanlardan anında fiyat teklifi alın. Puanları karşılaştırın, en iyi seçimi yapın.',
     bg: 'from-indigo-600 to-blue-800',
   },
   {
@@ -126,7 +126,7 @@ export default function OnboardingPage() {
                 className="w-full bg-stone-50 hover:bg-stone-100 text-stone-700 py-4 md:py-5 rounded-2xl text-lg md:text-xl font-bold transition-all border border-stone-200 flex items-center justify-center gap-3 active:scale-[0.98]"
                 onClick={() => router.push('/login?role=provider')}
               >
-                <span className="text-2xl">🔧</span> Usta Olarak Katıl
+                <span className="text-2xl">🔧</span> Uzman Olarak Katıl
               </button>
             </>
           )}

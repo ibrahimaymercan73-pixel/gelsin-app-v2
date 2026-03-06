@@ -116,7 +116,7 @@ export default function RegisterPage() {
           Yeni hesabını birkaç adımda oluştur.
         </h1>
         <p className="text-slate-200 text-base font-medium leading-relaxed max-w-md">
-          Müşteri veya usta olarak kayıt olup, işlerinizi tek panelden yönetin.
+          Müşteri veya uzman olarak kayıt olup, işlerinizi tek panelden yönetin.
         </p>
       </div>
 
@@ -145,7 +145,7 @@ export default function RegisterPage() {
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Usta
+              Uzman
             </button>
           </div>
 

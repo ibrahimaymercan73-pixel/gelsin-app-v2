@@ -55,7 +55,7 @@ export default function ProviderDashboard() {
       ])
       setStats({
         active: active.count || 0,
-        // Bekleyen İş: Ustanın bölgesinde görebildiği açık işler
+        // Bekleyen İş: Uzmanın bölgesinde görebildiği açık işler
         pending: openJobs.count || 0,
         wallet: pp?.wallet_balance || 0,
         total: total.data?.reduce((s, t) => s + t.amount, 0) || 0,
@@ -92,7 +92,7 @@ export default function ProviderDashboard() {
       <header className="px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Hoş geldin</p>
-          <h1 className="text-xl lg:text-2xl font-black text-slate-800 mt-0.5">{name || 'Usta'}</h1>
+          <h1 className="text-xl lg:text-2xl font-black text-slate-800 mt-0.5">{name || 'Uzman'}</h1>
         </div>
         <button onClick={toggleOnline}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-sm ${

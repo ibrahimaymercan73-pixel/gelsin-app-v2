@@ -178,13 +178,13 @@ export default function ChooseRolePage() {
                   Hizmet Almak İstiyorum
                 </p>
                 <p className="text-slate-300 text-sm md:text-base">
-                  Evimdeki işler için güvenilir ustalar arıyorum.
+                  Evimdeki işler için güvenilir uzmanlar arıyorum.
                 </p>
               </div>
             </div>
           </button>
 
-          {/* Usta kartı */}
+          {/* Uzman kartı */}
           <button
             type="button"
             disabled={submitting}

@@ -68,7 +68,7 @@ export default function AdminUsersPage() {
                     u.role === 'provider' ? 'bg-brand-100 text-brand-700' :
                     'bg-blue-100 text-blue-700'
                   }`}>
-                    {u.role === 'admin' ? 'Admin' : u.role === 'provider' ? 'Usta' : 'Müşteri'}
+                    {u.role === 'admin' ? 'Admin' : u.role === 'provider' ? 'Uzman' : 'Müşteri'}
                   </span>
                 </td>
                 <td className="px-5 py-3 text-surface-400">

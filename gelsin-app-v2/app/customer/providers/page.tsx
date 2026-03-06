@@ -24,7 +24,7 @@ const categoryMeta: Record<
   painting: {
     label: 'Boya & Badana',
     icon: '🎨',
-    description: 'Daire boyama, alçı ve tadilat işleri için ustalar',
+    description: 'Daire boyama, alçı ve tadilat işleri için uzmanlar',
   },
   plumbing: {
     label: 'Su Tesisatı',
@@ -122,7 +122,7 @@ export default function CustomerProvidersPage() {
       <header className="px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-sky-50/80 backdrop-blur-md z-40 border-b border-sky-200/60">
         <div>
           <p className="text-xs font-bold text-sky-600 uppercase tracking-[0.2em]">
-            Ustalar
+            Uzmanlar
           </p>
           <h1 className="text-xl lg:text-2xl font-black text-slate-900 mt-0.5 flex items-center gap-2">
             {titleFromQ ? (
@@ -130,10 +130,10 @@ export default function CustomerProvidersPage() {
             ) : meta ? (
               <>
                 <span className="text-2xl">{meta.icon}</span>
-                <span>{meta.label} Ustaları</span>
+                <span>{meta.label} Uzmanları</span>
               </>
             ) : (
-              'Tüm Ustalar'
+              'Tüm Uzmanlar'
             )}
           </h1>
           {meta && (
@@ -149,7 +149,7 @@ export default function CustomerProvidersPage() {
           <div className="bg-white rounded-3xl p-10 text-center border border-sky-100">
             <div className="text-5xl mb-3">👷</div>
             <p className="font-bold text-slate-700 mb-1">
-              Şu an bu kategoride uygun usta bulunamadı
+              Şu an bu kategoride uygun uzman bulunamadı
             </p>
             <p className="text-xs text-slate-400">
               Farklı bir zamanda tekrar deneyebilir veya genel ilan açabilirsiniz.
@@ -162,7 +162,7 @@ export default function CustomerProvidersPage() {
             const name =
               p.profiles?.full_name ||
               (!p.profiles?.hide_phone && p.profiles?.phone) ||
-              'İsimsiz Usta'
+              'İsimsiz Uzman'
             const rating =
               typeof p.rating === 'number' && typeof p.total_reviews === 'number'
                 ? `${p.rating.toFixed(1)} / 5 • ${p.total_reviews} değerlendirme`

@@ -32,7 +32,7 @@ export default function AdminDashboard() {
 
   const statCards = [
     { label: "Bugün'ün İşleri", value: stats.jobs, icon: '📋', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-100' },
-    { label: 'Aktif Ustalar', value: stats.providers, icon: '🟢', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+    { label: 'Aktif Uzmanlar', value: stats.providers, icon: '🟢', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-100' },
     { label: 'Onay Bekleyen', value: stats.pending, icon: '⏳', color: 'text-orange-700', bg: 'bg-orange-50', border: 'border-orange-100' },
     { label: 'Havuzdaki Para', value: `₺${stats.escrow}`, icon: '🔒', color: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-100' },
     { label: 'Platform Geliri', value: `₺${stats.revenue.toFixed(0)}`, icon: '💰', color: 'text-green-700', bg: 'bg-green-50', border: 'border-green-100' },
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
           <Link href="/admin/approvals">
             <div className="bg-orange-500 rounded-2xl p-5 flex items-center justify-between text-white shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all">
               <div>
-                <p className="font-black text-base">{stats.pending} usta onay bekliyor</p>
+                <p className="font-black text-base">{stats.pending} uzman onay bekliyor</p>
                 <p className="text-orange-100 text-sm mt-0.5">Belgeleri incele ve onayla</p>
               </div>
               <span className="text-3xl">⏳</span>
@@ -112,8 +112,8 @@ export default function AdminDashboard() {
             <h2 className="font-black text-slate-800 mb-4">Hızlı Erişim</h2>
             <div className="space-y-3">
               {[
-                { href: '/admin/approvals', icon: '✅', title: 'Onay Bekleyenler', desc: `${stats.pending} usta`, color: 'bg-orange-50 border-orange-100' },
-                { href: '/admin/live', icon: '🗺️', title: 'Canlı Harita', desc: `${stats.providers} aktif usta`, color: 'bg-blue-50 border-blue-100' },
+                { href: '/admin/approvals', icon: '✅', title: 'Onay Bekleyenler', desc: `${stats.pending} uzman`, color: 'bg-orange-50 border-orange-100' },
+                { href: '/admin/live', icon: '🗺️', title: 'Canlı Harita', desc: `${stats.providers} aktif uzman`, color: 'bg-blue-50 border-blue-100' },
                 { href: '/admin/finance', icon: '💰', title: 'Finanslar', desc: `₺${stats.revenue.toFixed(0)} gelir`, color: 'bg-emerald-50 border-emerald-100' },
                 { href: '/admin/users', icon: '👥', title: 'Kullanıcılar', desc: `${stats.users} kayıtlı`, color: 'bg-slate-50 border-slate-100' },
               ].map(item => (

@@ -37,7 +37,7 @@ export default function AdminApprovalsPage() {
       documents_verified_at: new Date().toISOString(),
     }).eq('id', providerId)
 
-    // Ustaya bildirim
+    // Uzmana bildirim
     await supabase.from('notifications').insert({
       user_id: providerId,
       title: '🎉 Hesabınız Onaylandı!',
@@ -63,7 +63,7 @@ export default function AdminApprovalsPage() {
         <h1 className="text-3xl font-extrabold text-surface-900" style={{fontFamily:'Syne,sans-serif'}}>
           İK Onay Masası
         </h1>
-        <p className="text-surface-500 mt-1">Usta belgelerini inceleyin ve onaylayın</p>
+        <p className="text-surface-500 mt-1">Uzman belgelerini inceleyin ve onaylayın</p>
       </div>
 
       {/* Filter Tabs */}
@@ -93,7 +93,7 @@ export default function AdminApprovalsPage() {
                 <div className="w-14 h-14 bg-surface-100 rounded-2xl flex items-center justify-center text-3xl">👷</div>
                 <div>
                   <h3 className="font-bold text-surface-900 text-lg">
-                    {p.profiles?.full_name || 'İsimsiz Usta'}
+                    {p.profiles?.full_name || 'İsimsiz Uzman'}
                   </h3>
                   <p className="text-surface-500">{p.profiles?.phone}</p>
                   <p className="text-xs text-surface-400 mt-0.5">
@@ -222,7 +222,7 @@ export default function AdminApprovalsPage() {
               {filter === 'pending' ? '✅' : '📭'}
             </div>
             <p className="font-medium">
-              {filter === 'pending' ? 'Onay bekleyen usta yok' : 'Bu kategoride kayıt bulunamadı'}
+              {filter === 'pending' ? 'Onay bekleyen uzman yok' : 'Bu kategoride kayıt bulunamadı'}
             </p>
           </div>
         )}

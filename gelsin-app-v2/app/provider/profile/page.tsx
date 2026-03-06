@@ -96,7 +96,7 @@ export default function ProviderProfile() {
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl">🔧</div>
           <div>
-            <p className="font-black text-lg">{name || 'Usta'}</p>
+            <p className="font-black text-lg">{name || 'Uzman'}</p>
             <span className={pp?.status ? statusColors[pp.status] : 'badge-gray'}>
               {pp?.status ? statusLabels[pp.status] : '—'}
             </span>

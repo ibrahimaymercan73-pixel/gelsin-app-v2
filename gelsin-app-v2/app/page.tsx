@@ -42,7 +42,7 @@ const CATEGORIES = [
 
 const HOW_IT_WORKS = [
   { step: 1, title: 'İşini Anlat', desc: 'İhtiyacını kısaca yaz, konumunu seç.', icon: FileText },
-  { step: 2, title: 'Teklif Al', desc: 'Onaylı ustalardan anında fiyat teklifleri al.', icon: Wallet },
+  { step: 2, title: 'Teklif Al', desc: 'Onaylı uzmanlardan anında fiyat teklifleri al.', icon: Wallet },
   { step: 3, title: 'Güvenle Öde', desc: 'İş bitene kadar ödemen güvende, sonra onayla.', icon: Lock },
 ]
 
@@ -147,7 +147,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
             className="text-4xl sm:text-5xl md:text-6xl font-bold text-slate-900 tracking-tight leading-[1.15] mb-5"
           >
-            <span className="text-slate-900">Aradığın ustayı </span>
+            <span className="text-slate-900">Aradığın uzmanı </span>
             <span className="bg-gradient-to-r from-orange-500 to-indigo-600 bg-clip-text text-transparent font-extrabold">
               hemen bul
             </span>
@@ -158,7 +158,7 @@ export default function LandingPage() {
             transition={{ delay: 0.08, duration: 0.4 }}
             className="text-lg sm:text-xl text-slate-500 mb-12 max-w-3xl mx-auto font-medium"
           >
-            Tamir, temizlik, boya, tesisat… Güvenilir ustalardan anında teklif al.
+            Tamir, temizlik, boya, tesisat… Güvenilir uzmanlardan anında teklif al.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -175,7 +175,7 @@ export default function LandingPage() {
               <span className="text-slate-800 font-bold text-sm">Ara</span>
             </Link>
             <p className="mt-4 text-sm text-slate-400">
-              Kayıt gerekmez · Önce ustaları incele, sonra giriş yap
+              Kayıt gerekmez · Önce uzmanları incele, sonra giriş yap
             </p>
           </motion.div>
         </div>
@@ -256,7 +256,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Usta kartları - avatar, Onaylı rozet, 5 yıldız, Profili İncele */}
+      {/* Uzman kartları - avatar, Onaylı rozet, 5 yıldız, Profili İncele */}
       {providers.length > 0 && (
         <section className="py-20 px-4">
           <div className="max-w-6xl mx-auto">
@@ -266,7 +266,7 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="text-2xl sm:text-3xl font-bold text-slate-900 mb-10 text-center"
             >
-              En İyi Ustalarımız
+              En İyi Uzmanlarımız
             </motion.h2>
             <motion.div
               variants={container}
@@ -276,7 +276,7 @@ export default function LandingPage() {
               className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               {providers.slice(0, 6).map((p) => {
-                const name = p.profiles?.full_name || 'Usta'
+                const name = p.profiles?.full_name || 'Uzman'
                 const initial = name[0]?.toUpperCase() || 'U'
                 const rating = typeof p.rating === 'number' ? p.rating : 0
                 const reviews = p.total_reviews ?? 0
@@ -295,7 +295,7 @@ export default function LandingPage() {
                             <p className="font-bold text-slate-900 truncate">{name}</p>
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold shrink-0">
                               <BadgeCheck className="w-3.5 h-3.5" />
-                              Onaylı Usta
+                              Onaylı Uzman
                             </span>
                           </div>
                           <div className="flex items-center gap-2 mt-1.5">
@@ -336,7 +336,7 @@ export default function LandingPage() {
             </div>
             <div>
               <div className="text-3xl sm:text-4xl font-bold text-white">{stats.providers > 0 ? `${stats.providers}+` : '200+'}</div>
-              <div className="text-slate-400 text-sm font-medium mt-1">Onaylı Usta</div>
+              <div className="text-slate-400 text-sm font-medium mt-1">Onaylı Uzman</div>
             </div>
             <div>
               <div className="text-3xl sm:text-4xl font-bold text-white">500+</div>
@@ -356,7 +356,7 @@ export default function LandingPage() {
         >
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">Hemen başla</h2>
           <p className="text-slate-300 text-lg mb-10 max-w-xl mx-auto">
-            Ücretsiz kayıt ol, işini aç veya usta olarak katıl.
+            Ücretsiz kayıt ol, işini aç veya uzman olarak katıl.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

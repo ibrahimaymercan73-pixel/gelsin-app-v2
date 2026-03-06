@@ -55,7 +55,7 @@ export default function JobChatPage() {
           .single()
 
         const fallback =
-          currentUserId === j.customer_id ? 'Usta' : 'Müşteri'
+          currentUserId === j.customer_id ? 'Uzman' : 'Müşteri'
 
         setOtherName(
           profile?.full_name || profile?.phone || fallback
@@ -140,7 +140,7 @@ export default function JobChatPage() {
 
       await supabase.from('notifications').insert({
         user_id: receiverId,
-        title: isCustomerSender ? 'Müşteriden Yeni Mesaj' : 'Ustadan Yeni Mesaj',
+        title: isCustomerSender ? 'Müşteriden Yeni Mesaj' : 'Uzmandan Yeni Mesaj',
         body: `"${job.title}" işi için yeni mesaj: ${preview}`,
         type: 'chat_message',
         related_job_id: id,
@@ -162,7 +162,7 @@ export default function JobChatPage() {
 
   const isCustomer = userId === job.customer_id
   const headerTitle =
-    otherName || (isCustomer ? 'Usta' : 'Müşteri')
+    otherName || (isCustomer ? 'Uzman' : 'Müşteri')
 
   // DESKTOP: sağ altta küçük chat penceresi (overlay)
   if (isDesktop) {
@@ -179,7 +179,7 @@ export default function JobChatPage() {
                   {headerTitle}
                 </p>
                 <p className="text-[11px] text-slate-400 line-clamp-1">
-                  {isCustomer ? 'Usta ile sohbet' : 'Müşteri ile sohbet'} •{' '}
+                  {isCustomer ? 'Uzman ile sohbet' : 'Müşteri ile sohbet'} •{' '}
                   {job.title}
                 </p>
               </div>
@@ -282,7 +282,7 @@ export default function JobChatPage() {
               {headerTitle}
             </p>
             <p className="text-[11px] text-slate-400 line-clamp-1">
-              {isCustomer ? 'Usta ile sohbet' : 'Müşteri ile sohbet'} •{' '}
+              {isCustomer ? 'Uzman ile sohbet' : 'Müşteri ile sohbet'} •{' '}
               {job.title}
             </p>
           </div>

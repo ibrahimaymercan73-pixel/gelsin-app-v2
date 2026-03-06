@@ -41,7 +41,7 @@ export default function AdminLivePage() {
         <div className="flex gap-4">
           <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2">
             <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
-            <span className="text-emerald-700 font-semibold text-sm">{providers.length} Usta Aktif</span>
+            <span className="text-emerald-700 font-semibold text-sm">{providers.length} Uzman Aktif</span>
           </div>
           <div className="flex items-center gap-2 bg-brand-50 border border-brand-200 rounded-xl px-4 py-2">
             <div className="w-2.5 h-2.5 bg-brand-500 rounded-full animate-pulse" />
