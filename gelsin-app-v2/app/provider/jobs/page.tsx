@@ -230,13 +230,13 @@ export default function ProviderJobsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      <header className="px-6 lg:px-10 py-6 sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200">
-        <h1 className="text-xl lg:text-2xl font-black text-slate-900">🔍 Radar</h1>
-        <p className="text-slate-600 text-sm mt-0.5">Yakınımdaki açık işler — en yakın önce</p>
+    <div className="min-h-screen bg-[#f8fafc] overflow-x-hidden">
+      <header className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200">
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-900">🔍 Radar</h1>
+        <p className="text-slate-600 text-xs sm:text-sm mt-0.5">Yakınımdaki açık işler</p>
 
         {/* Filters */}
-        <div className="mt-4 -mx-2 px-2 flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide pb-1">
+        <div className="mt-3 sm:mt-4 -mx-1 px-1 flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide pb-1">
           {chips.map((c) => {
             const active = filter === c.id
             return (
@@ -257,8 +257,8 @@ export default function ProviderJobsPage() {
         </div>
       </header>
 
-      <div className="px-4 sm:px-6 lg:px-10 py-6 pb-28 lg:pb-6">
-        <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-5xl mx-auto">
+      <div className="px-3 sm:px-6 lg:px-10 py-4 sm:py-6 pb-28 lg:pb-6 overflow-hidden">
+        <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-5xl mx-auto overflow-hidden">
           {filtered.map((job, i) => {
             const urgent = job.job_type === 'urgent'
             const distText = job.dist != null
@@ -277,7 +277,7 @@ export default function ProviderJobsPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') setSelectedJobId(job.id)
                 }}
-                className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer overflow-hidden animate-slide-up"
+                className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer overflow-hidden animate-slide-up w-full"
                 style={{ animationDelay: `${Math.min(i, 8) * 0.04}s` }}
               >
                 <div className="p-3 sm:p-4 md:p-5">
@@ -315,21 +315,21 @@ export default function ProviderJobsPage() {
                   )}
 
                   {/* Alt satır: Lokasyon ve zaman */}
-                  <div className="flex items-center gap-2 flex-wrap text-[11px] text-slate-500 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-[11px] text-slate-500 pt-2 border-t border-gray-100">
                     {job.address && (
-                      <span className="inline-flex items-center gap-1">
-                        <span>📍</span>
-                        <span>{job.address}</span>
+                      <span className="inline-flex items-center gap-1 max-w-full">
+                        <span className="flex-shrink-0">📍</span>
+                        <span className="truncate">{job.address}</span>
                       </span>
                     )}
                     {time && (
-                      <span className="inline-flex items-center gap-1">
+                      <span className="inline-flex items-center gap-1 flex-shrink-0">
                         <span>🕒</span>
                         <span>{time.replace(/^[📅⏱]\s*/, '')}</span>
                       </span>
                     )}
                     {distText && (
-                      <span className="inline-flex items-center gap-1 text-blue-600 font-semibold">
+                      <span className="inline-flex items-center gap-1 text-blue-600 font-semibold flex-shrink-0">
                         <span>📏</span>
                         <span>{distText}</span>
                       </span>
