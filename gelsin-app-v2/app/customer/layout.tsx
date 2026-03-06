@@ -5,17 +5,19 @@ import Link from 'next/link'
 import { Home, ClipboardList, Bell, User, Plus } from 'lucide-react'
 import { getCurrentUserAndRole } from '@/lib/auth'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
+import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
 
 const navItems = [
-  { href: '/customer', icon: Home, label: 'Ana Sayfa' },
-  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim' },
-  { href: '/customer/notifications', icon: Bell, label: 'Mesajlar' },
-  { href: '/customer/profile', icon: User, label: 'Profilim' },
+  { href: '/customer', icon: Home, label: 'Ana Sayfa', showBadge: false },
+  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', showBadge: false },
+  { href: '/customer/notifications', icon: Bell, label: 'Mesajlar', showBadge: true },
+  { href: '/customer/profile', icon: User, label: 'Profilim', showBadge: false },
 ]
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const { unreadCount } = useNotifications()
 
   useEffect(() => {
     const ensureAuthenticated = async () => {
@@ -64,7 +66,10 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] ${
                   isActive ? 'bg-slate-900/5 text-slate-900' : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
                 }`}>
-                <Icon className="w-5 h-5 shrink-0" />
+                <span className="relative">
+                  <Icon className="w-5 h-5 shrink-0" />
+                  {item.showBadge && <NotificationBadge count={unreadCount} />}
+                </span>
                 {item.label}
               </Link>
             )
@@ -95,7 +100,10 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all active:scale-95 ${
                   isActive ? 'text-slate-900' : 'text-stone-500'
                 }`}>
-                <Icon className="w-6 h-6" />
+                <span className="relative">
+                  <Icon className="w-6 h-6" />
+                  {item.showBadge && <NotificationBadge count={unreadCount} />}
+                </span>
                 <span className="text-[10px] font-bold">{item.label}</span>
               </Link>
             )

@@ -4,19 +4,21 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUserAndRole } from '@/lib/auth'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
+import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
 
 const navItems = [
-  { href: '/provider', icon: '📊', label: 'Özet' },
-  { href: '/provider/jobs', icon: '🔍', label: 'Radar' },
-  { href: '/provider/my-jobs', icon: '🔨', label: 'İşlerim' },
-  { href: '/provider/notifications', icon: '🔔', label: 'Mesajlar' },
-  { href: '/provider/wallet', icon: '💰', label: 'Cüzdan' },
-  { href: '/provider/profile', icon: '👤', label: 'Profil' },
+  { href: '/provider', icon: '📊', label: 'Özet', showBadge: false },
+  { href: '/provider/jobs', icon: '🔍', label: 'Radar', showBadge: false },
+  { href: '/provider/my-jobs', icon: '🔨', label: 'İşlerim', showBadge: false },
+  { href: '/provider/notifications', icon: '🔔', label: 'Mesajlar', showBadge: true },
+  { href: '/provider/wallet', icon: '💰', label: 'Cüzdan', showBadge: false },
+  { href: '/provider/profile', icon: '👤', label: 'Profil', showBadge: false },
 ]
 
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const { unreadCount } = useNotifications()
 
   useEffect(() => {
     const check = async () => {
@@ -60,7 +62,10 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl font-semibold text-sm transition-all ${
                   isActive ? 'bg-blue-600/15 text-blue-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}>
-                <span className="text-lg">{item.icon}</span>
+                <span className="text-lg relative">
+                  {item.icon}
+                  {item.showBadge && <NotificationBadge count={unreadCount} />}
+                </span>
                 {item.label}
               </Link>
             )
@@ -86,7 +91,10 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
                 className={`flex flex-col items-center gap-1 px-2 py-1 rounded-xl transition-all ${
                   isActive ? 'text-blue-400' : 'text-slate-500'
                 }`}>
-                <span className="text-xl">{item.icon}</span>
+                <span className="text-xl relative">
+                  {item.icon}
+                  {item.showBadge && <NotificationBadge count={unreadCount} />}
+                </span>
                 <span className="text-[10px] font-bold">{item.label}</span>
               </Link>
             )
