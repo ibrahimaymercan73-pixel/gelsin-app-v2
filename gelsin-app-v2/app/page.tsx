@@ -7,12 +7,6 @@ import { motion } from 'framer-motion'
 import {
   Search,
   ArrowRight,
-  Paintbrush,
-  Droplets,
-  Zap,
-  Hammer,
-  Sparkles,
-  Wrench,
   ChevronRight,
   BadgeCheck,
   FileText,
@@ -21,23 +15,28 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { getCurrentUserAndRole } from '@/lib/auth'
+import { SERVICE_CATEGORIES } from '@/lib/constants'
 
+// Super App için güncellenmiş arama placeholder'ları
 const SEARCH_PLACEHOLDERS = [
+  'Çekici hizmeti',
+  'İngilizce özel ders',
+  'Gelin makyajı',
   'Musluk tamiri',
-  'Boya badana',
-  'Su tesisatı',
   'Ev temizliği',
-  'Elektrik arızaları',
-  'Montaj işleri',
+  'Köpek gezdirici',
+  'Laptop tamiri',
 ]
 
-const CATEGORIES = [
-  { icon: Paintbrush, label: 'Boya & Badana', slug: 'painting', color: 'bg-blue-50 text-blue-600' },
-  { icon: Droplets, label: 'Su Tesisatı', slug: 'plumbing', color: 'bg-cyan-50 text-cyan-600' },
-  { icon: Zap, label: 'Elektrik', slug: 'electric', color: 'bg-amber-50 text-amber-600' },
-  { icon: Hammer, label: 'Marangoz', slug: 'carpentry', color: 'bg-orange-50 text-orange-600' },
-  { icon: Sparkles, label: 'Temizlik', slug: 'cleaning', color: 'bg-emerald-50 text-emerald-600' },
-  { icon: Wrench, label: 'Montaj', slug: 'assembly', color: 'bg-slate-100 text-slate-600' },
+// Kategori renkleri
+const CATEGORY_COLORS = [
+  'bg-blue-50 text-blue-600',
+  'bg-cyan-50 text-cyan-600',
+  'bg-rose-50 text-rose-600',
+  'bg-amber-50 text-amber-600',
+  'bg-emerald-50 text-emerald-600',
+  'bg-violet-50 text-violet-600',
+  'bg-slate-100 text-slate-600',
 ]
 
 const HOW_IT_WORKS = [
@@ -158,7 +157,7 @@ export default function LandingPage() {
             transition={{ delay: 0.08, duration: 0.4 }}
             className="text-lg sm:text-xl text-slate-500 mb-12 max-w-3xl mx-auto font-medium"
           >
-            Tamir, temizlik, boya, tesisat… Güvenilir uzmanlardan anında teklif al.
+            Özel ders, yol yardım, kuaför, tamir ve temizlik... İhtiyacın olan tüm uzmanlar tek tıkla kapında.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -167,12 +166,12 @@ export default function LandingPage() {
             className="max-w-3xl mx-auto w-full px-4"
           >
             <Link
-              href="/providers"
+              href="/customer/new-job"
               className="flex items-center justify-center gap-3 w-full mx-auto h-16 sm:h-[4.25rem] px-6 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/60 hover:shadow-xl hover:border-slate-300 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none transition-all text-left"
             >
               <Search className="w-6 h-6 text-slate-500 shrink-0" />
-              <span className="text-slate-500 flex-1 text-base sm:text-lg">{searchPlaceholder}...</span>
-              <span className="text-slate-800 font-bold text-sm">Ara</span>
+              <span className="text-slate-400 flex-1 text-sm sm:text-base truncate">Hangi uzmana ihtiyacın var? ({searchPlaceholder}...)</span>
+              <span className="text-slate-800 font-bold text-sm shrink-0">İş Aç</span>
             </Link>
             <p className="mt-4 text-sm text-slate-400">
               Kayıt gerekmez · Önce uzmanları incele, sonra giriş yap
@@ -181,38 +180,52 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Categories - Lucide ikonlar, renkli yuvarlak, hover lift */}
+      {/* Categories - Dinamik Super App kategorileri */}
       <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-2xl sm:text-3xl font-bold text-slate-900 mb-10 text-center"
+            className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4 text-center"
           >
-            Hizmet Kategorileri
+            Tüm Hizmet Kategorileri
           </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-slate-500 text-center mb-10 max-w-xl mx-auto"
+          >
+            İhtiyacınıza uygun kategoriyi seçin, hemen iş talebi oluşturun
+          </motion.p>
           <motion.div
             variants={container}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-5"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5"
           >
-            {CATEGORIES.map((c) => {
-              const Icon = c.icon
+            {SERVICE_CATEGORIES.map((cat, idx) => {
+              const Icon = cat.icon
+              const colorClass = CATEGORY_COLORS[idx % CATEGORY_COLORS.length]
               return (
-                <motion.div key={c.slug} variants={itemUp} className="flex">
+                <motion.div key={cat.id} variants={itemUp} className="flex">
                   <Link
-                    href={`/providers?category=${c.slug}`}
-                    className="flex flex-col items-center justify-center gap-3 flex-1 w-full min-w-0 p-4 sm:p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 hover:border-slate-200 transition-all duration-200 active:scale-[0.98] text-center group"
+                    href={`/customer/new-job?cat=${cat.id}`}
+                    className="flex flex-col items-center justify-center gap-3 flex-1 w-full min-w-0 p-4 sm:p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-slate-200 transition-all duration-200 active:scale-[0.98] text-center group"
                   >
-                    <div className={`inline-flex p-3 rounded-full ${c.color} group-hover:scale-110 transition-transform`}>
-                      <Icon className="w-8 h-8" />
+                    <div className={`inline-flex p-3.5 sm:p-4 rounded-2xl ${colorClass} group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-7 h-7 sm:w-8 sm:h-8" />
                     </div>
-                    <span className="whitespace-nowrap text-center text-sm md:text-base font-bold text-slate-800">
-                      {c.label}
-                    </span>
+                    <div className="space-y-1">
+                      <span className="block text-sm sm:text-base font-bold text-slate-800">
+                        {cat.name}
+                      </span>
+                      <span className="block text-[11px] sm:text-xs text-slate-400 line-clamp-1">
+                        {cat.sub.slice(0, 2).join(', ')}
+                      </span>
+                    </div>
                   </Link>
                 </motion.div>
               )
