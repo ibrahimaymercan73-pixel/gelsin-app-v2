@@ -3,7 +3,54 @@ import { useState, useEffect, Suspense, ChangeEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { SERVICE_CATEGORIES, type ServiceCategory } from '@/lib/constants'
-import { ChevronLeft, ChevronDown } from 'lucide-react'
+import { ChevronLeft, ChevronDown, Camera } from 'lucide-react'
+
+// Dinamik Placeholder Haritası - Kategoriye göre değişen ipuçları
+const CATEGORY_PLACEHOLDERS: Record<string, { title: string; description: string; address: string }> = {
+  ev_yasam: {
+    title: 'Ör: Mutfak musluğu damlatıyor',
+    description: 'Sorunu ve yapılacak işlemi kısaca anlatın...',
+    address: 'Mahalle, sokak, bina no...',
+  },
+  arac_yol: {
+    title: 'Ör: Aracım çalışmıyor, akü bitti',
+    description: 'Aracın markasını, modelini ve bulunduğu konumu belirtin...',
+    address: 'Aracın bulunduğu adres veya yol bilgisi...',
+  },
+  guzellik: {
+    title: 'Ör: Gelin saçı ve makyajı',
+    description: 'İstediğiniz modeli, tarih/saat tercihlerinizi ve detayları belirtin...',
+    address: 'Hizmet alınacak adres...',
+  },
+  egitim: {
+    title: 'Ör: Lise 1 Matematik Özel Ders',
+    description: 'Öğrencinin seviyesini, işlenecek konuları ve ders saati tercihlerinizi belirtin...',
+    address: 'Ders yapılacak adres...',
+  },
+  evcil_hayvan: {
+    title: 'Ör: Köpek gezdirme hizmeti',
+    description: 'Hayvanınızın türü, yaşı ve özel ihtiyaçlarını belirtin...',
+    address: 'Evinizin adresi...',
+  },
+  teknoloji: {
+    title: 'Ör: Laptop açılmıyor, ekran kararıyor',
+    description: 'Cihazın markası, modeli ve yaşadığınız sorunu detaylı anlatın...',
+    address: 'Cihazın bulunduğu adres...',
+  },
+  kurumsal: {
+    title: 'Ör: Ofis dezenfeksiyonu ve ilaçlama',
+    description: 'İşyerinizin büyüklüğü, hizmet kapsamı ve tarih/saat tercihlerinizi belirtin...',
+    address: 'İşyeri adresi...',
+  },
+  default: {
+    title: 'Ör: İhtiyacınızı kısaca yazın',
+    description: 'Detayları kısaca açıklayın...',
+    address: 'Hizmet alınacak adres...',
+  },
+}
+
+// Fotoğraf yükleme alanının gizleneceği kategoriler
+const HIDE_PHOTO_CATEGORIES = ['guzellik', 'egitim', 'kurumsal']
 
 function NewJobForm() {
   const router = useRouter()
@@ -329,79 +376,95 @@ function NewJobForm() {
               ))}
             </div>
 
-            <div>
-              <label className="text-sm font-bold text-slate-700 mb-1.5 block">İş Başlığı *</label>
-              <input
-                className="input"
-                placeholder="ör: Mutfak musluğu damlatıyor"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
+            {/* Dinamik Placeholder'lı Form Alanları */}
+            {(() => {
+              const catId = selectedCategory?.id || 'default'
+              const placeholders = CATEGORY_PLACEHOLDERS[catId] || CATEGORY_PLACEHOLDERS.default
+              const showPhotoUpload = !HIDE_PHOTO_CATEGORIES.includes(catId)
 
-            <div>
-              <label className="text-sm font-bold text-slate-700 mb-1.5 block">Açıklama</label>
-              <textarea
-                className="input resize-none"
-                rows={3}
-                placeholder="Sorunu kısaca açıklayın..."
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-bold text-slate-700 mb-1.5 block">
-                Fotoğraf / Video Ekle <span className="text-xs text-slate-400">(En fazla 3 adet, max 10MB)</span>
-              </label>
-              <div className="border-2 border-dashed border-blue-200 rounded-2xl p-4 bg-blue-50/40">
-                <label className="flex flex-col items-center justify-center gap-2 text-center text-sm text-slate-600 cursor-pointer">
-                  <span className="text-3xl">📎</span>
-                  <span className="font-semibold">Dosya seç veya sürükle bırak</span>
-                  <span className="text-[11px] text-slate-400">Desteklenen: JPEG, PNG, MP4, MOV (max 10MB)</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,video/*"
-                    className="hidden"
-                    onChange={handleFilesChange}
-                  />
-                </label>
-                {previews.length > 0 && (
-                  <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
-                    {previews.map((p, index) => (
-                      <div
-                        key={p.url}
-                        className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-blue-100 bg-black/5 flex-shrink-0"
-                      >
-                        {p.type === 'video' ? (
-                          <video src={p.url} className="w-full h-full object-cover" muted playsInline />
-                        ) : (
-                          <img src={p.url} alt={p.name} className="w-full h-full object-cover" />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeFileAt(index)}
-                          className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-black/70 text-white text-xs flex items-center justify-center"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
+              return (
+                <>
+                  <div>
+                    <label className="text-sm font-bold text-slate-700 mb-1.5 block">İş Başlığı *</label>
+                    <input
+                      className="input"
+                      placeholder={placeholders.title}
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                    />
                   </div>
-                )}
-              </div>
-            </div>
 
-            <div>
-              <label className="text-sm font-bold text-slate-700 mb-1.5 block">Adres *</label>
-              <input
-                className="input"
-                placeholder="Mahalle, sokak, bina no..."
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-            </div>
+                  <div>
+                    <label className="text-sm font-bold text-slate-700 mb-1.5 block">Açıklama</label>
+                    <textarea
+                      className="input resize-none"
+                      rows={3}
+                      placeholder={placeholders.description}
+                      value={desc}
+                      onChange={(e) => setDesc(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Fotoğraf Yükleme - Sadece uygun kategorilerde göster */}
+                  {showPhotoUpload && (
+                    <div>
+                      <label className="text-sm font-bold text-slate-700 mb-1.5 flex items-center gap-2">
+                        <Camera className="w-4 h-4 text-slate-500" />
+                        Fotoğraf / Video Ekle
+                        <span className="text-xs font-normal text-slate-400">(İsteğe Bağlı, max 3 adet)</span>
+                      </label>
+                      <div className="border-2 border-dashed border-slate-200 hover:border-blue-300 rounded-2xl p-4 bg-slate-50/50 transition-colors">
+                        <label className="flex flex-col items-center justify-center gap-2 text-center text-sm text-slate-500 cursor-pointer">
+                          <span className="text-2xl">📷</span>
+                          <span className="font-medium text-slate-600">Fotoğraf veya video ekle</span>
+                          <span className="text-[10px] text-slate-400">JPEG, PNG, MP4 (max 10MB)</span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*,video/*"
+                            className="hidden"
+                            onChange={handleFilesChange}
+                          />
+                        </label>
+                        {previews.length > 0 && (
+                          <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+                            {previews.map((p, index) => (
+                              <div
+                                key={p.url}
+                                className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-blue-100 bg-black/5 flex-shrink-0"
+                              >
+                                {p.type === 'video' ? (
+                                  <video src={p.url} className="w-full h-full object-cover" muted playsInline />
+                                ) : (
+                                  <img src={p.url} alt={p.name} className="w-full h-full object-cover" />
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => removeFileAt(index)}
+                                  className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-black/70 text-white text-xs flex items-center justify-center"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-sm font-bold text-slate-700 mb-1.5 block">Adres *</label>
+                    <input
+                      className="input"
+                      placeholder={placeholders.address}
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                    />
+                  </div>
+                </>
+              )
+            })()}
 
             <button
               className="btn-primary"
