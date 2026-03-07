@@ -4,32 +4,25 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { Search, Sparkles } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { SERVICE_CATEGORIES } from '@/lib/constants'
 
 const CTA_CARDS = [
-  {
-    title: 'Yeni İş Talebi Oluştur',
-    icon: '➕',
-    description: 'Uzmanlardan hemen teklif al',
-    href: '/customer/new-job',
-  },
-  {
-    title: 'Aktif İşlerim',
-    icon: '📋',
-    description: 'Devam eden işlerini ve teklifleri gör',
-    href: '/customer/jobs',
-  },
-  {
-    title: 'Geçmiş İşler',
-    icon: '🕒',
-    description: 'Tamamlanan hizmetlerine göz at',
-    href: '/customer/jobs',
-  },
+  { title: 'Yeni İş', icon: '➕', href: '/customer/new-job' },
+  { title: 'Aktif İşlerim', icon: '📋', href: '/customer/jobs' },
+  { title: 'Geçmiş İşler', icon: '🕒', href: '/customer/jobs' },
 ]
 
-// Gerçek 4 ana kategori (new-job'a yönlendir)
 const MAIN_CATEGORIES = SERVICE_CATEGORIES.slice(0, 4)
+
+// Pill etiketleri (Bionluk tarzı) – yaygın aramalar + kategoriler
+const PILL_LABELS = [
+  'Kombi Bakımı',
+  'Temizlik',
+  'Boya',
+  'Tesisat',
+  ...MAIN_CATEGORIES.flatMap((c) => [c.name, ...c.sub.slice(0, 1)]),
+].filter((v, i, a) => a.indexOf(v) === i).slice(0, 10)
 
 const HOW_IT_WORKS = [
   { icon: '📝', title: 'İhtiyacını Belirt', desc: 'Detayları ve konumu yaz' },
@@ -46,6 +39,13 @@ type VitrinService = {
   provider_id: string
   provider_name: string
   provider_rating: number | null
+}
+
+function getInitials(name: string): string {
+  if (!name?.trim()) return '?'
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  return name.slice(0, 2).toUpperCase()
 }
 
 export default function CustomerHome() {
@@ -89,12 +89,8 @@ export default function CustomerHome() {
         .in('id', providerIds)
       const nameBy: Record<string, string> = {}
       const ratingBy: Record<string, number> = {}
-      for (const x of profiles || []) {
-        nameBy[x.id] = x.full_name || 'Uzman'
-      }
-      for (const x of pp || []) {
-        ratingBy[x.id] = Number(x.rating) || 0
-      }
+      for (const x of profiles || []) nameBy[x.id] = x.full_name || 'Uzman'
+      for (const x of pp || []) ratingBy[x.id] = Number(x.rating) || 0
       setVitrinList(
         rows.map((r: any) => ({
           id: r.id,
@@ -111,156 +107,159 @@ export default function CustomerHome() {
     loadVitrin()
   }, [])
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      router.push(`/customer/providers?q=${encodeURIComponent(searchQuery.trim())}`)
-    } else {
-      router.push('/customer/providers')
-    }
+  const handleSearch = (q?: string) => {
+    const term = (q ?? searchQuery).trim()
+    if (term) router.push(`/customer/providers?q=${encodeURIComponent(term)}`)
+    else router.push('/customer/providers')
   }
 
   return (
-    <div className="min-h-screen bg-white w-full max-w-[100vw] overflow-x-hidden">
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 box-border flex flex-col gap-6 md:gap-8">
-        {/* Hero */}
-        <section className="text-center sm:text-left shrink-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            Merhaba {userName || ''} 👋
-          </h1>
-          <p className="mt-2 text-slate-500 text-sm sm:text-base">
-            Bugün hangi konuda uzman bir ele ihtiyacın var?
-          </p>
-        </section>
-
-        {/* Duyuru banner */}
-        <section className="shrink-0">
-          <div className="flex items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
-            <p className="text-sm sm:text-base font-semibold leading-snug flex-1">
-              İhtiyaçlarını erteleme! Alanında uzman profesyonellerden anında teklif al ve işini hızlıca çöz.
+    <div className="min-h-screen bg-slate-50 w-full max-w-[100vw] overflow-x-hidden">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 box-border flex flex-col gap-6">
+        {/* 1. Derinlik ve Karşılama (Soft UI) */}
+        <section className="flex items-center gap-4 shrink-0">
+          <div className="w-12 h-12 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-700 font-bold text-lg shrink-0">
+            {getInitials(userName)}
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
+              Merhaba {userName || 'Misafir'} 👋
+            </h1>
+            <p className="text-slate-500 text-sm mt-0.5">
+              Bugün hangi konuda uzman bir ele ihtiyacın var?
             </p>
-            <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/20 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
-            </div>
           </div>
         </section>
 
-        {/* Arama çubuğu */}
+        {/* 2. Kompakt Arama + Hap etiketler */}
         <section className="shrink-0">
-          <div className="flex flex-col sm:flex-row gap-3 p-2 bg-white rounded-2xl border border-gray-200 shadow-md">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-2 flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
             <input
               type="text"
-              placeholder="Hangi uzmana ihtiyacın var? (Örn: Musluk tamiri, Boya...)"
+              placeholder="Hangi uzmana ihtiyacın var? (Örn: Kombi bakımı, Boya...)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="flex-1 min-w-0 px-4 py-3.5 sm:py-4 rounded-xl border border-gray-200 bg-gray-50/50 text-slate-900 placeholder:text-gray-400 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 min-w-0 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <button
               type="button"
-              onClick={handleSearch}
-              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-6 py-3.5 sm:py-4 rounded-xl font-semibold text-sm transition-colors"
+              onClick={() => handleSearch()}
+              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-semibold text-sm transition-colors shrink-0"
             >
               <Search className="w-4 h-4" />
-              Arama Yap
+              Arama
             </button>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2 mt-3">
+            {PILL_LABELS.map((label) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => handleSearch(label)}
+                className="px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm text-slate-600 text-sm hover:bg-slate-50 hover:border-slate-300 transition-colors"
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </section>
 
-        {/* Hızlı eylem kartları - Mobilde carousel, masaüstünde grid */}
+        {/* 3. Hızlı aksiyon kartları – kompakt yatay (h-24/h-32) */}
         <section className="shrink-0">
-          <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-3 md:overflow-visible md:snap-none md:gap-4">
+          <div className="grid grid-cols-3 gap-3">
             {CTA_CARDS.map((card) => (
               <Link
                 key={card.href}
                 href={card.href}
-                className="group flex-shrink-0 w-[85%] min-w-[85%] sm:min-w-[300px] snap-center md:min-w-0 md:w-auto p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left"
+                className="flex items-center gap-4 p-4 h-24 sm:h-28 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
               >
-                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl mb-4 group-hover:bg-blue-100 transition-colors">
+                <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-xl shrink-0">
                   {card.icon}
                 </div>
-                <h3 className="font-bold text-slate-900 text-base mb-1">
+                <span className="font-semibold text-slate-800 text-sm sm:text-base truncate">
                   {card.title}
-                </h3>
-                <p className="text-sm text-slate-500">
-                  {card.description}
-                </p>
+                </span>
               </Link>
             ))}
           </div>
         </section>
 
-        {/* Öne çıkan uzman ilanları (vitrin) */}
-        {vitrinList.length > 0 && (
-          <section className="shrink-0">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Öne Çıkan Uzman İlanları</h3>
-            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0 hide-scrollbar snap-x snap-mandatory">
-              {vitrinList.map((s) => (
-                <Link
-                  key={s.id}
-                  href={`/customer/services/${s.id}`}
-                  className="flex-shrink-0 w-[280px] snap-center rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-blue-200 overflow-hidden transition-all"
-                >
-                  <div className="aspect-[4/3] bg-slate-100 relative">
-                    {s.image_url ? (
-                      <img src={s.image_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl">🔧</div>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <h4 className="font-bold text-slate-900 text-sm line-clamp-2">{s.title}</h4>
-                    <p className="text-xs text-slate-500 mt-0.5">{s.provider_name}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      {s.provider_rating != null && (
-                        <span className="text-xs text-amber-600">★ {s.provider_rating.toFixed(1)}</span>
+        {/* 4. Çift şerit: Vitrin + Popüler Hizmetler */}
+        <section className="flex flex-col gap-6 shrink-0 min-h-0">
+          {/* Üst şerit – Öne Çıkan Uzman İlanları (yatay carousel) */}
+          {vitrinList.length > 0 && (
+            <div>
+              <h3 className="text-base font-bold text-slate-900 mb-3">Öne Çıkan Uzman İlanları</h3>
+              <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 hide-scrollbar snap-x snap-mandatory">
+                {vitrinList.map((s) => (
+                  <Link
+                    key={s.id}
+                    href={`/customer/services/${s.id}`}
+                    className="flex-shrink-0 w-[260px] snap-center rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 overflow-hidden transition-all"
+                  >
+                    <div className="aspect-[4/3] bg-slate-100 relative">
+                      {s.image_url ? (
+                        <img src={s.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-3xl">🔧</div>
                       )}
-                      <span className="font-black text-blue-600">₺{Number(s.price).toFixed(0)}</span>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                    <div className="p-3">
+                      <h4 className="font-bold text-slate-900 text-sm line-clamp-2">{s.title}</h4>
+                      <p className="text-xs text-slate-500 mt-0.5">{s.provider_name}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        {s.provider_rating != null && (
+                          <span className="text-xs text-amber-600">★ {s.provider_rating.toFixed(1)}</span>
+                        )}
+                        <span className="font-bold text-blue-600">₺{Number(s.price).toFixed(0)}</span>
+                      </div>
+                      <span className="inline-block mt-2 w-full text-center py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold">
+                        Hemen Çağır
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </section>
-        )}
+          )}
 
-        {/* Gerçek ana kategoriler - new-job'a yönlendir */}
-        <section className="shrink-0">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Popüler Hizmetler</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {MAIN_CATEGORIES.map((cat) => (
+          {/* Alt şerit – Popüler Hizmetler (zarif küçük kareler) */}
+          <div>
+            <h3 className="text-base font-bold text-slate-900 mb-3">Popüler Hizmetler</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {MAIN_CATEGORIES.map((cat) => (
                 <Link
                   key={cat.id}
                   href={`/customer/new-job?cat=${cat.id}`}
-                  className="aspect-square w-full min-w-0 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all flex flex-col items-center justify-center gap-3 p-4"
+                  className="aspect-[1.1] min-h-0 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all flex flex-col items-center justify-center gap-2 p-3"
                 >
-                  <span className="text-4xl" aria-hidden>{cat.emoji}</span>
-                  <span className="font-semibold text-slate-800 text-sm text-center leading-tight">
+                  <span className="text-2xl sm:text-3xl" aria-hidden>{cat.emoji}</span>
+                  <span className="font-semibold text-slate-800 text-xs text-center leading-tight line-clamp-2">
                     {cat.name}
-                  </span>
-                  <span className="text-xs text-slate-400 text-center line-clamp-2">
-                    {cat.sub.slice(0, 2).join(', ')}
                   </span>
                 </Link>
               ))}
+            </div>
           </div>
         </section>
       </div>
 
-      {/* Nasıl Çalışır? - Premium grid */}
+      {/* Nasıl Çalışır? – Soft UI */}
       <section className="bg-slate-50 border-t border-slate-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-14">
-          <h3 className="text-lg font-bold text-slate-900 text-center mb-8">Nasıl Çalışır?</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+          <h3 className="text-lg font-bold text-slate-900 text-center mb-6">Nasıl Çalışır?</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {HOW_IT_WORKS.map((step, i) => (
               <div
                 key={i}
-                className="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 flex flex-col items-center text-center"
+                className="bg-white border border-slate-100 shadow-sm rounded-2xl p-5 flex flex-col items-center text-center"
               >
-                <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-2xl mb-4">
+                <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xl mb-3">
                   {step.icon}
                 </div>
-                <h4 className="font-bold text-slate-900 text-base mb-1">{step.title}</h4>
-                <p className="text-sm text-slate-500">{step.desc}</p>
+                <h4 className="font-bold text-slate-900 text-sm mb-1">{step.title}</h4>
+                <p className="text-xs text-slate-500">{step.desc}</p>
               </div>
             ))}
           </div>
