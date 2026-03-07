@@ -15,6 +15,7 @@ const SKILL_LABELS: Record<string, string> = {
 export default function ProviderJobsPage() {
   const [jobs, setJobs] = useState<any[]>([])
   const [myOffers, setMyOffers] = useState<Set<string>>(new Set())
+  const [myOfferMeta, setMyOfferMeta] = useState<Record<string, { offerId: string; is_bargain_requested: boolean }>>({})
   const [offering, setOffering] = useState<Record<string, { price: string; duration: string; message: string }>>({})
   const [submitting, setSubmitting] = useState('')
   const [userLat, setUserLat] = useState<number | null>(null)
@@ -69,9 +70,21 @@ export default function ProviderJobsPage() {
       return false
     })
     setJobs(filteredJobs)
-    const { data: o } = await supabase.from('offers').select('job_id').eq('provider_id', user.id)
+    const { data: o } = await supabase
+      .from('offers')
+      .select('job_id, id, is_bargain_requested')
+      .eq('provider_id', user.id)
     const ids = new Set(Array.from((o || []).map((x: any) => x.job_id as string)))
     setMyOffers(ids)
+    const meta: Record<string, { offerId: string; is_bargain_requested: boolean }> = {}
+    for (const row of o || []) {
+      const jid = row.job_id as string
+      meta[jid] = {
+        offerId: row.id,
+        is_bargain_requested: row.is_bargain_requested === true,
+      }
+    }
+    setMyOfferMeta(meta)
   }
 
   const distKm = (la1: number, lo1: number, la2: number, lo2: number) => {
@@ -122,6 +135,7 @@ export default function ProviderJobsPage() {
           price: newPrice,
           estimated_duration: o.duration,
           message: o.message,
+          is_bargain_requested: false,
         })
         .eq('id', current.id)
 
@@ -165,6 +179,11 @@ export default function ProviderJobsPage() {
       setMyOffers(next)
     }
 
+    setMyOfferMeta((prev) => {
+      const next = { ...prev }
+      if (next[jobId]) next[jobId] = { ...next[jobId], is_bargain_requested: false }
+      return next
+    })
     setOffering(p => { const n = {...p}; delete n[jobId]; return n })
     setSubmitting('')
   }
@@ -445,12 +464,19 @@ export default function ProviderJobsPage() {
               {myOffers.has(selectedJob.id) && !offering[selectedJob.id] ? (
                 <div className="space-y-2">
                   <div className="badge-green w-full justify-center py-2 text-sm">✅ Teklif Verildi</div>
-                  <button
-                    className="btn-secondary py-2 text-xs w-full"
-                    onClick={() => openEditOffer(selectedJob.id)}
-                  >
-                    🤝 Pazarlık Sonrası Fiyatı Düşür
-                  </button>
+                  {myOfferMeta[selectedJob.id]?.is_bargain_requested === true && (
+                    <>
+                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5">
+                        Müşteri indirim bekliyor
+                      </p>
+                      <button
+                        className="btn-secondary py-2 text-xs w-full"
+                        onClick={() => openEditOffer(selectedJob.id)}
+                      >
+                        🤝 Pazarlık Sonrası Fiyatı Düşür
+                      </button>
+                    </>
+                  )}
                 </div>
               ) : (
                 <>

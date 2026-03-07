@@ -176,6 +176,16 @@ export default function JobDetailPage() {
     }
 
     try {
+      const { error: updateErr } = await supabase
+        .from('offers')
+        .update({ is_bargain_requested: true })
+        .eq('id', offer.id)
+
+      if (updateErr) {
+        alert('Pazarlık talebi kaydedilemedi: ' + updateErr.message)
+        return
+      }
+
       await supabase.from('notifications').insert({
         user_id: offer.provider_id,
         title: '🤝 Pazarlık Talebi',
@@ -183,6 +193,7 @@ export default function JobDetailPage() {
         type: 'offer_negotiate',
         related_job_id: id,
       })
+      await load()
       alert('Pazarlık talebin uzmana iletildi.')
     } catch (e) {
       console.error('PAZARLIK TALEBİ HATASI:', e)
