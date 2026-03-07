@@ -247,29 +247,31 @@ export default function ProviderJobsPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] overflow-x-hidden w-full max-w-full">
-      <header className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200 overflow-hidden">
+      <header className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200">
         <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-900">🔍 Radar</h1>
         <p className="text-slate-600 text-xs sm:text-sm mt-0.5">Yakınımdaki açık işler</p>
 
-        {/* Filters */}
-        <div className="mt-3 sm:mt-4 flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide pb-1">
-          {chips.map((c) => {
-            const active = filter === c.id
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setFilter(c.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 flex-shrink-0 ${
-                  active
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                {c.label}
-              </button>
-            )
-          })}
+        {/* Filters: mobilde yatay kaydırma, taşma yok */}
+        <div className="mt-3 sm:mt-4 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto overflow-y-hidden scrollbar-hide">
+          <div className="flex gap-2 flex-nowrap w-max min-w-0 pb-1">
+            {chips.map((c) => {
+              const active = filter === c.id
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setFilter(c.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 flex-shrink-0 whitespace-nowrap ${
+                    active
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
       </header>
 
