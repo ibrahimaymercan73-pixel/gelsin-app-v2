@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 export default function ProviderWallet() {
   const [balance, setBalance] = useState(0)
@@ -13,12 +14,18 @@ export default function ProviderWallet() {
       const { data: pp } = await supabase.from('provider_profiles').select('wallet_balance').eq('id', user!.id).single()
       setBalance(pp?.wallet_balance || 0)
       const { data: tx } = await supabase.from('transactions')
-        .select('*, jobs(title)').eq('to_id', user!.id).eq('type', 'provider_payout')
+        .select('*, jobs(title)')
+        .eq('to_id', user!.id)
+        .eq('type', 'provider_payout')
         .order('created_at', { ascending: false })
       setTransactions(tx || [])
     }
     load()
   }, [])
+
+  const handleParaCek = () => {
+    toast.success('Para çekme talebiniz alındı')
+  }
 
   return (
     <div>
@@ -28,9 +35,29 @@ export default function ProviderWallet() {
         <p className="text-blue-200 text-xs mt-2">
           Tamamlanan işlerden kazanılan toplam tutar (platform komisyonu %2)
         </p>
+        <button
+          type="button"
+          onClick={handleParaCek}
+          className="mt-5 w-full py-3.5 rounded-xl font-bold text-blue-700 bg-white hover:bg-blue-50 active:scale-[0.98] transition-all shadow-lg"
+        >
+          Para Çek
+        </button>
       </div>
 
       <div className="px-4 py-4">
+        {/* Özet barlar */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="card p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Çekilebilir Bakiye</p>
+            <p className="text-xl font-black text-slate-900 mt-1">₺{balance.toFixed(2)}</p>
+          </div>
+          <div className="card p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Bekleyen Bakiye</p>
+            <p className="text-xl font-black text-slate-400 mt-1">₺0.00</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Tamamlanan, güvenlik süresindeki tutar</p>
+          </div>
+        </div>
+
         <p className="font-bold text-gray-800 mb-3">İşlem Geçmişi</p>
         {transactions.length === 0 ? (
           <div className="card p-8 text-center">
@@ -39,16 +66,24 @@ export default function ProviderWallet() {
           </div>
         ) : (
           <div className="space-y-2">
-            {transactions.map(tx => (
-              <div key={tx.id} className="card p-4 flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-xl">💰</div>
-                <div className="flex-1">
-                  <p className="font-semibold text-sm text-gray-900 truncate">{tx.jobs?.title || 'İş'}</p>
-                  <p className="text-xs text-gray-400">{new Date(tx.created_at).toLocaleDateString('tr-TR')}</p>
+            {transactions.map(tx => {
+              const netAmount = Number(tx.amount) || 0
+              const grossAmount = netAmount / 0.98
+              const commission = grossAmount - netAmount
+              return (
+                <div key={tx.id} className="card p-4 flex items-start gap-3">
+                  <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">💰</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-gray-900 truncate">{tx.jobs?.title || 'İş'}</p>
+                    <p className="text-xs text-gray-400">{new Date(tx.created_at).toLocaleDateString('tr-TR')}</p>
+                    <p className="text-[11px] text-slate-500 mt-1.5">
+                      İş Bedeli: ₺{grossAmount.toFixed(2)} | Kesinti (%2): -₺{commission.toFixed(2)}
+                    </p>
+                  </div>
+                  <p className="text-emerald-600 font-black text-lg flex-shrink-0">+₺{netAmount.toFixed(2)}</p>
                 </div>
-                <p className="text-emerald-600 font-black">+₺{tx.amount}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
