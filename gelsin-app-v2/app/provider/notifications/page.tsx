@@ -2,7 +2,44 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useChatOverlay } from '@/components/ChatOverlay'
-import { MessageCircle } from 'lucide-react'
+import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns'
+import { tr } from 'date-fns/locale'
+
+function formatRelativeDate(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  if (diffMs < 60 * 1000) return 'Az önce'
+  if (diffMs < 24 * 60 * 60 * 1000 && isToday(d)) {
+    return 'Bugün ' + format(d, 'HH:mm', { locale: tr })
+  }
+  if (isYesterday(d)) return 'Dün ' + format(d, 'HH:mm', { locale: tr })
+  if (diffMs < 7 * 24 * 60 * 60 * 1000) {
+    return formatDistanceToNow(d, { addSuffix: true, locale: tr })
+  }
+  return format(d, 'd MMM HH:mm', { locale: tr })
+}
+
+const AVATAR_COLORS = [
+  'bg-blue-100 text-blue-600',
+  'bg-emerald-100 text-emerald-600',
+  'bg-violet-100 text-violet-600',
+  'bg-amber-100 text-amber-600',
+  'bg-rose-100 text-rose-600',
+] as const
+
+function getInitials(name: string): string {
+  if (!name || name === 'Bilinmeyen Müşteri') return 'BM'
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return (parts[0]?.slice(0, 2) || '?').toUpperCase()
+}
+
+function getAvatarColor(name: string): (typeof AVATAR_COLORS)[number] {
+  const n = name || ''
+  const idx = n.split('').reduce((a, b) => a + b.charCodeAt(0), 0) % AVATAR_COLORS.length
+  return AVATAR_COLORS[Math.abs(idx)]
+}
 
 type Notification = {
   id: string
@@ -86,7 +123,7 @@ export default function ProviderNotificationsPage() {
         const nameBy: Record<string, string> = {}
         if (profiles) {
           for (const p of profiles) {
-            nameBy[p.id] = p.full_name || 'İsimsiz'
+            nameBy[p.id] = p.full_name != null && p.full_name.trim() !== '' ? p.full_name : 'Bilinmeyen Müşteri'
           }
         }
 
@@ -96,7 +133,7 @@ export default function ProviderNotificationsPage() {
           return {
             job_id: j.id,
             job_title: j.title,
-            other_name: otherId ? (nameBy[otherId] || 'Müşteri') : 'Müşteri',
+            other_name: otherId ? (nameBy[otherId] || 'Bilinmeyen Müşteri') : 'Bilinmeyen Müşteri',
             last_body: b?.last?.body?.slice(0, 60) || '',
             last_at: b?.last?.created_at || '',
             unread_count: b?.unreadCount ?? 0,
@@ -150,26 +187,37 @@ export default function ProviderNotificationsPage() {
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-4 lg:px-6 py-6 space-y-6">
-        {conversations.length > 0 && (
-          <section>
-            <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
-              Sohbetler
-            </h2>
+      <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Sol: Sohbetler */}
+        <section className="min-w-0">
+          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
+            Sohbetler
+          </h2>
+          {conversations.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center border border-slate-200">
+              <p className="text-slate-500 text-sm">Henüz sohbet yok</p>
+            </div>
+          ) : (
             <div className="space-y-2">
               {conversations.map((c) => {
                 const hasUnread = c.unread_count > 0
+                const initials = getInitials(c.other_name)
+                const avatarColor = getAvatarColor(c.other_name)
                 return (
                   <button
                     key={c.job_id}
                     type="button"
                     onClick={() => openChat(c.job_id)}
-                    className={`w-full text-left bg-white rounded-2xl p-4 border shadow-sm flex items-center gap-3 transition-colors ${
-                      hasUnread ? 'border-blue-200' : 'border-slate-100'
+                    className={`w-full text-left rounded-2xl p-4 border shadow-sm flex items-center gap-3 transition-colors ${
+                      hasUnread
+                        ? 'bg-blue-50/50 border-blue-200'
+                        : 'bg-white border-slate-100'
                     } hover:bg-slate-50`}
                   >
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
-                      <MessageCircle className="w-5 h-5 text-slate-600" />
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm ${avatarColor}`}
+                    >
+                      {initials}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm truncate ${hasUnread ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'}`}>
@@ -179,40 +227,48 @@ export default function ProviderNotificationsPage() {
                         {c.last_body || '—'}
                       </p>
                       <p className="text-[10px] text-slate-400 mt-1">
-                        {c.last_at ? new Date(c.last_at).toLocaleString('tr-TR') : ''}
+                        {c.last_at ? formatRelativeDate(c.last_at) : ''}
                       </p>
                     </div>
                     {hasUnread && (
-                      <span className="flex-shrink-0 bg-blue-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                        {c.unread_count > 99 ? '99+' : c.unread_count}
-                      </span>
+                      <>
+                        <span className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500" aria-hidden />
+                        <span className="flex-shrink-0 bg-blue-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                          {c.unread_count > 99 ? '99+' : c.unread_count}
+                        </span>
+                      </>
                     )}
                   </button>
                 )
               })}
             </div>
-          </section>
-        )}
+          )}
+        </section>
 
-        <section>
+        {/* Sağ: Bildirimler */}
+        <section className="min-w-0">
           <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
             Bildirimler
           </h2>
-          {items.length === 0 && conversations.length === 0 && (
-            <div className="bg-white rounded-3xl p-10 text-center border border-slate-200">
+          {items.length === 0 && conversations.length === 0 ? (
+            <div className="bg-white rounded-3xl p-10 text-center border border-slate-200 md:col-span-1">
               <div className="text-5xl mb-3">🔔</div>
               <p className="font-bold text-slate-700 mb-1">Henüz bildirim yok</p>
               <p className="text-xs text-slate-400">
                 Teklifleriniz ve işlerinizle ilgili bildirimler burada görünecek.
               </p>
             </div>
-          )}
-          {items.length > 0 && (
+          ) : items.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center border border-slate-200">
+              <p className="text-slate-500 text-sm">Henüz bildirim yok</p>
+            </div>
+          ) : (
             <div className="space-y-2">
               {items.map((n) => {
                 const isChat = n.type === 'chat_message' && n.related_job_id
                 const isBargain = n.type === 'offer_negotiate' && n.related_job_id
                 const clickable = isChat || isBargain
+                const unread = n.is_read === false || n.is_read == null
 
                 const handleClick = () => {
                   if ((isChat || isBargain) && n.related_job_id) {
@@ -225,13 +281,14 @@ export default function ProviderNotificationsPage() {
                     key={n.id}
                     type="button"
                     onClick={handleClick}
-                    className={`w-full text-left bg-white rounded-2xl p-4 border ${
-                      n.is_read ? 'border-slate-100' : 'border-blue-200'
-                    } shadow-sm flex items-start gap-3 ${
-                      clickable ? 'hover:bg-slate-50 cursor-pointer' : ''
-                    }`}
+                    className={`w-full text-left rounded-2xl p-4 border shadow-sm flex items-start gap-3 ${
+                      unread ? 'bg-blue-50/50 border-blue-200' : 'bg-white border-slate-100'
+                    } ${clickable ? 'hover:bg-slate-50 cursor-pointer' : ''}`}
                   >
-                    <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                    <span className="flex-shrink-0 w-2 flex items-center justify-center mt-2.5">
+                      {unread && <span className="w-2 h-2 rounded-full bg-blue-500" aria-hidden />}
+                    </span>
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
                       <span className="text-lg">🔔</span>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -242,7 +299,7 @@ export default function ProviderNotificationsPage() {
                         </p>
                       )}
                       <p className="text-[10px] text-slate-400 mt-1">
-                        {new Date(n.created_at).toLocaleString('tr-TR')}
+                        {formatRelativeDate(n.created_at)}
                       </p>
                     </div>
                   </button>
