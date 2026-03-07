@@ -63,24 +63,10 @@ export default function RoleSelectionPage() {
     }
 
     try {
-      const { data: existing } = await supabase
+      const { error: upsertErr } = await supabase
         .from('profiles')
-        .select('id, role')
-        .eq('id', user.id)
-        .single()
-
-      if (!existing) {
-        const { error: insertErr } = await supabase
-          .from('profiles')
-          .insert({ id: user.id, role })
-        if (insertErr) throw insertErr
-      } else {
-        const { error: updateErr } = await supabase
-          .from('profiles')
-          .update({ role })
-          .eq('id', user.id)
-        if (updateErr) throw updateErr
-      }
+        .upsert({ id: user.id, role }, { onConflict: 'id' })
+      if (upsertErr) throw upsertErr
 
       if (role === 'provider') {
         await supabase
