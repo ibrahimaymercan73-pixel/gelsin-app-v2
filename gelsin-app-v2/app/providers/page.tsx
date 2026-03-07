@@ -39,12 +39,20 @@ export default function PublicProvidersPage() {
     const load = async () => {
       const supabase = createClient()
       let query = supabase
-        .from('provider_profiles')
-        .select('id, bio, service_categories, rating, total_reviews, is_online, profiles(full_name, phone, hide_phone)')
+        .from('provider_list_public')
+        .select('id, bio, service_categories, rating, total_reviews, is_online, full_name, phone')
         .eq('status', 'approved')
       if (category) query = query.contains('service_categories', [category])
       const { data } = await query
-      setItems(((data || []) as unknown) as ProviderRow[])
+      const rows = (data || []).map((p: any) => ({
+        ...p,
+        profiles: {
+          full_name: p.full_name,
+          phone: p.phone ?? null,
+          hide_phone: p.phone == null,
+        },
+      }))
+      setItems(rows as ProviderRow[])
       setLoading(false)
     }
     load()

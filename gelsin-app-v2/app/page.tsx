@@ -99,11 +99,11 @@ export default function LandingPage() {
     const load = async () => {
       const supabase = createClient()
       const { data: prov } = await supabase
-        .from('provider_profiles')
-        .select('id, rating, total_reviews, profiles(full_name)')
+        .from('provider_list_public')
+        .select('id, rating, total_reviews, full_name')
         .eq('status', 'approved')
         .limit(6)
-      setProviders(((prov || []) as unknown) as typeof providers)
+      setProviders(((prov || []).map((p: any) => ({ ...p, profiles: p.full_name != null ? { full_name: p.full_name } : null })) as unknown) as typeof providers)
       const { count: jobsCount } = await supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'completed')
       const { count: provCount } = await supabase.from('provider_profiles').select('*', { count: 'exact', head: true }).eq('status', 'approved')
       setStats({ jobs: jobsCount ?? 0, providers: provCount ?? 0 })

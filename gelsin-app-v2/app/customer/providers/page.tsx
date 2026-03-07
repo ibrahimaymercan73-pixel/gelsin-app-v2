@@ -72,8 +72,8 @@ export default function CustomerProvidersPage() {
       const supabase = createClient()
 
       let query = supabase
-        .from('provider_profiles')
-        .select('id, bio, service_categories, rating, total_reviews, is_online, profiles(full_name, phone, hide_phone)')
+        .from('provider_list_public')
+        .select('id, bio, service_categories, rating, total_reviews, is_online, full_name, phone')
         .eq('status', 'approved')
 
       if (category) {
@@ -81,7 +81,14 @@ export default function CustomerProvidersPage() {
       }
 
       const { data } = await query
-      const list = ((data || []) as unknown) as ProviderRow[]
+      const list = (data || []).map((p: any) => ({
+        ...p,
+        profiles: {
+          full_name: p.full_name,
+          phone: p.phone ?? null,
+          hide_phone: p.phone == null,
+        },
+      })) as ProviderRow[]
       setAllItems(list)
       setLoading(false)
     }

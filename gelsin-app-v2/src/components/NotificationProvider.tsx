@@ -111,7 +111,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           if (msg.receiver_id !== currentUserId) return
 
           const { data: sender } = await supabase
-            .from('profiles')
+            .from('profiles_public')
             .select('full_name')
             .eq('id', msg.sender_id)
             .single()

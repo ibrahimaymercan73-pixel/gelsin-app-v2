@@ -215,12 +215,13 @@ function NewJobForm() {
     if (files.length > 0) {
       try {
         const uploads = await Promise.all(
-          files.map(async (file, index) => {
-            const ext = file.name.split('.').pop() || 'file'
-            const path = `${user.id}/${Date.now()}-${index}.${ext}`
-            const { error: uploadError } = await supabase.storage.from('job-media').upload(path, file)
-            if (uploadError) throw uploadError
-            const { data } = supabase.storage.from('job-media').getPublicUrl(path)
+          files.map(async (file) => {
+            const form = new FormData()
+            form.append('file', file)
+            form.append('bucket', 'job-media')
+            const res = await fetch('/api/upload', { method: 'POST', body: form })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Yükleme başarısız')
             return data.publicUrl
           })
         )

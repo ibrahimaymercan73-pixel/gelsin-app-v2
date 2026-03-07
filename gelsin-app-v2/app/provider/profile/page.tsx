@@ -65,12 +65,21 @@ export default function ProviderProfile() {
   const uploadDoc = async (type: 'id_document_url' | 'criminal_record_url', file: File) => {
     setUploading(type)
     const supabase = createClient()
-    const path = `${profile.id}/${type}-${Date.now()}`
-    await supabase.storage.from('documents').upload(path, file)
-    const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(path)
-    await supabase.from('provider_profiles').update({ [type]: publicUrl }).eq('id', profile.id)
-    setUploading('')
-    alert('Belge yüklendi!')
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('bucket', 'documents')
+      form.append('subpath', type)
+      const res = await fetch('/api/upload', { method: 'POST', body: form })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Yükleme başarısız')
+      await supabase.from('provider_profiles').update({ [type]: data.publicUrl }).eq('id', profile.id)
+      alert('Belge yüklendi!')
+    } catch (e: any) {
+      alert(e?.message || 'Belge yüklenemedi')
+    } finally {
+      setUploading('')
+    }
   }
 
   const statusColors: Record<string, string> = {

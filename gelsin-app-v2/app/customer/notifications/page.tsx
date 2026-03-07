@@ -80,7 +80,7 @@ export default function CustomerNotificationsPage() {
         }
 
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('profiles_public')
           .select('id, full_name')
           .in('id', Array.from(otherIds))
 

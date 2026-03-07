@@ -54,18 +54,13 @@ export default function JobChatPage() {
       setIsOtherProvider(!!otherIsProvider)
 
       if (otherId) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, phone')
-          .eq('id', otherId)
-          .single()
-
+        const { data: counterpartRow } = await supabase.rpc('get_counterpart_contact', { p_job_id: id })
+        const c = Array.isArray(counterpartRow) && counterpartRow[0]
+          ? (counterpartRow[0] as { phone: string | null; full_name: string | null })
+          : null
         const fallback =
           currentUserId === j.customer_id ? 'Uzman' : 'Müşteri'
-
-        setOtherName(
-          profile?.full_name || profile?.phone || fallback
-        )
+        setOtherName(c?.full_name || c?.phone || fallback)
 
         if (otherIsProvider) {
           const { data: pp } = await supabase

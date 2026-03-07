@@ -20,12 +20,13 @@ Ev hizmetleri için konum tabanlı pazaryeri platformu.
 ### 2. Supabase Projesi Oluştur
 1. [supabase.com](https://supabase.com) üzerinde yeni proje oluşturun
 2. Dashboard'dan `SQL Editor` açın
-3. **`supabase-schema.sql`** dosyasının tamamını kopyalayıp çalıştırın
+3. **`supabase-schema.sql`** dosyasının tamamını kopyalayıp çalıştırın; ardından **`supabase-migration-rls-and-storage-security.sql`** ile RLS ve Storage güvenlik politikalarını uygulayın
 
 ### 3. Supabase Storage Bucket'ları Oluştur
 Supabase Dashboard > Storage menüsünden:
-- **`documents`** bucket oluşturun (Private - kapalı)
-- **`avatars`** bucket oluşturun (Public - açık)
+- **`documents`** bucket oluşturun (Private)
+- **`job-media`** bucket oluşturun (Public – iş görselleri)
+- **`avatars`** bucket oluşturun (Public)
 
 ### 4. Supabase SMS (OTP) Ayarları
 Supabase Dashboard > Authentication > Providers > Phone:
@@ -41,7 +42,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
 ```
 
-Supabase Dashboard > Settings > API'dan alın.
+Supabase Dashboard > Settings > API'dan alın. `SUPABASE_SERVICE_ROLE_KEY` dosya yükleme API'si (MIME/boyut doğrulama) için gereklidir.
 
 ### 6. Admin Kullanıcı Oluştur
 SMS ile giriş yaptıktan sonra, Supabase Dashboard > Table Editor > `profiles` tablosunda `role` sütununu `admin` olarak güncelleyin.

@@ -70,32 +70,23 @@ export default function ProviderMyJobsPage() {
       }
     }
 
-    // İlgili müşteri profillerini çek (isim/telefon için)
-    const customerIds = Array.from(
-      new Set(
-        jobsCombined
-          .map((j: any) => j.customer_id as string | null)
-          .filter((id): id is string => !!id)
-      )
-    )
-
-    let profilesById: Record<string, any> = {}
-    if (customerIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, phone, hide_phone')
-        .in('id', customerIds)
-
-      profilesById =
-        profiles?.reduce((acc: Record<string, any>, p: any) => {
-          acc[p.id] = p
-          return acc
-        }, {}) ?? {}
+    // Karşı taraf (müşteri) bilgisi: RLS uyumlu RPC
+    const idsForRpc = jobsCombined.map((j: any) => j.id)
+    let counterpartsByJobId: Record<string, { phone: string | null; full_name: string | null }> = {}
+    if (idsForRpc.length > 0) {
+      const { data: rows } = await supabase.rpc('get_job_counterparts', { p_job_ids: idsForRpc })
+      if (rows) {
+        for (const r of rows as { job_id: string; phone: string | null; full_name: string | null }[]) {
+          counterpartsByJobId[r.job_id] = { phone: r.phone, full_name: r.full_name }
+        }
+      }
     }
 
     jobsCombined = jobsCombined.map((j: any) => ({
       ...j,
-      profiles: profilesById[j.customer_id] || null,
+      profiles: counterpartsByJobId[j.id]
+        ? { full_name: counterpartsByJobId[j.id].full_name, phone: counterpartsByJobId[j.id].phone, hide_phone: !counterpartsByJobId[j.id].phone }
+        : null,
     }))
 
     // Tarihe göre yeniden sırala (en yeni üstte)

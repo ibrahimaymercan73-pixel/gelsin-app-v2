@@ -61,16 +61,13 @@ export default function JobDetailPage() {
     let providerProfilesById: Record<string, any> = {}
 
     if (providerIds.length > 0) {
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, phone, hide_phone')
+      const { data: profiles } = await supabase
+        .from('profiles_public')
+        .select('id, full_name, avatar_url')
         .in('id', providerIds)
 
-      if (profilesError) {
-        console.warn('[job detail] profiles fetch failed:', profilesError)
-      }
       profilesById = Object.fromEntries(
-        (profiles || []).map((p: any) => [normId(p.id), p])
+        (profiles || []).map((p: any) => [normId(p.id), { ...p, phone: null, hide_phone: true }])
       )
 
       const { data: providerProfiles } = await supabase
@@ -83,12 +80,23 @@ export default function JobDetailPage() {
       )
     }
 
+    // Kabul edilen uzmanın iletişim bilgisi (RLS: sadece iş tarafı görebilir)
+    const { data: counterpartRow } = await supabase.rpc('get_counterpart_contact', { p_job_id: id })
+    const counterpart = Array.isArray(counterpartRow) && counterpartRow[0]
+      ? (counterpartRow[0] as { phone: string | null; full_name: string | null })
+      : null
+
     const enrichedOffers = offersList.map((o) => {
       const providerId = o.provider_id ? String(o.provider_id) : ''
       const nid = normId(providerId)
+      const baseProfiles = nid ? (profilesById[nid] ?? null) : null
+      const isAccepted = j && o.provider_id === j.provider_id
+      const profiles = isAccepted && counterpart
+        ? { full_name: counterpart.full_name, phone: counterpart.phone, hide_phone: !counterpart.phone }
+        : baseProfiles
       return {
         ...o,
-        profiles: nid ? (profilesById[nid] ?? null) : null,
+        profiles,
         provider_profiles: nid ? (providerProfilesById[nid] ?? null) : null,
       }
     })
