@@ -1,23 +1,24 @@
 'use client'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Home, ClipboardList, Bell, User, Plus } from 'lucide-react'
-import { getCurrentUserAndRole } from '@/lib/auth'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
+import { OnboardingTour } from '@/components/OnboardingTour'
 
 const navItems = [
-  { href: '/customer', icon: Home, label: 'Ana Sayfa', showBadge: false },
-  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', showBadge: false },
-  { href: '/customer/notifications', icon: Bell, label: 'Mesajlar', showBadge: true },
-  { href: '/customer/profile', icon: User, label: 'Profilim', showBadge: false },
+  { href: '/customer', icon: Home, label: 'Ana Sayfa', showBadge: false, tourId: 'customer-ana-sayfa' as const },
+  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', showBadge: false, tourId: 'customer-islerim' as const },
+  { href: '/customer/notifications', icon: Bell, label: 'Mesajlar', showBadge: true, tourId: 'customer-mesajlar' as const },
+  { href: '/customer/profile', icon: User, label: 'Profilim', showBadge: false, tourId: null },
 ]
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const { unreadCount } = useNotifications()
+  const [tourRole, setTourRole] = useState<'customer' | 'provider' | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -49,6 +50,8 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         router.replace('/admin')
         return
       }
+
+      if (role === 'customer') setTourRole('customer')
     }
 
     ensureAuthenticated()
@@ -59,6 +62,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
 
   return (
     <ChatOverlayProvider>
+      <OnboardingTour role={tourRole} />
       <div className="min-h-dvh bg-[#fafaf9] flex font-sans">
 
       {/* DESKTOP SIDEBAR - glassmorphism style */}
@@ -76,6 +80,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             const Icon = item.icon
             return (
               <Link key={item.href} href={item.href}
+                {...(item.tourId ? { 'data-tour': item.tourId } : {})}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] ${
                   isActive ? 'bg-slate-900/5 text-slate-900' : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
                 }`}>
@@ -110,6 +115,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             const Icon = item.icon
             return (
               <Link key={item.href} href={item.href}
+                {...(item.tourId ? { 'data-tour': item.tourId } : {})}
                 className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all active:scale-95 ${
                   isActive ? 'text-slate-900' : 'text-stone-500'
                 }`}>

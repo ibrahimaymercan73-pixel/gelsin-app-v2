@@ -90,3 +90,59 @@ html, body {
 .delay-2 { animation-delay: 0.16s; }
 .delay-3 { animation-delay: 0.24s; }
 .delay-4 { animation-delay: 0.32s; }
+
+/* Ürün turu (driver.js) – Gelsin teması */
+.gelsin-tour-popover.driver-popover {
+  background: #fff !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.15) !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 1.25rem !important;
+  max-width: 360px;
+}
+.gelsin-tour-popover .driver-popover-title {
+  font-weight: 800 !important;
+  font-size: 1.1rem !important;
+  color: #0f172a !important;
+  margin-bottom: 0.35rem !important;
+}
+.gelsin-tour-popover .driver-popover-description {
+  font-size: 0.9rem !important;
+  color: #475569 !important;
+  line-height: 1.5 !important;
+}
+.gelsin-tour-popover .driver-popover-footer {
+  margin-top: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5rem !important;
+}
+.gelsin-tour-popover .driver-popover-prev-btn,
+.gelsin-tour-popover .driver-popover-next-btn,
+.gelsin-tour-popover .driver-popover-close-btn {
+  background: #2563eb !important;
+  color: #fff !important;
+  border-radius: 0.75rem !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  padding: 0.5rem 1rem !important;
+  border: none !important;
+}
+.gelsin-tour-popover .driver-popover-prev-btn:hover,
+.gelsin-tour-popover .driver-popover-next-btn:hover {
+  background: #1d4ed8 !important;
+}
+.gelsin-tour-popover .driver-popover-close-btn {
+  margin-left: auto;
+  background: #64748b !important;
+  padding: 0.35rem 0.5rem !important;
+}
+.gelsin-tour-popover .driver-popover-close-btn:hover {
+  background: #475569 !important;
+}
+.gelsin-tour-popover .driver-popover-progress-text {
+  font-size: 0.75rem !important;
+  color: #64748b !important;
+  font-weight: 600 !important;
+}

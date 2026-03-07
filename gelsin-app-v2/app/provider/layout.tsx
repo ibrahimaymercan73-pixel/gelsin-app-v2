@@ -6,20 +6,22 @@ import { getCurrentUserAndRole } from '@/lib/auth'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
 import { useUpdatePresence } from '@/hooks/useUpdatePresence'
+import { OnboardingTour } from '@/components/OnboardingTour'
 
 const navItems = [
-  { href: '/provider', icon: '📊', label: 'Özet', showBadge: false },
-  { href: '/provider/jobs', icon: '🔍', label: 'Radar', showBadge: false },
-  { href: '/provider/my-jobs', icon: '🔨', label: 'İşlerim', showBadge: false },
-  { href: '/provider/notifications', icon: '🔔', label: 'Mesajlar', showBadge: true },
-  { href: '/provider/wallet', icon: '💰', label: 'Cüzdan', showBadge: false },
-  { href: '/provider/profile', icon: '👤', label: 'Profil', showBadge: false },
+  { href: '/provider', icon: '📊', label: 'Özet', showBadge: false, tourId: null as string | null },
+  { href: '/provider/jobs', icon: '🔍', label: 'Radar', showBadge: false, tourId: 'provider-radar' as string | null },
+  { href: '/provider/my-jobs', icon: '🔨', label: 'İşlerim', showBadge: false, tourId: null },
+  { href: '/provider/notifications', icon: '🔔', label: 'Mesajlar', showBadge: true, tourId: null },
+  { href: '/provider/wallet', icon: '💰', label: 'Cüzdan', showBadge: false, tourId: 'provider-cuzdan' as string | null },
+  { href: '/provider/profile', icon: '👤', label: 'Profil', showBadge: false, tourId: null },
 ]
 
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const { unreadCount } = useNotifications()
+  const [tourRole, setTourRole] = useState<'customer' | 'provider' | null>(null)
   useUpdatePresence()
 
   useEffect(() => {
@@ -40,6 +42,8 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
         router.replace('/admin')
         return
       }
+
+      if (role === 'provider') setTourRole('provider')
     }
     check()
   }, [router])
@@ -48,6 +52,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
 
   return (
     <ChatOverlayProvider>
+      <OnboardingTour role={tourRole} />
       <div className="min-h-dvh bg-[#F4F7FA] flex font-sans">
       <aside className="hidden lg:flex w-64 bg-slate-900 flex-col fixed h-full z-50">
         <div className="px-8 py-7 border-b border-white/5">
@@ -61,6 +66,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
             const isActive = pathname === item.href
             return (
               <Link key={item.href} href={item.href}
+                {...(item.tourId ? { 'data-tour': item.tourId } : {})}
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl font-semibold text-sm transition-all ${
                   isActive ? 'bg-blue-600/15 text-blue-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}>
@@ -90,6 +96,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
             const isActive = pathname === item.href
             return (
               <Link key={item.href} href={item.href}
+                {...(item.tourId ? { 'data-tour': item.tourId } : {})}
                 className={`flex flex-col items-center gap-1 px-2 py-1 rounded-xl transition-all ${
                   isActive ? 'text-blue-400' : 'text-slate-500'
                 }`}>
