@@ -1,5 +1,5 @@
- 'use client'
-import { useEffect, useState, useRef } from 'react'
+'use client'
+import { Suspense, useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -13,7 +13,7 @@ const SKILL_LABELS: Record<string, string> = {
   repair: 'Tamir',
 }
 
-export default function ProviderJobsPage() {
+function ProviderJobsPageContent() {
   const [jobs, setJobs] = useState<any[]>([])
   const [myOffers, setMyOffers] = useState<Set<string>>(new Set())
   const [myOfferMeta, setMyOfferMeta] = useState<Record<string, { offerId: string; is_bargain_requested: boolean }>>({})
@@ -602,5 +602,19 @@ export default function ProviderJobsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function ProviderJobsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <ProviderJobsPageContent />
+    </Suspense>
   )
 }
