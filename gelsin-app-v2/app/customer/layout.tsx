@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, MessageSquare, Briefcase, Menu, ClipboardList, Bell, User, Plus } from 'lucide-react'
+import { Home, MessageSquare, Briefcase, Menu, ClipboardList, LayoutDashboard, Bell, User, Plus } from 'lucide-react'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
 import { OnboardingTour } from '@/components/OnboardingTour'
@@ -18,7 +18,8 @@ const mobileNavItems = [
 /** Masaüstü sidebar: geniş menü – badgeType ile rozet: message=Mesajlar, notification=Bildirimler */
 const desktopNavItems = [
   { href: '/customer', icon: Home, label: 'Ana Sayfa', badgeType: null as 'message' | 'notification' | null, tourId: 'tour-ana-sayfa' as const },
-  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', badgeType: null, tourId: 'tour-jobs' as const },
+  { href: '/customer/dashboard', icon: LayoutDashboard, label: 'Dashboard', badgeType: null, tourId: 'tour-jobs' as const },
+  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', badgeType: null, tourId: null },
   { href: '/customer/messages', icon: MessageSquare, label: 'Mesajlar', badgeType: 'message' as const, tourId: 'tour-mesajlar' as const },
   { href: '/customer/notifications', icon: Bell, label: 'Bildirimler', badgeType: 'notification' as const, tourId: null },
   { href: '/customer/panel', icon: Briefcase, label: 'Panel', badgeType: null, tourId: null },
@@ -76,24 +77,24 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       <OnboardingTour role={tourRole} />
       <div className="min-h-dvh bg-[#fafaf9] flex font-sans">
 
-      {/* DESKTOP SIDEBAR - glassmorphism style */}
-      <aside className="hidden lg:flex w-64 bg-white/80 backdrop-blur-md flex-col fixed h-full z-50 border-r border-stone-200/80 shadow-lg shadow-stone-200/50">
-        <div className="px-6 py-6 border-b border-stone-200/60">
+      {/* DESKTOP SIDEBAR – wireframe: açık renk */}
+      <aside className="hidden lg:flex w-[220px] bg-[#F5F5F5] flex-col fixed h-full z-50 border-r border-[#D8D8D8]">
+        <div className="px-4 py-5 border-b border-[#D8D8D8]">
           <span className="text-xl font-black text-stone-900 tracking-tight">
-            GELSİN<span className="text-slate-900">.</span>
+            GELSİN<span className="text-slate-700">.</span>
           </span>
           <p className="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-widest">Müşteri Paneli</p>
         </div>
 
-        <nav className="p-3 space-y-1 mt-2 flex-1">
+        <nav className="p-2.5 space-y-0.5 mt-2 flex-1">
           {desktopNavItems.map(item => {
             const isActive = pathname === item.href
             const Icon = item.icon
             return (
               <Link key={item.href} href={item.href}
                 {...(item.tourId ? { id: item.tourId } : {})}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] ${
-                  isActive ? 'bg-slate-900/5 text-slate-900' : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                  isActive ? 'bg-[#E0E0E0] text-slate-900' : 'text-stone-600 hover:bg-[#ECECEC] hover:text-stone-900'
                 }`}>
                 <span className="relative">
                   <Icon className="w-5 h-5 shrink-0" />
@@ -106,16 +107,16 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           })}
         </nav>
 
-        <div className="p-3 border-t border-stone-200/60">
+        <div className="p-2.5 border-t border-[#D8D8D8]">
           <Link href="/customer/new-job"
-            className="flex items-center justify-center gap-2 w-full bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-slate-900/25 active:scale-[0.98]">
+            className="flex items-center justify-center gap-2 w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg font-bold text-sm transition-all">
             <Plus className="w-5 h-5" /> Yeni İş Talebi
           </Link>
         </div>
       </aside>
 
       {/* ANA İÇERİK */}
-      <main className="flex-1 lg:ml-64 pb-24 lg:pb-0">
+      <main className="flex-1 lg:ml-[220px] pb-24 lg:pb-0">
         {children}
       </main>
 
@@ -147,7 +148,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       )}
 
       {/* FAB - Yeni İş (Ana sayfa, İşlerim ve Yeni İş sayfasında gizli; mobilde her zaman gizli) */}
-      {pathname !== '/customer' && pathname !== '/customer/jobs' && pathname !== '/customer/new-job' && (
+      {pathname !== '/customer' && pathname !== '/customer/dashboard' && pathname !== '/customer/jobs' && pathname !== '/customer/new-job' && (
         <Link
           href="/customer/new-job"
           className="hidden md:flex fixed right-5 bottom-8 z-[95] bg-slate-900 hover:bg-slate-800 text-white w-14 h-14 rounded-2xl shadow-lg shadow-slate-900/30 items-center justify-center text-2xl font-bold hover:scale-105 active:scale-95 transition-transform"
