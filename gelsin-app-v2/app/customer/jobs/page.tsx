@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
@@ -101,11 +101,23 @@ function deriveStatusKey(job: JobWithMeta): string {
   return rawStatus
 }
 
-export default function CustomerJobsPage() {
+const TAB_KEYS: TabKey[] = ['open', 'offers', 'progress', 'done']
+
+function CustomerJobsPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab')
   const [jobs, setJobs] = useState<JobWithMeta[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<TabKey>('open')
+  const [activeTab, setActiveTab] = useState<TabKey>(() =>
+    tabParam && TAB_KEYS.includes(tabParam as TabKey) ? (tabParam as TabKey) : 'open'
+  )
+
+  useEffect(() => {
+    if (tabParam && TAB_KEYS.includes(tabParam as TabKey)) {
+      setActiveTab(tabParam as TabKey)
+    }
+  }, [tabParam])
 
   const load = async () => {
     setLoading(true)
@@ -350,3 +362,14 @@ export default function CustomerJobsPage() {
   )
 }
 
+export default function CustomerJobsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-dvh flex items-center justify-center bg-slate-50">
+        <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-700 rounded-full animate-spin" />
+      </div>
+    }>
+      <CustomerJobsPageContent />
+    </Suspense>
+  )
+}

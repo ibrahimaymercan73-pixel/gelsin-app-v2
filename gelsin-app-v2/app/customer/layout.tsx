@@ -2,15 +2,25 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, ClipboardList, Bell, User, Plus } from 'lucide-react'
+import { Home, MessageSquare, Briefcase, Menu, ClipboardList, Bell, User, Plus } from 'lucide-react'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
 import { OnboardingTour } from '@/components/OnboardingTour'
 
-const navItems = [
+/** Mobil bottom nav: 4’lü koyu menü (Bionluk tarzı) */
+const mobileNavItems = [
+  { href: '/customer', icon: Home, label: 'Keşfet', tourId: 'tour-ana-sayfa' as const },
+  { href: '/customer/messages', icon: MessageSquare, label: 'Mesajlar', showBadge: true, tourId: 'tour-mesajlar' as const },
+  { href: '/customer/panel', icon: Briefcase, label: 'Panel', tourId: null },
+  { href: '/customer/menu', icon: Menu, label: 'Diğer', tourId: null },
+]
+
+/** Masaüstü sidebar: geniş menü */
+const desktopNavItems = [
   { href: '/customer', icon: Home, label: 'Ana Sayfa', showBadge: false, tourId: 'tour-ana-sayfa' as const },
   { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', showBadge: false, tourId: 'tour-jobs' as const },
   { href: '/customer/notifications', icon: Bell, label: 'Mesajlar', showBadge: true, tourId: 'tour-mesajlar' as const },
+  { href: '/customer/panel', icon: Briefcase, label: 'Panel', showBadge: false, tourId: null },
   { href: '/customer/profile', icon: User, label: 'Profilim', showBadge: false, tourId: null },
 ]
 
@@ -75,7 +85,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         </div>
 
         <nav className="p-3 space-y-1 mt-2 flex-1">
-          {navItems.map(item => {
+          {desktopNavItems.map(item => {
             const isActive = pathname === item.href
             const Icon = item.icon
             return (
@@ -107,31 +117,29 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         {children}
       </main>
 
-      {/* MOBİL BOTTOM NAV - glassmorphism */}
+      {/* MOBİL BOTTOM NAV – koyu 4’lü (Bionluk tarzı) */}
       {!hideBottomNav && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md px-3 py-2.5 flex justify-around items-center z-[90] rounded-t-[2rem] shadow-[0_-4px_24px_rgba(0,0,0,0.06)] border-t border-stone-200/80">
-          {navItems.map(item => {
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900 px-1 py-2 flex justify-around items-stretch z-[90] border-t border-slate-800 pb-[env(safe-area-inset-bottom,8px)]">
+          {mobileNavItems.map(item => {
             const isActive = pathname === item.href
             const Icon = item.icon
             return (
-              <Link key={item.href} href={item.href}
+              <Link
+                key={item.href}
+                href={item.href}
                 {...(item.tourId ? { id: item.tourId } : {})}
-                className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all active:scale-95 ${
-                  isActive ? 'text-slate-900' : 'text-stone-500'
-                }`}>
+                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-w-0 transition-colors active:opacity-80 ${
+                  isActive ? 'text-white font-semibold' : 'text-slate-400 font-normal'
+                }`}
+              >
                 <span className="relative">
-                  <Icon className="w-6 h-6" />
-                  {item.showBadge && <NotificationBadge count={unreadCount} />}
+                  <Icon className="w-6 h-6 shrink-0" />
+                  {'showBadge' in item && item.showBadge && <NotificationBadge count={unreadCount} />}
                 </span>
-                <span className="text-[10px] font-bold">{item.label}</span>
+                <span className="text-[10px] mt-1 truncate w-full text-center">{item.label}</span>
               </Link>
             )
           })}
-          <Link href="/customer/new-job"
-            className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-stone-500 active:scale-95">
-            <Plus className="w-6 h-6" />
-            <span className="text-[10px] font-bold">Yeni İş</span>
-          </Link>
         </nav>
       )}
 
