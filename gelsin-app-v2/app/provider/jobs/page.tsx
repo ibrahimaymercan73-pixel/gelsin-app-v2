@@ -36,6 +36,13 @@ function ProviderJobsPageContent() {
     load()
   }, [])
 
+  // Sekmeye geri dönünce veriyi yenile (müşteri pazarlık istediyse rozet güncellenir)
+  useEffect(() => {
+    const onVisible = () => { load() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
   // KURAL 3: Bildirimden "pazarlık" ile gelindiğinde iş modalını + teklif güncelleme formunu aç
   useEffect(() => {
     const bargainJobId = searchParams.get('bargain')
@@ -348,10 +355,16 @@ function ProviderJobsPageContent() {
                           </h3>
                           <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">{job.service_categories?.name}</p>
                         </div>
-                        {/* Rozet: Acil veya Teklif Verildi (KURAL 1) */}
+                        {/* Rozet: Teklif Verildi / Müşteri pazarlık istedi veya Acil */}
                         {myOffers.has(job.id) && (
-                          <span className="flex-shrink-0 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                            ✅ Teklif Verildi - Müşteri Yanıtı Bekleniyor
+                          <span className={`flex-shrink-0 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold border ${
+                            myOfferMeta[job.id]?.is_bargain_requested
+                              ? 'bg-amber-100 text-amber-800 border-amber-200'
+                              : 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                          }`}>
+                            {myOfferMeta[job.id]?.is_bargain_requested
+                              ? '📉 Müşteri indirim bekliyor'
+                              : '✅ Teklif Verildi - Müşteri Yanıtı Bekleniyor'}
                           </span>
                         )}
                         {urgent && !myOffers.has(job.id) && (
