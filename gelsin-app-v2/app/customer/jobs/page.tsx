@@ -230,19 +230,19 @@ export default function CustomerJobsPage() {
         </div>
         <button
           onClick={() => router.push('/customer/new-job')}
-          className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-2xl text-sm font-bold shadow-sm shadow-blue-600/30"
+          className="hidden md:inline-flex bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-2xl text-sm font-bold shadow-sm shadow-blue-600/30"
         >
           + Yeni İş Talebi
         </button>
       </header>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-6">
-        <div className="bg-white rounded-3xl p-2 border border-slate-200 shadow-sm flex flex-wrap gap-2 mb-6">
+        <div className="bg-white rounded-3xl p-2 border border-slate-200 shadow-sm flex overflow-x-auto hide-scrollbar gap-2 pb-2 mb-6">
           {(Object.keys(tabConfig) as TabKey[]).map((key) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`flex-1 min-w-0 px-2 sm:px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all ${
+              className={`whitespace-nowrap flex-shrink-0 px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all ${
                 activeTab === key
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-500 hover:bg-slate-50'
@@ -251,7 +251,7 @@ export default function CustomerJobsPage() {
               <span>{tabConfig[key].label}</span>
               {counts[key] > 0 && (
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-black flex-shrink-0 ${
                     activeTab === key
                       ? 'bg-white/15 text-white'
                       : 'bg-slate-100 text-slate-700'
@@ -263,10 +263,6 @@ export default function CustomerJobsPage() {
             </button>
           ))}
         </div>
-
-        <p className="text-xs text-slate-400 mb-4">
-          {tabConfig[activeTab].description}
-        </p>
 
         {activeJobs.length === 0 ? (
           <div className="bg-white rounded-3xl p-10 text-center border border-dashed border-slate-200">
@@ -283,7 +279,7 @@ export default function CustomerJobsPage() {
               Bu kategoride iş bulunmuyor
             </p>
             <p className="text-xs text-slate-400 mb-4">
-              Yeni bir iş talebi oluşturarak uzmanlardan teklif isteyebilirsiniz.
+              {tabConfig[activeTab].description}
             </p>
             <button
               onClick={() => router.push('/customer/new-job')}
