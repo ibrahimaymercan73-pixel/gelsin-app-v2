@@ -218,8 +218,8 @@ export default function CustomerJobsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F7FA]">
-      <header className="px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
+    <div className="min-h-screen bg-[#F4F7FA] w-full max-w-full overflow-x-hidden">
+      <header className="w-full max-w-full px-4 sm:px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
             Müşteri Paneli
@@ -236,8 +236,8 @@ export default function CustomerJobsPage() {
         </button>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-6">
-        <div className="bg-white rounded-3xl p-2 border border-slate-200 shadow-sm flex overflow-x-auto hide-scrollbar gap-2 pb-2 mb-6">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 min-w-0">
+        <div className="w-full min-w-0 bg-white rounded-3xl p-2 border border-slate-200 shadow-sm flex overflow-x-auto hide-scrollbar gap-2 pb-2 mb-6">
           {(Object.keys(tabConfig) as TabKey[]).map((key) => (
             <button
               key={key}
