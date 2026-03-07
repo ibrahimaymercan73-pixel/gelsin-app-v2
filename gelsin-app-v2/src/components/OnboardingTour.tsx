@@ -49,12 +49,14 @@ const PROVIDER_STEPS: Step[] = [
   },
 ]
 
-/** Joyride buton metinleri (Türkçe). */
+/** Joyride buton ve sayaç metinleri (Türkçe). nextLabelWithProgress: adım sayacı (placeholders: {step}, {steps}). */
 const LOCALE = {
   back: 'Geri',
   close: 'Kapat',
   last: 'Bitir',
   next: 'İleri',
+  nextLabelWithProgress: 'İleri ({step} / {steps})',
+  open: 'Turu başlat',
   skip: 'Atla',
 }
 
