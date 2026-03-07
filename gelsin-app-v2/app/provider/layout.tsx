@@ -10,10 +10,10 @@ import { OnboardingTour } from '@/components/OnboardingTour'
 
 const navItems = [
   { href: '/provider', icon: '📊', label: 'Özet', showBadge: false, tourId: null as string | null },
-  { href: '/provider/jobs', icon: '🔍', label: 'Radar', showBadge: false, tourId: 'provider-radar' as string | null },
+  { href: '/provider/jobs', icon: '🔍', label: 'Radar', showBadge: false, tourId: 'tour-radar' as string | null },
   { href: '/provider/my-jobs', icon: '🔨', label: 'İşlerim', showBadge: false, tourId: null },
   { href: '/provider/notifications', icon: '🔔', label: 'Mesajlar', showBadge: true, tourId: null },
-  { href: '/provider/wallet', icon: '💰', label: 'Cüzdan', showBadge: false, tourId: 'provider-cuzdan' as string | null },
+  { href: '/provider/wallet', icon: '💰', label: 'Cüzdan', showBadge: false, tourId: 'tour-wallet' as string | null },
   { href: '/provider/profile', icon: '👤', label: 'Profil', showBadge: false, tourId: null },
 ]
 
@@ -66,7 +66,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
             const isActive = pathname === item.href
             return (
               <Link key={item.href} href={item.href}
-                {...(item.tourId ? { 'data-tour': item.tourId } : {})}
+                {...(item.tourId ? { id: item.tourId } : {})}
                 className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl font-semibold text-sm transition-all ${
                   isActive ? 'bg-blue-600/15 text-blue-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}>
@@ -96,7 +96,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
             const isActive = pathname === item.href
             return (
               <Link key={item.href} href={item.href}
-                {...(item.tourId ? { 'data-tour': item.tourId } : {})}
+                {...(item.tourId ? { id: item.tourId } : {})}
                 className={`flex flex-col items-center gap-1 px-2 py-1 rounded-xl transition-all ${
                   isActive ? 'text-blue-400' : 'text-slate-500'
                 }`}>

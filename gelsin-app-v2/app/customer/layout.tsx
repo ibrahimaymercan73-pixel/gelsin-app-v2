@@ -8,9 +8,9 @@ import { useNotifications, NotificationBadge } from '@/components/NotificationPr
 import { OnboardingTour } from '@/components/OnboardingTour'
 
 const navItems = [
-  { href: '/customer', icon: Home, label: 'Ana Sayfa', showBadge: false, tourId: 'customer-ana-sayfa' as const },
-  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', showBadge: false, tourId: 'customer-islerim' as const },
-  { href: '/customer/notifications', icon: Bell, label: 'Mesajlar', showBadge: true, tourId: 'customer-mesajlar' as const },
+  { href: '/customer', icon: Home, label: 'Ana Sayfa', showBadge: false, tourId: 'tour-ana-sayfa' as const },
+  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', showBadge: false, tourId: 'tour-jobs' as const },
+  { href: '/customer/notifications', icon: Bell, label: 'Mesajlar', showBadge: true, tourId: 'tour-mesajlar' as const },
   { href: '/customer/profile', icon: User, label: 'Profilim', showBadge: false, tourId: null },
 ]
 
@@ -80,7 +80,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             const Icon = item.icon
             return (
               <Link key={item.href} href={item.href}
-                {...(item.tourId ? { 'data-tour': item.tourId } : {})}
+                {...(item.tourId ? { id: item.tourId } : {})}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-sm transition-all active:scale-[0.98] ${
                   isActive ? 'bg-slate-900/5 text-slate-900' : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900'
                 }`}>
@@ -115,7 +115,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             const Icon = item.icon
             return (
               <Link key={item.href} href={item.href}
-                {...(item.tourId ? { 'data-tour': item.tourId } : {})}
+                {...(item.tourId ? { id: item.tourId } : {})}
                 className={`flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all active:scale-95 ${
                   isActive ? 'text-slate-900' : 'text-stone-500'
                 }`}>

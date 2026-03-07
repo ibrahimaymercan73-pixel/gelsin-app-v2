@@ -1,113 +1,134 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { driver, type DriveStep, type Driver } from 'driver.js'
-import 'driver.js/dist/driver.css'
+import { useEffect, useState } from 'react'
+import Joyride, { STATUS, type Step, type CallBackProps } from 'react-joyride'
 
 const STORAGE_KEY = 'gelsin_hasSeenTour'
 
-const CUSTOMER_STEPS: DriveStep[] = [
+const CUSTOMER_STEPS: Step[] = [
   {
-    element: '[data-tour="customer-ana-sayfa"]',
-    popover: {
-      title: 'Hemen Başlayın!',
-      description:
-        'İhtiyacınız olan hizmet kategorisini buradan seçerek saniyeler içinde iş talebi oluşturabilirsiniz.',
-      side: 'right',
-      align: 'start',
-    },
+    target: '#tour-ana-sayfa',
+    content: 'İhtiyacınız olan hizmet kategorisini buradan seçerek saniyeler içinde iş talebi oluşturabilirsiniz.',
+    title: 'Hemen Başlayın!',
+    disableBeacon: true,
+    placement: 'right',
   },
   {
-    element: '[data-tour="customer-islerim"]',
-    popover: {
-      title: 'İş Takibi!',
-      description:
-        'Oluşturduğunuz işleri ve gelen teklifleri buradan takip edebilirsiniz.',
-      side: 'right',
-      align: 'start',
-    },
+    target: '#tour-jobs',
+    content: 'Oluşturduğunuz işleri ve gelen teklifleri buradan takip edebilirsiniz.',
+    title: 'İş Takibi!',
+    disableBeacon: true,
+    placement: 'right',
   },
   {
-    element: '[data-tour="customer-mesajlar"]',
-    popover: {
-      title: 'Anında İletişim!',
-      description:
-        'Uzmanlarla yaptığınız pazarlıkları ve mesajları buradan yönetin.',
-      side: 'right',
-      align: 'start',
-    },
+    target: '#tour-mesajlar',
+    content: 'Uzmanlarla yaptığınız pazarlıkları ve mesajları buradan yönetin.',
+    title: 'Anında İletişim!',
+    disableBeacon: true,
+    placement: 'right',
   },
 ]
 
-const PROVIDER_STEPS: DriveStep[] = [
+const PROVIDER_STEPS: Step[] = [
   {
-    element: '[data-tour="provider-radar"]',
-    popover: {
-      title: 'Fırsat Radarı!',
-      description:
-        'Çevrenizdeki yeni iş fırsatları anlık olarak buraya düşer.',
-      side: 'right',
-      align: 'start',
-    },
+    target: '#tour-radar',
+    content: 'Çevrenizdeki yeni iş fırsatları anlık olarak buraya düşer.',
+    title: 'Fırsat Radarı!',
+    disableBeacon: true,
+    placement: 'right',
   },
   {
-    element: '[data-tour="provider-cuzdan"]',
-    popover: {
-      title: 'Kazancınızı Yönetin!',
-      description:
-        'Bakiyenizi ve profil puanınızı buradan kontrol edin.',
-      side: 'right',
-      align: 'start',
-    },
+    target: '#tour-wallet',
+    content: 'Bakiyenizi ve profil puanınızı buradan kontrol edin.',
+    title: 'Kazancınızı Yönetin!',
+    disableBeacon: true,
+    placement: 'right',
   },
 ]
+
+const LOCALE = {
+  back: 'Geri',
+  close: 'Kapat',
+  last: 'Bitir',
+  next: 'İleri',
+  skip: 'Atla',
+}
+
+const STYLES = {
+  options: {
+    primaryColor: '#2563eb',
+    textColor: '#1e293b',
+    zIndex: 10000,
+    arrowColor: '#fff',
+    backgroundColor: '#fff',
+    overlayColor: 'rgba(15, 23, 42, 0.7)',
+  },
+  tooltip: {
+    borderRadius: '12px',
+    padding: '16px',
+  },
+  tooltipContainer: {
+    textAlign: 'left' as const,
+  },
+  buttonNext: {
+    backgroundColor: '#2563eb',
+    borderRadius: '12px',
+    padding: '10px 16px',
+    fontWeight: 600,
+  },
+  buttonBack: {
+    color: '#64748b',
+    marginRight: 8,
+  },
+  buttonSkip: {
+    color: '#64748b',
+  },
+  buttonClose: {
+    color: '#64748b',
+    right: 12,
+    top: 12,
+  },
+}
 
 export function OnboardingTour({ role }: { role: 'customer' | 'provider' | null }) {
-  const driverRef = useRef<Driver | null>(null)
+  const [run, setRun] = useState(false)
+  const [steps, setSteps] = useState<Step[]>([])
 
   useEffect(() => {
     if (typeof window === 'undefined' || !role) return
     if (localStorage.getItem(STORAGE_KEY) === 'true') return
 
-    const steps = role === 'customer' ? CUSTOMER_STEPS : PROVIDER_STEPS
-    const hasAllTargets = steps.every((s) => {
-      const sel = typeof s.element === 'string' ? s.element : null
-      return sel && document.querySelector(sel)
-    })
-    if (!hasAllTargets) return
-
-    const driverObj = driver({
-      showProgress: true,
-      animate: true,
-      overlayColor: '#0f172a',
-      overlayOpacity: 0.6,
-      stagePadding: 8,
-      stageRadius: 12,
-      popoverClass: 'gelsin-tour-popover',
-      popoverOffset: 12,
-      nextBtnText: 'İleri',
-      prevBtnText: 'Geri',
-      doneBtnText: 'Bitir',
-      progressText: '{{current}} / {{total}}',
-      steps,
-      onDestroyStarted: () => {
-        try {
-          localStorage.setItem(STORAGE_KEY, 'true')
-        } catch (_) {}
-      },
-      onDestroyed: () => {
-        driverRef.current = null
-      },
-    })
-
-    driverRef.current = driverObj
-    const t = setTimeout(() => driverObj.drive(), 600)
-    return () => {
-      clearTimeout(t)
-      driverRef.current?.destroy()
-      driverRef.current = null
-    }
+    const stepList = role === 'customer' ? CUSTOMER_STEPS : PROVIDER_STEPS
+    setSteps(stepList)
+    const t = setTimeout(() => setRun(true), 800)
+    return () => clearTimeout(t)
   }, [role])
 
-  return null
+  const handleCallback = (data: CallBackProps) => {
+    const { status } = data
+    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+      try {
+        localStorage.setItem(STORAGE_KEY, 'true')
+      } catch (_) {}
+      setRun(false)
+    }
+  }
+
+  if (!run || steps.length === 0) return null
+
+  return (
+    <Joyride
+      run={run}
+      steps={steps}
+      callback={handleCallback}
+      continuous
+      showProgress
+      showSkipButton
+      locale={LOCALE}
+      styles={STYLES}
+      scrollToFirstStep
+      spotlightClicks={false}
+      disableOverlayClose={false}
+    />
+  )
 }
