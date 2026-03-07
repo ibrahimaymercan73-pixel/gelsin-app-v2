@@ -68,17 +68,23 @@ export async function POST(req: NextRequest) {
       .select('id')
       .eq('slug', service.category_slug || 'repair')
       .limit(1)
-      .single()
+      .maybeSingle()
 
     const categoryId = catRow?.id
-    const { data: fallbackCat } = await supabase
-      .from('service_categories')
-      .select('id')
-      .limit(1)
-      .single()
-    const category_id = categoryId || fallbackCat?.id
+    let category_id = categoryId
     if (!category_id) {
-      return NextResponse.json({ error: 'Kategori bulunamadı' }, { status: 500 })
+      const { data: fallbackCat } = await supabase
+        .from('service_categories')
+        .select('id')
+        .limit(1)
+        .maybeSingle()
+      category_id = fallbackCat?.id
+    }
+    if (!category_id) {
+      return NextResponse.json(
+        { error: 'Kategori bulunamadı. Supabase\'de service_categories tablosuna en az bir satır ekleyin (slug: repair vb.).' },
+        { status: 500 }
+      )
     }
 
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -107,8 +113,12 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (jobErr || !newJob) {
-      console.error('Job insert:', jobErr)
-      return NextResponse.json({ error: 'İş oluşturulamadı: ' + (jobErr?.message || '') }, { status: 500 })
+      console.error('[book-service] Job insert:', jobErr)
+      const msg = jobErr?.message || jobErr?.code || 'Bilinmeyen hata'
+      return NextResponse.json(
+        { error: 'İş oluşturulamadı: ' + msg },
+        { status: 500 }
+      )
     }
 
     const { error: offerErr } = await supabase.from('offers').insert({
@@ -133,8 +143,12 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ jobId: newJob.id })
-  } catch (e) {
-    console.error('book-service:', e)
-    return NextResponse.json({ error: 'Beklenmeyen hata' }, { status: 500 })
+  } catch (e: any) {
+    console.error('[book-service]', e)
+    const msg = e?.message || String(e)
+    return NextResponse.json(
+      { error: 'Beklenmeyen hata: ' + msg },
+      { status: 500 }
+    )
   }
 }

@@ -18,6 +18,12 @@ CREATE TABLE IF NOT EXISTS provider_services (
 
 ALTER TABLE provider_services ENABLE ROW LEVEL SECURITY;
 
+-- Politikaları varsa kaldır (migration tekrar çalıştırılabilir)
+DROP POLICY IF EXISTS "provider_services_insert" ON provider_services;
+DROP POLICY IF EXISTS "provider_services_update" ON provider_services;
+DROP POLICY IF EXISTS "provider_services_delete" ON provider_services;
+DROP POLICY IF EXISTS "provider_services_select" ON provider_services;
+
 -- Uzman sadece kendi ilanını ekleyebilir / güncelleyebilir
 CREATE POLICY "provider_services_insert"
   ON provider_services FOR INSERT
