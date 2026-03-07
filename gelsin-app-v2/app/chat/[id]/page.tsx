@@ -183,26 +183,14 @@ export default function JobChatPage() {
                 </p>
               </div>
             </div>
-            {(embed ? (
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof window !== 'undefined' && window.parent) {
-                    window.parent.postMessage({ type: 'close-chat' }, '*')
-                  }
-                }}
-                className="text-slate-600 hover:text-slate-900 text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-slate-100 border border-slate-200"
-              >
-                Kapat
-              </button>
-            ) : (
+            {!embed && (
               <button
                 onClick={() => router.back()}
                 className="text-slate-400 text-xs font-semibold px-2 py-1 rounded-full hover:bg-slate-100"
               >
                 Kapat
               </button>
-            ))}
+            )}
           </header>
 
           <main className="flex-1 px-3 py-3 overflow-y-auto space-y-2">
@@ -275,20 +263,8 @@ export default function JobChatPage() {
 
   return (
     <div className={mobileContainerClass}>
-      <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between gap-3 sticky top-0 z-40">
-        {embed ? (
-          <button
-            type="button"
-            onClick={() => {
-              if (typeof window !== 'undefined' && window.parent) {
-                window.parent.postMessage({ type: 'close-chat' }, '*')
-              }
-            }}
-            className="text-slate-600 hover:text-slate-900 text-sm font-semibold shrink-0"
-          >
-            Kapat
-          </button>
-        ) : (
+      <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-3 sticky top-0 z-40">
+        {!embed && (
           <button
             onClick={() => router.back()}
             className="text-blue-600 text-sm font-semibold shrink-0"
