@@ -268,14 +268,13 @@ export default function JobDetailPage() {
 
   const getOfferPhoneDisplay = (offer: any) => {
     const phone = offer.profiles?.phone as string | undefined | null
-    const hidden = !!offer.profiles?.hide_phone
     const status = job?.status as string | undefined
-    const canShow =
-      !hidden ||
-      status === 'accepted' ||
-      status === 'started' ||
-      status === 'completed'
-    return { phone: phone || null, canShow: !!phone && canShow }
+    const acceptedProviderId = job?.provider_id as string | undefined
+    const isAcceptedOffer =
+      (status === 'accepted' || status === 'started' || status === 'completed') &&
+      acceptedProviderId &&
+      offer.provider_id === acceptedProviderId
+    return { phone: phone || null, canShow: !!phone && !!isAcceptedOffer }
   }
 
   const mediaUrls: string[] = Array.isArray(job?.media_urls)

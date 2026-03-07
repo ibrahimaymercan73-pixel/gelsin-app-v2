@@ -10,6 +10,7 @@ export default function ChooseRolePage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -25,7 +26,7 @@ export default function ChooseRolePage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, full_name')
+        .select('role, full_name, phone')
         .eq('id', user.id)
         .single()
 
@@ -52,17 +53,30 @@ export default function ChooseRolePage() {
         ''
 
       setFullName((profile?.full_name as string | null) || metaName || '')
+      setPhone((profile?.phone as string | null) || (meta.phone as string | null) || '')
       setLoading(false)
     }
 
     load()
   }, [router])
 
+  const normalizePhone = (raw: string) => raw.replace(/\s/g, '').replace(/^\+90/, '0')
+  const isValidPhone = (p: string) => /^0[0-9]{10}$/.test(normalizePhone(p))
+
   const chooseRole = async (role: 'customer' | 'provider') => {
     setError('')
     const trimmedName = fullName.trim()
+    const trimmedPhone = normalizePhone(phone.trim())
     if (!trimmedName || trimmedName.length < 3) {
       setError('Lütfen adınızı ve soyadınızı girin.')
+      return
+    }
+    if (!trimmedPhone || trimmedPhone.length < 10) {
+      setError('Lütfen geçerli bir telefon numarası girin (05xx xxx xx xx).')
+      return
+    }
+    if (!isValidPhone(trimmedPhone)) {
+      setError('Telefon numarası 0 ile başlamalı ve 11 haneli olmalı (örn: 0532 123 45 67).')
       return
     }
 
@@ -87,12 +101,12 @@ export default function ChooseRolePage() {
       if (!existing) {
         const { error: insertErr } = await supabase
           .from('profiles')
-          .insert({ id: user.id, role, full_name: trimmedName })
+          .insert({ id: user.id, role, full_name: trimmedName, phone: trimmedPhone })
         if (insertErr) throw insertErr
       } else {
         const { error: updateErr } = await supabase
           .from('profiles')
-          .update({ role, full_name: trimmedName })
+          .update({ role, full_name: trimmedName, phone: trimmedPhone })
           .eq('id', user.id)
         if (updateErr) throw updateErr
       }
@@ -134,7 +148,7 @@ export default function ChooseRolePage() {
             Ne yapmak istiyorsun?
           </h1>
           <p className="text-slate-400 mt-2 text-sm md:text-base max-w-xl mx-auto">
-            Rolünü ve adını seçerek profilini tamamla.
+            Rolünü, adını ve telefon numaranı girerek profilini tamamla.
           </p>
         </div>
 
@@ -149,6 +163,20 @@ export default function ChooseRolePage() {
               onChange={(e) => setFullName(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl bg-slate-900/40 border border-slate-700 text-sm md:text-base text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/80 focus:border-slate-300 transition"
               placeholder="Örn: Ahmet Yılmaz"
+              disabled={submitting}
+            />
+          </div>
+          <div className="text-left">
+            <label className="block text-xs font-semibold text-slate-300 tracking-wide mb-1.5">
+              Telefon numaranız <span className="text-slate-500">(kritik iletişim bilgisi)</span>
+            </label>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl bg-slate-900/40 border border-slate-700 text-sm md:text-base text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-400/80 focus:border-slate-300 transition"
+              placeholder="05xx xxx xx xx"
               disabled={submitting}
             />
           </div>

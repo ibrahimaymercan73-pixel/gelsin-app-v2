@@ -372,11 +372,9 @@ export default function ProviderMyJobsPage() {
               : { cls: 'badge-red', text: '✖ İptal' }
 
           const customerPhone = job.profiles?.phone
-          const customerHide = !!job.profiles?.hide_phone
           const canShowPhone =
             !!customerPhone &&
-            (!customerHide ||
-              job.status === 'accepted' ||
+            (job.status === 'accepted' ||
               job.status === 'started' ||
               job.status === 'completed')
 
