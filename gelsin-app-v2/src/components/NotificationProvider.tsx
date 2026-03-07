@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
 import { createClient } from '@/lib/supabase'
 import { toast, Toaster } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -20,8 +20,7 @@ export const useNotifications = () => useContext(NotificationContext)
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [unreadCount, setUnreadCount] = useState(0)
-  const userIdRef = useRef<string | null>(null)
-  const [initialized, setInitialized] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   const fetchUnreadCount = useCallback(async () => {
     const supabase = createClient()
@@ -29,11 +28,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     
     if (!user) {
       setUnreadCount(0)
-      userIdRef.current = null
+      setUserId(null)
       return
     }
     
-    userIdRef.current = user.id
+    setUserId(user.id)
 
     const { count } = await supabase
       .from('notifications')
@@ -44,19 +43,26 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setUnreadCount(count ?? 0)
   }, [])
 
+  // Auth state değişince (giriş/çıkış) userId güncelle – masaüstü/mobil fark etmez, her zaman senkron
   useEffect(() => {
-    const init = async () => {
-      await fetchUnreadCount()
-      setInitialized(true)
+    const supabase = createClient()
+    fetchUnreadCount()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      fetchUnreadCount()
+    })
+
+    return () => {
+      subscription.unsubscribe()
     }
-    init()
   }, [fetchUnreadCount])
 
+  // userId varsa Realtime subscription kur – tek kaynak, root layout’ta, tüm cihazlarda
   useEffect(() => {
-    if (!initialized || !userIdRef.current) return
+    if (!userId) return
 
     const supabase = createClient()
-    const currentUserId = userIdRef.current
+    const currentUserId = userId
 
     const notifChannel = supabase
       .channel('db-notifications')
@@ -145,7 +151,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(notifChannel)
       supabase.removeChannel(msgChannel)
     }
-  }, [initialized, router])
+  }, [userId, router])
 
   return (
     <NotificationContext.Provider value={{ unreadCount, refreshUnreadCount: fetchUnreadCount }}>
