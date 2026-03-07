@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { isOnline, formatLastSeenForChat } from '@/lib/presence'
 
 type Message = {
   id: string
@@ -23,6 +24,8 @@ export default function JobChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const [isDesktop, setIsDesktop] = useState(false)
   const [otherName, setOtherName] = useState<string>('')
+  const [otherLastSeen, setOtherLastSeen] = useState<string | null>(null)
+  const [isOtherProvider, setIsOtherProvider] = useState(false)
   const [embed, setEmbed] = useState(false)
 
   const supabase = createClient()
@@ -43,10 +46,12 @@ export default function JobChatPage() {
     setUserId(currentUserId)
     setJob(j)
 
-    // Konuşulan kişinin adını bul
+    // Konuşulan kişinin adını ve (usta ise) son görülme bilgisini al
     if (j && currentUserId) {
       const otherId =
         currentUserId === j.customer_id ? j.provider_id : j.customer_id
+      const otherIsProvider = !!otherId && otherId === j.provider_id
+      setIsOtherProvider(!!otherIsProvider)
 
       if (otherId) {
         const { data: profile } = await supabase
@@ -61,6 +66,17 @@ export default function JobChatPage() {
         setOtherName(
           profile?.full_name || profile?.phone || fallback
         )
+
+        if (otherIsProvider) {
+          const { data: pp } = await supabase
+            .from('provider_profiles')
+            .select('last_seen')
+            .eq('id', otherId)
+            .single()
+          setOtherLastSeen(pp?.last_seen ?? null)
+        } else {
+          setOtherLastSeen(null)
+        }
       }
     }
   }
@@ -95,6 +111,20 @@ export default function JobChatPage() {
     const interval = setInterval(loadMessages, 4000)
     return () => clearInterval(interval)
   }, [userId, id])
+
+  // Usta son görülme bilgisini periyodik güncelle (çevrimiçi durumu için)
+  useEffect(() => {
+    if (!job || !isOtherProvider || userId !== job.customer_id) return
+    const providerId = job.provider_id
+    if (!providerId) return
+    const refetchLastSeen = async () => {
+      const { data } = await supabase.from('provider_profiles').select('last_seen').eq('id', providerId).single()
+      if (data?.last_seen != null) setOtherLastSeen(data.last_seen)
+    }
+    refetchLastSeen()
+    const t = setInterval(refetchLastSeen, 30000)
+    return () => clearInterval(t)
+  }, [job?.id, job?.provider_id, job?.customer_id, userId, isOtherProvider])
 
   useEffect(() => {
     if (!userId || !id) return
@@ -181,6 +211,11 @@ export default function JobChatPage() {
                   {isCustomer ? 'Uzman ile sohbet' : 'Müşteri ile sohbet'} •{' '}
                   {job.title}
                 </p>
+                {isOtherProvider && otherLastSeen != null && (
+                  <p className={`text-[11px] mt-0.5 ${isOnline(otherLastSeen) ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
+                    {formatLastSeenForChat(otherLastSeen)}
+                  </p>
+                )}
               </div>
             </div>
             {!embed && (
@@ -276,7 +311,7 @@ export default function JobChatPage() {
           <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-lg">
             {job.service_categories?.icon || '💬'}
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-slate-900 line-clamp-1">
               {headerTitle}
             </p>
@@ -284,6 +319,11 @@ export default function JobChatPage() {
               {isCustomer ? 'Uzman ile sohbet' : 'Müşteri ile sohbet'} •{' '}
               {job.title}
             </p>
+            {isOtherProvider && otherLastSeen != null && (
+              <p className={`text-[11px] mt-0.5 ${isOnline(otherLastSeen) ? 'text-emerald-600 font-medium' : 'text-slate-500'}`}>
+                {formatLastSeenForChat(otherLastSeen)}
+              </p>
+            )}
           </div>
         </div>
       </header>

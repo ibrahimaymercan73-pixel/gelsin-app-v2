@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import { useChatOverlay } from '@/components/ChatOverlay'
+import { isOnline, formatLastSeenRelative } from '@/lib/presence'
 
 export default function JobDetailPage() {
   const { id } = useParams()
@@ -74,7 +75,7 @@ export default function JobDetailPage() {
 
       const { data: providerProfiles } = await supabase
         .from('provider_profiles')
-        .select('id, rating, service_categories')
+        .select('id, rating, service_categories, last_seen, avg_response_time_mins')
         .in('id', providerIds)
 
       providerProfilesById = Object.fromEntries(
@@ -741,6 +742,27 @@ export default function JobDetailPage() {
                             <span className="text-xs">
                               {getOfferPhoneDisplay(offer)}
                             </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-[11px] text-slate-500">
+                            {typeof offer.provider_profiles?.avg_response_time_mins === 'number' && (
+                              <span className="inline-flex items-center gap-0.5">
+                                <span className="text-amber-500">⚡</span>
+                                Genellikle {offer.provider_profiles.avg_response_time_mins} dk içinde yanıt verir
+                              </span>
+                            )}
+                            {offer.provider_profiles?.last_seen ? (
+                              isOnline(offer.provider_profiles.last_seen) ? (
+                                <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                  Çevrimiçi
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-0.5">
+                                  <span className="text-slate-400">🕒</span>
+                                  {formatLastSeenRelative(offer.provider_profiles.last_seen)}
+                                </span>
+                              )
+                            ) : null}
                           </div>
                           {Array.isArray(offer.provider_profiles?.service_categories) &&
                             offer.provider_profiles.service_categories.length > 0 && (

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { getCurrentUserAndRole } from '@/lib/auth'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
+import { useUpdatePresence } from '@/hooks/useUpdatePresence'
 
 const navItems = [
   { href: '/provider', icon: '📊', label: 'Özet', showBadge: false },
@@ -19,6 +20,7 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
   const router = useRouter()
   const pathname = usePathname()
   const { unreadCount } = useNotifications()
+  useUpdatePresence()
 
   useEffect(() => {
     const check = async () => {

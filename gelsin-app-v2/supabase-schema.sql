@@ -29,6 +29,8 @@ CREATE TABLE provider_profiles (
   current_lat DOUBLE PRECISION,
   current_lng DOUBLE PRECISION,
   is_online BOOLEAN DEFAULT false,
+  last_seen TIMESTAMPTZ,
+  avg_response_time_mins INT DEFAULT 15,
   id_document_url TEXT,       -- e-Devlet kimlik belgesi
   criminal_record_url TEXT,   -- Adli sicil belgesi
   documents_verified_at TIMESTAMPTZ,
@@ -295,3 +297,7 @@ ALTER TABLE jobs ADD COLUMN IF NOT EXISTS end_qr_token TEXT UNIQUE;
 
 -- Profilde telefon gizlilik ayarı (uzman teklif ekranında görünsün)
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS hide_phone BOOLEAN DEFAULT false;
+
+-- Usta çevrimiçi / son görülme ve ortalama yanıt süresi
+ALTER TABLE provider_profiles ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ;
+ALTER TABLE provider_profiles ADD COLUMN IF NOT EXISTS avg_response_time_mins INT DEFAULT 15;
