@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef, Re
 import { createClient } from '@/lib/supabase'
 import { toast, Toaster } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { MessageCircle } from 'lucide-react'
 
 interface NotificationContextType {
   unreadCount: number
@@ -57,8 +58,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const supabase = createClient()
     const currentUserId = userIdRef.current
 
-    console.log('[NotificationProvider] Setting up realtime for user:', currentUserId)
-
     const notifChannel = supabase
       .channel('db-notifications')
       .on(
@@ -69,27 +68,26 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           table: 'notifications',
         },
         (payload) => {
-          console.log('[NotificationProvider] New notification:', payload)
           const newNotif = payload.new as any
           
-          if (newNotif.user_id === currentUserId) {
-            console.log('[NotificationProvider] Notification is for this user!')
-            setUnreadCount(prev => prev + 1)
+          if (newNotif.user_id !== currentUserId) return
+          
+          setUnreadCount(prev => prev + 1)
 
-            toast(newNotif.title || 'Yeni Bildirim', {
-              description: newNotif.body?.slice(0, 60) || '',
-              action: newNotif.related_job_id ? {
-                label: 'Görüntüle',
-                onClick: () => router.push(`/customer/jobs/${newNotif.related_job_id}`),
-              } : undefined,
-              duration: 6000,
-            })
-          }
+          // Mesaj bildiriminde toast gösterme – tek toast messages kanalından gelecek (gönderen adıyla)
+          if (newNotif.type === 'chat_message') return
+
+          toast(newNotif.title || 'Yeni Bildirim', {
+            description: newNotif.body?.slice(0, 60) || '',
+            action: newNotif.related_job_id ? {
+              label: 'Görüntüle',
+              onClick: () => router.push(`/customer/jobs/${newNotif.related_job_id}`),
+            } : undefined,
+            duration: 4000,
+          })
         }
       )
-      .subscribe((status) => {
-        console.log('[NotificationProvider] Notifications channel status:', status)
-      })
+      .subscribe()
 
     const msgChannel = supabase
       .channel('db-messages')
@@ -101,37 +99,49 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           table: 'messages',
         },
         async (payload) => {
-          console.log('[NotificationProvider] New message:', payload)
           const msg = payload.new as any
-          
-          if (msg.receiver_id === currentUserId) {
-            console.log('[NotificationProvider] Message is for this user!')
-            
-            const { data: sender } = await supabase
-              .from('profiles')
-              .select('full_name')
-              .eq('id', msg.sender_id)
-              .single()
+          if (msg.receiver_id !== currentUserId) return
 
-            const senderName = sender?.full_name || 'Birisi'
+          const { data: sender } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', msg.sender_id)
+            .single()
 
-            toast(`💬 ${senderName}`, {
-              description: msg.body?.slice(0, 50) || 'Yeni mesaj',
-              action: {
-                label: 'Yanıtla',
-                onClick: () => router.push(`/chat/${msg.job_id}`),
-              },
-              duration: 6000,
-            })
-          }
+          const senderName = sender?.full_name || 'Birisi'
+          const preview = msg.body?.slice(0, 40) || 'Yeni mesaj'
+          const jobId = msg.job_id
+
+          toast.custom(
+            () => (
+              <div
+                className="flex items-center gap-3 w-full max-w-sm bg-white border border-gray-100 shadow-lg rounded-2xl px-4 py-3"
+                role="alert"
+              >
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                  <MessageCircle className="w-5 h-5 text-slate-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {senderName}: {preview}{preview.length >= 40 ? '…' : ''}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/chat/${jobId}`)}
+                  className="flex-shrink-0 text-blue-600 font-medium text-sm hover:text-blue-700 hover:underline"
+                >
+                  Yanıtla
+                </button>
+              </div>
+            ),
+            { duration: 4000 }
+          )
         }
       )
-      .subscribe((status) => {
-        console.log('[NotificationProvider] Messages channel status:', status)
-      })
+      .subscribe()
 
     return () => {
-      console.log('[NotificationProvider] Cleaning up channels')
       supabase.removeChannel(notifChannel)
       supabase.removeChannel(msgChannel)
     }
@@ -142,13 +152,21 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       <Toaster 
         position="top-center"
         expand={true}
-        richColors
         toastOptions={{
+          duration: 4000,
           style: {
-            background: '#1e293b',
-            color: '#fff',
-            border: '1px solid #475569',
+            background: '#ffffff',
+            color: '#111827',
+            border: '1px solid #f3f4f6',
+            borderRadius: '1rem',
+            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
             fontSize: '14px',
+          },
+          classNames: {
+            title: 'text-gray-900 font-medium',
+            description: 'text-gray-600',
+            actionButton: 'text-blue-600 font-medium bg-transparent border-0',
+            cancelButton: 'text-gray-500 bg-transparent border-0',
           },
         }}
       />
