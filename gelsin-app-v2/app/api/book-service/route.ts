@@ -54,8 +54,12 @@ export async function POST(req: NextRequest) {
 
     if (serviceErr) {
       console.error('[book-service] service fetch:', serviceErr)
+      const detail = serviceErr.message || serviceErr.code || ''
       return NextResponse.json(
-        { error: 'İlan sorgulanamadı. Veritabanında provider_services tablosu ve migration çalıştırıldı mı?' },
+        {
+          error: 'İlan sorgulanamadı. Veritabanında provider_services tablosu ve migration çalıştırıldı mı?',
+          detail: detail,
+        },
         { status: 500 }
       )
     }

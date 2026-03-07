@@ -70,9 +70,19 @@ export default function CustomerServiceDetailPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ serviceId: id }),
       })
-      const data = await res.json()
+      let data: { error?: string; detail?: string; jobId?: string } = {}
+      try {
+        data = await res.json()
+      } catch {
+        console.error('[book-service] Response not JSON:', res.status, await res.text())
+        toast.error(`Sunucu hatası (${res.status}). Network sekmesinden book-service isteğinin Response’una bakın.`)
+        setBooking(false)
+        return
+      }
       if (!res.ok) {
-        toast.error(data.error || 'İşlem başarısız')
+        const msg = data.detail ? `${data.error} (${data.detail})` : (data.error || 'İşlem başarısız')
+        console.error('[book-service]', res.status, data)
+        toast.error(msg)
         setBooking(false)
         return
       }
