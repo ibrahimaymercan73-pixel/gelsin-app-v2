@@ -75,18 +75,22 @@ function ChatOverlayFrame({ jobId, isDesktop, onClose }: FrameProps) {
   if (isDesktop) {
     return (
       <div className="fixed inset-0 z-[9999] pointer-events-none flex items-end justify-end pr-4 pb-4">
-        <div className="pointer-events-auto relative flex flex-col w-full max-w-sm h-[420px] max-h-[70vh] rounded-3xl border border-slate-200 shadow-2xl bg-white overflow-hidden">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white text-sm flex items-center justify-center shadow-lg z-20 border-2 border-white"
-            aria-label="Sohbeti kapat"
-          >
-            ✕
-          </button>
+        <div className="pointer-events-auto flex flex-col w-full max-w-sm h-[460px] max-h-[75vh] rounded-3xl border border-slate-200 shadow-2xl bg-white overflow-hidden">
+          {/* Üst şerit: iframe'in üzerine çıkmayacak, her zaman görünür */}
+          <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-200 bg-slate-50 shrink-0">
+            <span className="text-xs font-semibold text-slate-500 truncate">Sohbet</span>
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-800 text-white text-sm flex items-center justify-center font-bold"
+              aria-label="Sohbeti kapat"
+            >
+              ✕
+            </button>
+          </div>
           <iframe
             src={`/chat/${jobId}?embed=1`}
-            className="w-full h-full border-0 rounded-3xl"
+            className="w-full flex-1 min-h-0 border-0 rounded-b-3xl"
           />
         </div>
       </div>

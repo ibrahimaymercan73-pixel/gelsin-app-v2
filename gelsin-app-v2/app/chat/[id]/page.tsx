@@ -275,16 +275,28 @@ export default function JobChatPage() {
 
   return (
     <div className={mobileContainerClass}>
-      <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center gap-3 sticky top-0 z-40">
-        {!embed && (
+      <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between gap-3 sticky top-0 z-40">
+        {embed ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.parent) {
+                window.parent.postMessage({ type: 'close-chat' }, '*')
+              }
+            }}
+            className="text-slate-600 hover:text-slate-900 text-sm font-semibold shrink-0"
+          >
+            Kapat
+          </button>
+        ) : (
           <button
             onClick={() => router.back()}
-            className="text-blue-600 text-sm font-semibold"
+            className="text-blue-600 text-sm font-semibold shrink-0"
           >
             ← Geri
           </button>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-lg">
             {job.service_categories?.icon || '💬'}
           </div>
