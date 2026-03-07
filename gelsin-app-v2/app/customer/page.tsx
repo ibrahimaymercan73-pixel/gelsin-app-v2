@@ -115,9 +115,9 @@ export default function CustomerHome() {
 
   return (
     <div className="min-h-screen bg-slate-50 w-full max-w-[100vw] overflow-x-hidden">
-      <div className="w-full max-w-6xl mx-auto flex flex-col items-start justify-start text-left px-4 md:px-8 py-6 gap-6">
+      <div className="w-full max-w-6xl mx-auto flex flex-col justify-start items-start text-left pt-12 pb-24 px-4 md:px-8 min-h-screen gap-8">
         {/* 1. Karşılama ve avatar – tek satır, sola yaslı */}
-        <section className="w-full flex flex-row items-center justify-start gap-4 shrink-0">
+        <section className="w-full flex flex-row items-center justify-start gap-4 mb-6">
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-700 font-bold text-base md:text-lg shrink-0">
             {getInitials(userName)}
           </div>
