@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useChatOverlay } from '@/components/ChatOverlay'
+import { MessageCircle } from 'lucide-react'
 
 type Notification = {
   id: string
@@ -13,7 +14,17 @@ type Notification = {
   related_job_id?: string | null
 }
 
+type Conversation = {
+  job_id: string
+  job_title: string
+  other_name: string
+  last_body: string
+  last_at: string
+  unread_count: number
+}
+
 export default function ProviderNotificationsPage() {
+  const [conversations, setConversations] = useState<Conversation[]>([])
   const [items, setItems] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const { openChat } = useChatOverlay()
@@ -27,14 +38,80 @@ export default function ProviderNotificationsPage() {
 
       if (!user) {
         setItems([])
+        setConversations([])
         setLoading(false)
         return
+      }
+
+      const me = user.id
+
+      const { data: msgData } = await supabase
+        .from('messages')
+        .select('id, job_id, sender_id, receiver_id, body, created_at, is_read')
+        .or(`sender_id.eq.${me},receiver_id.eq.${me}`)
+        .order('created_at', { ascending: false })
+
+      const byJob: Record<string, { last: any; unreadCount: number }> = {}
+      if (msgData) {
+        for (const m of msgData) {
+          if (!byJob[m.job_id]) {
+            byJob[m.job_id] = { last: m, unreadCount: 0 }
+          }
+          if (m.receiver_id === me && (m.is_read === false || m.is_read == null)) {
+            byJob[m.job_id].unreadCount += 1
+          }
+        }
+      }
+
+      const jobIds = Object.keys(byJob)
+      if (jobIds.length > 0) {
+        const { data: jobs } = await supabase
+          .from('jobs')
+          .select('id, title, customer_id, provider_id')
+          .in('id', jobIds)
+
+        const otherIds = new Set<string>()
+        if (jobs) {
+          for (const j of jobs) {
+            const otherId = j.customer_id === me ? j.provider_id : j.customer_id
+            if (otherId) otherIds.add(otherId)
+          }
+        }
+
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', Array.from(otherIds))
+
+        const nameBy: Record<string, string> = {}
+        if (profiles) {
+          for (const p of profiles) {
+            nameBy[p.id] = p.full_name || 'İsimsiz'
+          }
+        }
+
+        const convList: Conversation[] = (jobs || []).map((j) => {
+          const b = byJob[j.id]
+          const otherId = j.customer_id === me ? j.provider_id : j.customer_id
+          return {
+            job_id: j.id,
+            job_title: j.title,
+            other_name: otherId ? (nameBy[otherId] || 'Müşteri') : 'Müşteri',
+            last_body: b?.last?.body?.slice(0, 60) || '',
+            last_at: b?.last?.created_at || '',
+            unread_count: b?.unreadCount ?? 0,
+          }
+        })
+        convList.sort((a, b) => new Date(b.last_at).getTime() - new Date(a.last_at).getTime())
+        setConversations(convList)
+      } else {
+        setConversations([])
       }
 
       const { data } = await supabase
         .from('notifications')
         .select('id, title, body, type, created_at, is_read, related_job_id')
-        .eq('user_id', user.id)
+        .eq('user_id', me)
         .order('created_at', { ascending: false })
 
       setItems((data || []) as Notification[])
@@ -42,7 +119,7 @@ export default function ProviderNotificationsPage() {
       await supabase
         .from('notifications')
         .update({ is_read: true })
-        .eq('user_id', user.id)
+        .eq('user_id', me)
         .eq('is_read', false)
 
       setLoading(false)
@@ -63,7 +140,7 @@ export default function ProviderNotificationsPage() {
       <header className="px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
-            Bildirimler
+            Mesajlar & Bildirimler
           </p>
           <h1 className="text-xl lg:text-2xl font-black text-slate-800 mt-0.5">
             Uzman Bildirimleri
@@ -71,59 +148,108 @@ export default function ProviderNotificationsPage() {
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-4 lg:px-6 py-6 space-y-3">
-        {items.length === 0 && (
-          <div className="bg-white rounded-3xl p-10 text-center border border-slate-200">
-            <div className="text-5xl mb-3">🔔</div>
-            <p className="font-bold text-slate-700 mb-1">Henüz bildirim yok</p>
-            <p className="text-xs text-slate-400">
-              Teklifleriniz ve işlerinizle ilgili bildirimler burada görünecek.
-            </p>
-          </div>
+      <div className="max-w-3xl mx-auto px-4 lg:px-6 py-6 space-y-6">
+        {conversations.length > 0 && (
+          <section>
+            <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
+              Sohbetler
+            </h2>
+            <div className="space-y-2">
+              {conversations.map((c) => {
+                const hasUnread = c.unread_count > 0
+                return (
+                  <button
+                    key={c.job_id}
+                    type="button"
+                    onClick={() => openChat(c.job_id)}
+                    className={`w-full text-left bg-white rounded-2xl p-4 border shadow-sm flex items-center gap-3 transition-colors ${
+                      hasUnread ? 'border-blue-200' : 'border-slate-100'
+                    } hover:bg-slate-50`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+                      <MessageCircle className="w-5 h-5 text-slate-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm truncate ${hasUnread ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'}`}>
+                        {c.other_name}
+                      </p>
+                      <p className={`text-xs truncate mt-0.5 ${hasUnread ? 'text-slate-700' : 'text-slate-500'}`}>
+                        {c.last_body || '—'}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        {c.last_at ? new Date(c.last_at).toLocaleString('tr-TR') : ''}
+                      </p>
+                    </div>
+                    {hasUnread && (
+                      <span className="flex-shrink-0 bg-blue-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                        {c.unread_count > 99 ? '99+' : c.unread_count}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </section>
         )}
 
-        {items.map((n) => {
-          const isChat = n.type === 'chat_message' && n.related_job_id
-          const isBargain = n.type === 'offer_negotiate' && n.related_job_id
-          const clickable = isChat || isBargain
+        <section>
+          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
+            Bildirimler
+          </h2>
+          {items.length === 0 && conversations.length === 0 && (
+            <div className="bg-white rounded-3xl p-10 text-center border border-slate-200">
+              <div className="text-5xl mb-3">🔔</div>
+              <p className="font-bold text-slate-700 mb-1">Henüz bildirim yok</p>
+              <p className="text-xs text-slate-400">
+                Teklifleriniz ve işlerinizle ilgili bildirimler burada görünecek.
+              </p>
+            </div>
+          )}
+          {items.length > 0 && (
+            <div className="space-y-2">
+              {items.map((n) => {
+                const isChat = n.type === 'chat_message' && n.related_job_id
+                const isBargain = n.type === 'offer_negotiate' && n.related_job_id
+                const clickable = isChat || isBargain
 
-          const handleClick = () => {
-            if ((isChat || isBargain) && n.related_job_id) {
-              // Hem mesajlaşma hem pazarlık için ilgili iş sohbetini aç
-              openChat(n.related_job_id)
-            }
-          }
+                const handleClick = () => {
+                  if ((isChat || isBargain) && n.related_job_id) {
+                    openChat(n.related_job_id)
+                  }
+                }
 
-          return (
-            <button
-              key={n.id}
-              type="button"
-              onClick={handleClick}
-              className={`w-full text-left bg-white rounded-2xl p-4 border ${
-                n.is_read ? 'border-slate-100' : 'border-blue-200'
-              } shadow-sm flex items-start gap-3 ${
-                clickable ? 'hover:bg-slate-50 cursor-pointer' : ''
-              }`}
-            >
-              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                <span className="text-lg">🔔</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900">{n.title}</p>
-                {n.body && (
-                  <p className="text-xs text-slate-500 mt-1 whitespace-pre-line">
-                    {n.body}
-                  </p>
-                )}
-                <p className="text-[10px] text-slate-400 mt-1">
-                  {new Date(n.created_at).toLocaleString('tr-TR')}
-                </p>
-              </div>
-            </button>
-          )
-        })}
+                return (
+                  <button
+                    key={n.id}
+                    type="button"
+                    onClick={handleClick}
+                    className={`w-full text-left bg-white rounded-2xl p-4 border ${
+                      n.is_read ? 'border-slate-100' : 'border-blue-200'
+                    } shadow-sm flex items-start gap-3 ${
+                      clickable ? 'hover:bg-slate-50 cursor-pointer' : ''
+                    }`}
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                      <span className="text-lg">🔔</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-900">{n.title}</p>
+                      {n.body && (
+                        <p className="text-xs text-slate-500 mt-1 whitespace-pre-line">
+                          {n.body}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        {new Date(n.created_at).toLocaleString('tr-TR')}
+                      </p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   )
 }
-
