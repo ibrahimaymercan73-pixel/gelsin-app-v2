@@ -115,13 +115,13 @@ export default function CustomerHome() {
 
   return (
     <div className="min-h-screen bg-slate-50 w-full max-w-[100vw] overflow-x-hidden">
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 box-border flex flex-col gap-6">
-        {/* 1. Derinlik ve Karşılama (Soft UI) */}
-        <section className="flex items-center gap-4 shrink-0">
-          <div className="w-12 h-12 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-700 font-bold text-lg shrink-0">
+      <div className="w-full max-w-6xl mx-auto flex flex-col items-start justify-start text-left px-4 md:px-8 py-6 gap-6">
+        {/* 1. Karşılama ve avatar – tek satır, sola yaslı */}
+        <section className="w-full flex flex-row items-center justify-start gap-4 shrink-0">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-700 font-bold text-base md:text-lg shrink-0">
             {getInitials(userName)}
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
               Merhaba {userName || 'Misafir'} 👋
             </h1>
@@ -131,9 +131,9 @@ export default function CustomerHome() {
           </div>
         </section>
 
-        {/* 2. Kompakt Arama + Hap etiketler */}
-        <section className="shrink-0">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-2 flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto">
+        {/* 2. Arama + hap etiketler – mobilde hap yatay kaydırma */}
+        <section className="w-full shrink-0">
+          <div className="w-full md:max-w-2xl flex flex-col sm:flex-row gap-3 bg-white rounded-2xl shadow-sm border border-slate-100 p-2">
             <input
               type="text"
               placeholder="Hangi uzmana ihtiyacın var? (Örn: Kombi bakımı, Boya...)"
@@ -151,13 +151,13 @@ export default function CustomerHome() {
               Arama
             </button>
           </div>
-          <div className="flex flex-wrap justify-center gap-2 mt-3">
+          <div className="w-full flex flex-row overflow-x-auto whitespace-nowrap hide-scrollbar gap-2 pb-2 mt-3 md:max-w-3xl">
             {PILL_LABELS.map((label) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => handleSearch(label)}
-                className="px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm text-slate-600 text-sm hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                className="flex-shrink-0 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-sm text-slate-600 text-sm hover:bg-slate-50 hover:border-slate-300 transition-colors"
               >
                 {label}
               </button>
@@ -165,19 +165,19 @@ export default function CustomerHome() {
           </div>
         </section>
 
-        {/* 3. Hızlı aksiyon kartları – kompakt yatay (h-24/h-32) */}
-        <section className="shrink-0">
-          <div className="grid grid-cols-3 gap-3">
+        {/* 3. Hızlı işlem kartları – mobilde alt alta, md’de 3’lü */}
+        <section className="w-full shrink-0">
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {CTA_CARDS.map((card) => (
               <Link
                 key={card.href}
                 href={card.href}
-                className="flex items-center gap-4 p-4 h-24 sm:h-28 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
+                className="p-4 flex items-center gap-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
               >
                 <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-xl shrink-0">
                   {card.icon}
                 </div>
-                <span className="font-semibold text-slate-800 text-sm sm:text-base truncate">
+                <span className="font-semibold text-slate-800 text-sm sm:text-base">
                   {card.title}
                 </span>
               </Link>
@@ -185,13 +185,12 @@ export default function CustomerHome() {
           </div>
         </section>
 
-        {/* 4. Çift şerit: Vitrin + Popüler Hizmetler */}
-        <section className="flex flex-col gap-6 shrink-0 min-h-0">
-          {/* Üst şerit – Öne Çıkan Uzman İlanları (yatay carousel) */}
+        {/* 4. Vitrin + Popüler Hizmetler – başlık sola, vitrin yatay kaydırma */}
+        <section className="w-full flex flex-col gap-6 shrink-0 min-h-0">
           {vitrinList.length > 0 && (
-            <div>
-              <h3 className="text-base font-bold text-slate-900 mb-3">Öne Çıkan Uzman İlanları</h3>
-              <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 hide-scrollbar snap-x snap-mandatory">
+            <div className="w-full">
+              <h3 className="text-base font-bold text-slate-900 mb-3 text-left">Öne Çıkan Uzman İlanları</h3>
+              <div className="w-full flex overflow-x-auto gap-4 hide-scrollbar pb-2 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory">
                 {vitrinList.map((s) => (
                   <Link
                     key={s.id}
@@ -224,18 +223,17 @@ export default function CustomerHome() {
             </div>
           )}
 
-          {/* Alt şerit – Popüler Hizmetler (zarif küçük kareler) */}
-          <div>
-            <h3 className="text-base font-bold text-slate-900 mb-3">Popüler Hizmetler</h3>
+          <div className="w-full">
+            <h3 className="text-base font-bold text-slate-900 mb-3 text-left">Popüler Hizmetler</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {MAIN_CATEGORIES.map((cat) => (
                 <Link
                   key={cat.id}
                   href={`/customer/new-job?cat=${cat.id}`}
-                  className="aspect-[1.1] min-h-0 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all flex flex-col items-center justify-center gap-2 p-3"
+                  className="aspect-[1.1] min-h-0 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all flex flex-col items-start justify-center gap-2 p-3 text-left"
                 >
                   <span className="text-2xl sm:text-3xl" aria-hidden>{cat.emoji}</span>
-                  <span className="font-semibold text-slate-800 text-xs text-center leading-tight line-clamp-2">
+                  <span className="font-semibold text-slate-800 text-xs leading-tight line-clamp-2">
                     {cat.name}
                   </span>
                 </Link>
@@ -245,15 +243,15 @@ export default function CustomerHome() {
         </section>
       </div>
 
-      {/* Nasıl Çalışır? – Soft UI */}
+      {/* Nasıl Çalışır? – sol hizalı */}
       <section className="bg-slate-50 border-t border-slate-200">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
-          <h3 className="text-lg font-bold text-slate-900 text-center mb-6">Nasıl Çalışır?</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="w-full max-w-6xl mx-auto flex flex-col items-start text-left px-4 md:px-8 py-10">
+          <h3 className="text-lg font-bold text-slate-900 mb-6">Nasıl Çalışır?</h3>
+          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4">
             {HOW_IT_WORKS.map((step, i) => (
               <div
                 key={i}
-                className="bg-white border border-slate-100 shadow-sm rounded-2xl p-5 flex flex-col items-center text-center"
+                className="bg-white border border-slate-100 shadow-sm rounded-2xl p-5 flex flex-col items-start text-left"
               >
                 <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xl mb-3">
                   {step.icon}
