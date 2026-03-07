@@ -121,9 +121,9 @@ export default function CustomerHome() {
 
   return (
     <div className="min-h-screen bg-white w-full max-w-[100vw] overflow-x-hidden">
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 box-border">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 box-border flex flex-col gap-6 md:gap-8">
         {/* Hero */}
-        <section className="text-center sm:text-left mb-6">
+        <section className="text-center sm:text-left shrink-0">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
             Merhaba {userName || ''} 👋
           </h1>
@@ -133,7 +133,7 @@ export default function CustomerHome() {
         </section>
 
         {/* Duyuru banner */}
-        <section className="mb-8">
+        <section className="shrink-0">
           <div className="flex items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
             <p className="text-sm sm:text-base font-semibold leading-snug flex-1">
               İhtiyaçlarını erteleme! Alanında uzman profesyonellerden anında teklif al ve işini hızlıca çöz.
@@ -145,7 +145,7 @@ export default function CustomerHome() {
         </section>
 
         {/* Arama çubuğu */}
-        <section className="mb-8">
+        <section className="shrink-0">
           <div className="flex flex-col sm:flex-row gap-3 p-2 bg-white rounded-2xl border border-gray-200 shadow-md">
             <input
               type="text"
@@ -167,7 +167,7 @@ export default function CustomerHome() {
         </section>
 
         {/* Hızlı eylem kartları - Mobilde carousel, masaüstünde grid */}
-        <section className="mb-12">
+        <section className="shrink-0">
           <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-3 md:overflow-visible md:snap-none md:gap-4">
             {CTA_CARDS.map((card) => (
               <Link
@@ -191,7 +191,7 @@ export default function CustomerHome() {
 
         {/* Öne çıkan uzman ilanları (vitrin) */}
         {vitrinList.length > 0 && (
-          <section className="mb-12">
+          <section className="shrink-0">
             <h3 className="text-lg font-bold text-slate-900 mb-4">Öne Çıkan Uzman İlanları</h3>
             <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0 hide-scrollbar snap-x snap-mandatory">
               {vitrinList.map((s) => (
@@ -224,7 +224,7 @@ export default function CustomerHome() {
         )}
 
         {/* Gerçek ana kategoriler - new-job'a yönlendir */}
-        <section className="mb-14">
+        <section className="shrink-0">
           <h3 className="text-lg font-bold text-slate-900 mb-4">Popüler Hizmetler</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {MAIN_CATEGORIES.map((cat) => (
