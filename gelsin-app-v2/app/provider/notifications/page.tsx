@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useChatOverlay } from '@/components/ChatOverlay'
 import { format, isToday, isYesterday, formatDistanceToNow } from 'date-fns'
@@ -64,6 +65,7 @@ export default function ProviderNotificationsPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [items, setItems] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
   const { openChat } = useChatOverlay()
 
   useEffect(() => {
@@ -274,9 +276,12 @@ export default function ProviderNotificationsPage() {
                 const unread = n.is_read === false || n.is_read == null
 
                 const handleClick = () => {
-                  if ((isChat || isBargain) && n.related_job_id) {
-                    openChat(n.related_job_id)
+                  if (!n.related_job_id) return
+                  if (isBargain) {
+                    router.push('/provider/jobs?bargain=' + n.related_job_id)
+                    return
                   }
+                  if (isChat) openChat(n.related_job_id)
                 }
 
                 return (

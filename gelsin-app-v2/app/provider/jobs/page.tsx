@@ -1,5 +1,6 @@
  'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 const SKILL_LABELS: Record<string, string> = {
@@ -24,6 +25,8 @@ export default function ProviderJobsPage() {
   const [skills, setSkills] = useState<string[]>([])
   const [filter, setFilter] = useState<string>('all')
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const bargainHandledRef = useRef(false)
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(p => {
@@ -32,6 +35,19 @@ export default function ProviderJobsPage() {
     })
     load()
   }, [])
+
+  // KURAL 3: Bildirimden "pazarlık" ile gelindiğinde iş modalını + teklif güncelleme formunu aç
+  useEffect(() => {
+    const bargainJobId = searchParams.get('bargain')
+    if (!bargainJobId || bargainHandledRef.current) return
+    bargainHandledRef.current = true
+    setSelectedJobId(bargainJobId)
+    const t = setTimeout(() => {
+      openEditOffer(bargainJobId)
+      window.history.replaceState({}, '', '/provider/jobs')
+    }, 500)
+    return () => clearTimeout(t)
+  }, [searchParams])
 
   const load = async () => {
     const supabase = createClient()
@@ -113,7 +129,7 @@ export default function ProviderJobsPage() {
       return
     }
 
-    // Bu işe daha önce verilmiş teklif var mı? (varsa pazarlık sonrası güncelle)
+    // KURAL 4: Mevcut teklif varsa sadece UPDATE (asla ikinci satır INSERT etme)
     const { data: existing } = await supabase
       .from('offers')
       .select('id, price')
@@ -332,8 +348,13 @@ export default function ProviderJobsPage() {
                           </h3>
                           <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">{job.service_categories?.name}</p>
                         </div>
-                        {/* Rozet */}
-                        {urgent && (
+                        {/* Rozet: Acil veya Teklif Verildi (KURAL 1) */}
+                        {myOffers.has(job.id) && (
+                          <span className="flex-shrink-0 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                            ✅ Teklif Verildi - Müşteri Yanıtı Bekleniyor
+                          </span>
+                        )}
+                        {urgent && !myOffers.has(job.id) && (
                           <span className="flex-shrink-0 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200">
                             🔥 Acil
                           </span>
@@ -473,7 +494,7 @@ export default function ProviderJobsPage() {
                         className="btn-secondary py-2 text-xs w-full"
                         onClick={() => openEditOffer(selectedJob.id)}
                       >
-                        🤝 Pazarlık Sonrası Fiyatı Düşür
+                        📉 Müşteri İndirim Bekliyor - Teklifi Güncelle
                       </button>
                     </>
                   )}
