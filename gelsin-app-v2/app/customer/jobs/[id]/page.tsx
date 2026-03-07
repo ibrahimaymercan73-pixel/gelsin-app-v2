@@ -44,7 +44,10 @@ export default function JobDetailPage() {
 
     const offersList = (offerRows || []) as any[]
 
-    // Teklif veren uzmanlarin profil ID'lerini netlestir (stringe zorla, boslari at)
+    // UUID eşleşmesi için normalize (büyük/küçük harf farkı olmasın)
+    const normId = (x: string | null | undefined) =>
+      x ? String(x).toLowerCase().trim() : ''
+
     const providerIds = Array.from(
       new Set(
         offersList
@@ -57,13 +60,16 @@ export default function JobDetailPage() {
     let providerProfilesById: Record<string, any> = {}
 
     if (providerIds.length > 0) {
-      const { data: profiles } = await supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, phone, hide_phone')
         .in('id', providerIds)
 
+      if (profilesError) {
+        console.warn('[job detail] profiles fetch failed:', profilesError)
+      }
       profilesById = Object.fromEntries(
-        (profiles || []).map((p: any) => [p.id as string, p])
+        (profiles || []).map((p: any) => [normId(p.id), p])
       )
 
       const { data: providerProfiles } = await supabase
@@ -72,18 +78,17 @@ export default function JobDetailPage() {
         .in('id', providerIds)
 
       providerProfilesById = Object.fromEntries(
-        (providerProfiles || []).map((p: any) => [String(p.id), p])
+        (providerProfiles || []).map((p: any) => [normId(p.id), p])
       )
     }
 
     const enrichedOffers = offersList.map((o) => {
       const providerId = o.provider_id ? String(o.provider_id) : ''
+      const nid = normId(providerId)
       return {
         ...o,
-        profiles: providerId ? profilesById[providerId] || null : null,
-        provider_profiles: providerId
-          ? providerProfilesById[providerId] || null
-          : null,
+        profiles: nid ? (profilesById[nid] ?? null) : null,
+        provider_profiles: nid ? (providerProfilesById[nid] ?? null) : null,
       }
     })
 

@@ -11,6 +11,7 @@ CREATE TABLE profiles (
   role TEXT DEFAULT NULL CHECK (role IS NULL OR role IN ('customer', 'provider', 'admin')),
   avatar_url TEXT,
   is_verified BOOLEAN DEFAULT false,
+  hide_phone BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -291,3 +292,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE provider_profiles;
 -- GÜNCELLEMEler: Çift QR sistemi için (v2)
 -- ============================================================
 ALTER TABLE jobs ADD COLUMN IF NOT EXISTS end_qr_token TEXT UNIQUE;
+
+-- Profilde telefon gizlilik ayarı (uzman teklif ekranında görünsün)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS hide_phone BOOLEAN DEFAULT false;

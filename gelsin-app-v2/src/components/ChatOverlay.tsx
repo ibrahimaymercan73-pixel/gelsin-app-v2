@@ -29,6 +29,15 @@ export function ChatOverlayProvider({ children }: ProviderProps) {
     return () => window.removeEventListener('resize', check)
   }, [])
 
+  // Iframe içindeki sohbet sayfası "Kapat" deyince overlay'i kapat
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'close-chat') setJobId(null)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
   const openChat = (id: string) => setJobId(id)
   const closeChat = () => setJobId(null)
 
@@ -70,7 +79,8 @@ function ChatOverlayFrame({ jobId, isDesktop, onClose }: FrameProps) {
           <button
             type="button"
             onClick={onClose}
-            className="absolute -top-3 -right-3 w-7 h-7 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center shadow-lg z-10"
+            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white text-sm flex items-center justify-center shadow-lg z-20 border-2 border-white"
+            aria-label="Sohbeti kapat"
           >
             ✕
           </button>

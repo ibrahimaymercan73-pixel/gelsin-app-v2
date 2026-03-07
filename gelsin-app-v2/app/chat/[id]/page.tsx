@@ -183,14 +183,26 @@ export default function JobChatPage() {
                 </p>
               </div>
             </div>
-            {!embed && (
+            {(embed ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && window.parent) {
+                    window.parent.postMessage({ type: 'close-chat' }, '*')
+                  }
+                }}
+                className="text-slate-600 hover:text-slate-900 text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-slate-100 border border-slate-200"
+              >
+                Kapat
+              </button>
+            ) : (
               <button
                 onClick={() => router.back()}
                 className="text-slate-400 text-xs font-semibold px-2 py-1 rounded-full hover:bg-slate-100"
               >
                 Kapat
               </button>
-            )}
+            ))}
           </header>
 
           <main className="flex-1 px-3 py-3 overflow-y-auto space-y-2">
