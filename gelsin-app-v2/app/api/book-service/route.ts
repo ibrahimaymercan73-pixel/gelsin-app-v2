@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const serviceId = body?.serviceId
+    const serviceId = typeof body?.serviceId === 'string' ? body.serviceId.trim() : null
     if (!serviceId) {
       return NextResponse.json({ error: 'serviceId gerekli' }, { status: 400 })
     }
@@ -50,10 +50,17 @@ export async function POST(req: NextRequest) {
       .select('id, provider_id, title, description, price, category_slug')
       .eq('id', serviceId)
       .eq('status', 'active')
-      .single()
+      .maybeSingle()
 
-    if (serviceErr || !service) {
-      return NextResponse.json({ error: 'İlan bulunamadı veya aktif değil' }, { status: 404 })
+    if (serviceErr) {
+      console.error('[book-service] service fetch:', serviceErr)
+      return NextResponse.json(
+        { error: 'İlan sorgulanamadı. Veritabanında provider_services tablosu ve migration çalıştırıldı mı?' },
+        { status: 500 }
+      )
+    }
+    if (!service) {
+      return NextResponse.json({ error: 'İlan bulunamadı veya ilan pasif. Lütfen yayındaki bir ilan seçin.' }, { status: 404 })
     }
 
     const { data: catRow } = await supabase

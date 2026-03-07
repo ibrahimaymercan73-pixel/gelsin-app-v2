@@ -34,6 +34,8 @@ export default function ProviderServicesPage() {
     status: 'active',
   })
   const [submitting, setSubmitting] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   const load = async () => {
     const supabase = createClient()
@@ -58,6 +60,7 @@ export default function ProviderServicesPage() {
 
   const openNew = () => {
     setEditingId(null)
+    setImageFile(null)
     setForm({
       title: '',
       description: '',
@@ -71,6 +74,7 @@ export default function ProviderServicesPage() {
 
   const openEdit = (s: Service) => {
     setEditingId(s.id)
+    setImageFile(null)
     setForm({
       title: s.title,
       description: s.description || '',
@@ -80,6 +84,35 @@ export default function ProviderServicesPage() {
       status: s.status,
     })
     setModalOpen(true)
+  }
+
+  const uploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !file.type.startsWith('image/')) {
+      toast.error('Lütfen bir resim seçin (JPEG/PNG)')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Dosya 5MB\'dan küçük olmalı')
+      return
+    }
+    setUploadingImage(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('bucket', 'job-media')
+      formData.append('subpath', 'service')
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Yükleme başarısız')
+      setForm((f) => ({ ...f, image_url: data.publicUrl }))
+      setImageFile(file)
+      toast.success('Görsel yüklendi')
+    } catch (err: any) {
+      toast.error(err?.message || 'Görsel yüklenemedi')
+    } finally {
+      setUploadingImage(false)
+    }
   }
 
   const save = async () => {
@@ -286,14 +319,38 @@ export default function ProviderServicesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Vitrin görseli URL</label>
-                <input
-                  type="url"
-                  value={form.image_url}
-                  onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-                  className="input text-sm"
-                  placeholder="https://..."
-                />
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Vitrin görseli</label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-dashed border-slate-200 hover:border-blue-300 bg-slate-50/50 cursor-pointer transition-colors">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      className="hidden"
+                      onChange={uploadImage}
+                      disabled={uploadingImage}
+                    />
+                    {uploadingImage ? (
+                      <span className="text-sm text-slate-500">Yükleniyor...</span>
+                    ) : (
+                      <>
+                        <span className="text-lg">📷</span>
+                        <span className="text-sm font-medium text-slate-600">Görsel seç veya sürükle</span>
+                      </>
+                    )}
+                  </label>
+                  {form.image_url && (
+                    <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video max-h-32">
+                      <img src={form.image_url} alt="" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, image_url: '' }))}
+                        className="absolute top-1 right-1 w-7 h-7 rounded-full bg-black/60 text-white text-sm"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Durum</label>
