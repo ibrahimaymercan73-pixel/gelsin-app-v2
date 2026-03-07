@@ -74,15 +74,15 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   return (
     <ChatOverlayProvider>
       <OnboardingTour role={tourRole} />
-      <div className="min-h-dvh bg-[#fafaf9] flex font-sans">
+      <div className="min-h-dvh bg-[#F8F9F8] flex font-sans">
 
-      {/* DESKTOP SIDEBAR – wireframe: açık renk */}
-      <aside className="hidden lg:flex w-[220px] bg-[#F5F5F5] flex-col fixed h-full z-50 border-r border-[#D8D8D8]">
-        <div className="px-4 py-5 border-b border-[#D8D8D8]">
-          <span className="text-xl font-black text-stone-900 tracking-tight">
-            GELSİN<span className="text-slate-700">.</span>
+      {/* DESKTOP SIDEBAR – derin lacivert/teal (mobilde gizli) */}
+      <aside className="hidden md:flex w-[220px] bg-[#112F3D] flex-col fixed h-full z-50 border-r border-[#0d2430]">
+        <div className="px-4 py-5 border-b border-[#0d2430]">
+          <span className="text-xl font-black text-white tracking-tight">
+            GELSİN<span className="text-[#05C6A9]">.</span>
           </span>
-          <p className="text-stone-500 text-xs font-semibold mt-1 uppercase tracking-widest">Müşteri Paneli</p>
+          <p className="text-slate-400 text-xs font-semibold mt-1 uppercase tracking-widest">Müşteri Paneli</p>
         </div>
 
         <nav className="p-2.5 space-y-0.5 mt-2 flex-1">
@@ -92,8 +92,8 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             return (
               <Link key={item.href} href={item.href}
                 {...(item.tourId ? { id: item.tourId } : {})}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                  isActive ? 'bg-[#E0E0E0] text-slate-900' : 'text-stone-600 hover:bg-[#ECECEC] hover:text-stone-900'
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                  isActive ? 'bg-[#05C6A9] text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'
                 }`}>
                 <span className="relative">
                   <Icon className="w-5 h-5 shrink-0" />
@@ -106,22 +106,22 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           })}
         </nav>
 
-        <div className="p-2.5 border-t border-[#D8D8D8]">
+        <div className="p-2.5 border-t border-[#0d2430]">
           <Link href="/customer/new-job"
-            className="flex items-center justify-center gap-2 w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-lg font-bold text-sm transition-all">
+            className="flex items-center justify-center gap-2 w-full bg-[#05C6A9] hover:bg-[#04b398] text-white py-3 rounded-xl font-bold text-sm transition-all">
             <Plus className="w-5 h-5" /> Yeni İş Talebi
           </Link>
         </div>
       </aside>
 
       {/* ANA İÇERİK */}
-      <main className="flex-1 lg:ml-[220px] pb-24 lg:pb-0">
+      <main className="flex-1 md:ml-[220px] pb-24 md:pb-0">
         {children}
       </main>
 
-      {/* MOBİL BOTTOM NAV – koyu 4’lü (Bionluk tarzı) */}
+      {/* MOBİL BOTTOM NAV – koyu teal (Bionluk tarzı) */}
       {!hideBottomNav && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900 px-1 py-2 flex justify-around items-stretch z-[90] border-t border-slate-800 pb-[env(safe-area-inset-bottom,8px)]">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#112F3D] px-1 py-2 flex justify-around items-stretch z-[90] border-t border-[#0d2430] pb-[env(safe-area-inset-bottom,8px)]">
           {mobileNavItems.map(item => {
             const isActive = pathname === item.href
             const Icon = item.icon
@@ -131,7 +131,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 href={item.href}
                 {...(item.tourId ? { id: item.tourId } : {})}
                 className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-w-0 transition-colors active:opacity-80 ${
-                  isActive ? 'text-white font-semibold' : 'text-slate-400 font-normal'
+                  isActive ? 'text-[#05C6A9] font-semibold' : 'text-slate-400 font-normal'
                 }`}
               >
                 <span className="relative">
@@ -150,7 +150,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       {pathname !== '/customer' && pathname !== '/customer/dashboard' && pathname !== '/customer/jobs' && pathname !== '/customer/new-job' && (
         <Link
           href="/customer/new-job"
-          className="hidden md:flex fixed right-5 bottom-8 z-[95] bg-slate-900 hover:bg-slate-800 text-white w-14 h-14 rounded-2xl shadow-lg shadow-slate-900/30 items-center justify-center text-2xl font-bold hover:scale-105 active:scale-95 transition-transform"
+          className="hidden md:flex fixed right-5 bottom-8 z-[95] bg-[#05C6A9] hover:bg-[#04b398] text-white w-14 h-14 rounded-2xl shadow-lg shadow-[#05C6A9]/30 items-center justify-center text-2xl font-bold hover:scale-105 active:scale-95 transition-transform"
           aria-label="Yeni iş oluştur"
         >
           <Plus className="w-7 h-7" />
