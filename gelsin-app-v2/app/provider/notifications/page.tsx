@@ -175,8 +175,8 @@ export default function ProviderNotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F7FA]">
-      <header className="px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
+    <div className="min-h-screen md:h-dvh md:max-h-dvh md:flex md:flex-col bg-[#F4F7FA] md:overflow-hidden">
+      <header className="flex-shrink-0 px-6 lg:px-10 py-6 flex items-center justify-between bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
             Mesajlar & Bildirimler
@@ -187,18 +187,19 @@ export default function ProviderNotificationsPage() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="max-w-6xl w-full mx-auto px-4 lg:px-6 py-6 grid grid-cols-1 md:grid-cols-2 gap-8 md:flex-1 md:min-h-0 md:overflow-hidden">
         {/* Sol: Sohbetler */}
-        <section className="min-w-0">
-          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
+        <section className="min-w-0 md:flex md:flex-col md:h-full md:overflow-hidden">
+          <h2 className="flex-shrink-0 text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
             Sohbetler
           </h2>
+          <div className="md:flex md:flex-col md:flex-1 md:min-h-0 md:overflow-y-auto pr-2 scrollbar-thin">
           {conversations.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center border border-slate-200">
+            <div className="bg-white rounded-2xl p-8 text-center border border-slate-200 flex-shrink-0">
               <p className="text-slate-500 text-sm">Henüz sohbet yok</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 pb-2">
               {conversations.map((c) => {
                 const hasUnread = c.unread_count > 0
                 const initials = getInitials(c.other_name)
@@ -243,15 +244,17 @@ export default function ProviderNotificationsPage() {
               })}
             </div>
           )}
+          </div>
         </section>
 
         {/* Sağ: Bildirimler */}
-        <section className="min-w-0">
-          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
+        <section className="min-w-0 md:flex md:flex-col md:h-full md:overflow-hidden">
+          <h2 className="flex-shrink-0 text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">
             Bildirimler
           </h2>
+          <div className="md:flex md:flex-col md:flex-1 md:min-h-0 md:overflow-y-auto pr-2 scrollbar-thin">
           {items.length === 0 && conversations.length === 0 ? (
-            <div className="bg-white rounded-3xl p-10 text-center border border-slate-200 md:col-span-1">
+            <div className="bg-white rounded-3xl p-10 text-center border border-slate-200 flex-shrink-0">
               <div className="text-5xl mb-3">🔔</div>
               <p className="font-bold text-slate-700 mb-1">Henüz bildirim yok</p>
               <p className="text-xs text-slate-400">
@@ -259,11 +262,11 @@ export default function ProviderNotificationsPage() {
               </p>
             </div>
           ) : items.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center border border-slate-200">
+            <div className="bg-white rounded-2xl p-8 text-center border border-slate-200 flex-shrink-0">
               <p className="text-slate-500 text-sm">Henüz bildirim yok</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 pb-2">
               {items.map((n) => {
                 const isChat = n.type === 'chat_message' && n.related_job_id
                 const isBargain = n.type === 'offer_negotiate' && n.related_job_id
@@ -307,6 +310,7 @@ export default function ProviderNotificationsPage() {
               })}
             </div>
           )}
+          </div>
         </section>
       </div>
     </div>
