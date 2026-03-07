@@ -218,8 +218,8 @@ export default function CustomerJobsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F7FA] w-full max-w-full overflow-x-hidden">
-      <header className="w-full max-w-full px-4 sm:px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
+    <div className="min-h-screen bg-[#F4F7FA] w-full max-w-[100vw] overflow-x-hidden">
+      <header className="w-full max-w-[100vw] px-4 sm:px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50 box-border">
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
             Müşteri Paneli
@@ -236,13 +236,13 @@ export default function CustomerJobsPage() {
         </button>
       </header>
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 min-w-0">
-        <div className="w-full min-w-0 bg-white rounded-3xl p-2 border border-slate-200 shadow-sm flex overflow-x-auto hide-scrollbar gap-2 pb-2 mb-6">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 min-w-0 box-border">
+        <div className="w-full min-w-0 max-w-full flex overflow-x-auto hide-scrollbar gap-2 pb-2 mb-6 bg-white rounded-3xl p-2 border border-slate-200 shadow-sm">
           {(Object.keys(tabConfig) as TabKey[]).map((key) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`whitespace-nowrap flex-shrink-0 px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all ${
+              className={`flex-shrink-0 whitespace-nowrap px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all ${
                 activeTab === key
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-500 hover:bg-slate-50'
@@ -265,7 +265,7 @@ export default function CustomerJobsPage() {
         </div>
 
         {activeJobs.length === 0 ? (
-          <div className="bg-white rounded-3xl p-10 text-center border border-dashed border-slate-200">
+          <div className="w-full min-w-0 max-w-full bg-white rounded-3xl p-10 px-4 text-center border border-dashed border-slate-200 whitespace-normal box-border">
             <div className="text-5xl mb-3">
               {activeTab === 'open'
                 ? '📭'
@@ -275,10 +275,10 @@ export default function CustomerJobsPage() {
                 ? '🚗'
                 : '📁'}
             </div>
-            <p className="font-bold text-slate-700 mb-1">
+            <p className="font-bold text-slate-700 mb-1 break-words">
               Bu kategoride iş bulunmuyor
             </p>
-            <p className="text-xs text-slate-400 mb-4">
+            <p className="text-xs text-slate-400 mb-4 break-words">
               {tabConfig[activeTab].description}
             </p>
             <button
