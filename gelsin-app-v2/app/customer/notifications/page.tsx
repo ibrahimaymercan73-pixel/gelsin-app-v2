@@ -109,14 +109,15 @@ export default function CustomerNotificationsPage() {
         setConversations([])
       }
 
-      // Bildirimler
+      // Bildirimler (sadece pazarlık, teklif vb. – mesajlar sadece Sohbetler'de)
       const { data } = await supabase
         .from('notifications')
         .select('id, title, body, type, created_at, is_read, related_job_id')
         .eq('user_id', me)
         .order('created_at', { ascending: false })
 
-      setItems((data || []) as Notification[])
+      const list = (data || []) as Notification[]
+      setItems(list.filter((n) => n.type !== 'chat_message'))
 
       await supabase
         .from('notifications')

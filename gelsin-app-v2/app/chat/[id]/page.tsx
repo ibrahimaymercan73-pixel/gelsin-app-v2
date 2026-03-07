@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -9,6 +9,7 @@ type Message = {
   sender_id: string
   body: string
   created_at: string
+  is_read?: boolean
 }
 
 export default function JobChatPage() {
@@ -68,12 +69,21 @@ export default function JobChatPage() {
     if (!id) return
     const { data } = await supabase
       .from('messages')
-      .select('id, job_id, sender_id, body, created_at')
+      .select('id, job_id, sender_id, body, created_at, is_read')
       .eq('job_id', id)
       .order('created_at', { ascending: true })
 
     setMessages((data || []) as Message[])
   }
+
+  const markConversationAsRead = useCallback(async () => {
+    if (!id || !userId) return
+    await supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('job_id', id)
+      .eq('receiver_id', userId)
+  }, [id, userId])
 
   useEffect(() => {
     loadJobAndUser().then(() => setLoading(false))
@@ -85,6 +95,11 @@ export default function JobChatPage() {
     const interval = setInterval(loadMessages, 4000)
     return () => clearInterval(interval)
   }, [userId, id])
+
+  useEffect(() => {
+    if (!userId || !id) return
+    markConversationAsRead()
+  }, [userId, id, markConversationAsRead])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -132,23 +147,7 @@ export default function JobChatPage() {
       return
     }
 
-    // Karşı tarafa bildirim gönder
-    try {
-      const isCustomerSender = job.customer_id === userId
-      const preview =
-        body.length > 80 ? body.slice(0, 77).trimEnd() + '...' : body
-
-      await supabase.from('notifications').insert({
-        user_id: receiverId,
-        title: isCustomerSender ? 'Müşteriden Yeni Mesaj' : 'Uzmandan Yeni Mesaj',
-        body: `"${job.title}" işi için yeni mesaj: ${preview}`,
-        type: 'chat_message',
-        related_job_id: id,
-      })
-    } catch (e) {
-      console.error('MESAJ BILDIRIM HATASI:', e)
-    }
-
+    // Normal mesaj için bildirim oluşturma – sadece Sohbetler'de görünsün; Bildirimler'de pazarlık/teklif kalsın
     await loadMessages()
   }
 
