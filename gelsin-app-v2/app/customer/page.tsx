@@ -70,7 +70,7 @@ export default function CustomerHome() {
             Merhaba {userName || ''} 👋
           </h1>
           <p className="mt-2 text-slate-500 text-sm sm:text-base">
-            Bugün evinde neyi tamir etmek istersin?
+            Bugün hangi konuda uzman bir ele ihtiyacın var?
           </p>
         </section>
 
@@ -78,7 +78,7 @@ export default function CustomerHome() {
         <section className="mb-8">
           <div className="flex items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
             <p className="text-sm sm:text-base font-semibold leading-snug flex-1">
-              Evinizdeki eksikleri ertelemeyin! Türkiye&apos;nin en iyi uzmanlarından hemen teklif alın.
+              İhtiyaçlarını erteleme! Alanında uzman profesyonellerden anında teklif al ve işini hızlıca çöz.
             </p>
             <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/20 flex items-center justify-center">
               <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
