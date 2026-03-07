@@ -265,8 +265,8 @@ function NewJobForm() {
   const totalSteps = 3
 
   return (
-    <div className="min-h-dvh bg-white">
-      <div className="bg-gradient-to-br from-blue-700 to-blue-900 px-4 sm:px-5 pt-10 sm:pt-14 pb-5 sm:pb-6 text-white">
+    <div className="min-h-dvh bg-white w-full max-w-[100vw] overflow-x-hidden">
+      <div className="bg-gradient-to-br from-blue-700 to-blue-900 px-4 sm:px-5 pt-10 sm:pt-14 pb-5 sm:pb-6 text-white w-full max-w-[100vw] box-border">
         <button
           onClick={goBack}
           className="text-blue-300 hover:text-white text-sm mb-3 sm:mb-4 flex items-center gap-1 transition-colors"
@@ -279,11 +279,11 @@ function NewJobForm() {
           {step === 1 && 'Hangi Hizmeti İstiyorsun?'}
           {step === 2 && 'İş Detayları'}
         </h1>
-        <div className="flex gap-2 mt-3">
+        <div className="flex w-full gap-2 mt-3 min-w-0">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className={`h-1.5 flex-1 rounded-full transition-all ${
+              className={`h-1.5 flex-1 min-w-0 rounded-full transition-all ${
                 i <= step ? 'bg-white' : 'bg-white/30'
               }`}
             />
@@ -291,10 +291,10 @@ function NewJobForm() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-5 py-5 sm:py-6 pb-32 max-w-3xl mx-auto">
+      <div className="w-full min-w-0 px-4 sm:px-5 py-5 sm:py-6 pb-32 max-w-3xl mx-auto box-border">
         {/* STEP 0: Ana Kategori Seçimi */}
         {step === 0 && (
-          <div className="space-y-3 animate-slide-up">
+          <div className="w-full px-0 space-y-3 animate-slide-up">
             <p className="text-sm text-slate-500 mb-4">Önce ana kategori seçin:</p>
             {SERVICE_CATEGORIES.map((cat) => {
               const Icon = cat.icon

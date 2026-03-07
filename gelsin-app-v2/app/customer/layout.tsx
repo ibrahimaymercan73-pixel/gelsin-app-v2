@@ -116,8 +116,8 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         </nav>
       )}
 
-      {/* FAB - Yeni İş (İşlerim sayfasında gizli, alt menü zaten var) */}
-      {pathname !== '/customer/jobs' && (
+      {/* FAB - Yeni İş (İşlerim ve Yeni İş sayfasında gizli) */}
+      {pathname !== '/customer/jobs' && pathname !== '/customer/new-job' && (
         <Link
           href="/customer/new-job"
           className="fixed right-5 bottom-24 lg:bottom-8 z-[95] bg-slate-900 hover:bg-slate-800 text-white w-14 h-14 rounded-2xl shadow-lg shadow-slate-900/30 flex items-center justify-center text-2xl font-bold hover:scale-105 active:scale-95 transition-transform"
