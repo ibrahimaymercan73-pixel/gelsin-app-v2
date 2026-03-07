@@ -499,14 +499,16 @@ export default function ProviderJobsPage() {
                   />
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <button
+                      type="button"
                       className="btn-secondary py-2 text-xs"
-                      onClick={() =>
+                      onClick={() => {
                         setOffering((p) => {
                           const n = { ...p }
                           delete n[selectedJob.id]
                           return n
                         })
-                      }
+                        setSelectedJobId(null)
+                      }}
                     >
                       İptal
                     </button>
