@@ -131,9 +131,9 @@ export default function CustomerHome() {
           </div>
         </section>
 
-        {/* 2. Arama + hap etiketler – mobilde hap yatay kaydırma */}
+        {/* 2. Arama + hap etiketler – tam genişlik, sola yaslı */}
         <section className="w-full shrink-0">
-          <div className="w-full md:max-w-2xl flex flex-col sm:flex-row gap-3 bg-white rounded-2xl shadow-sm border border-slate-100 p-2">
+          <div className="w-full flex flex-col sm:flex-row gap-3 bg-white rounded-2xl shadow-sm border border-slate-100 p-2.5">
             <input
               type="text"
               placeholder="Hangi uzmana ihtiyacın var? (Örn: Kombi bakımı, Boya...)"
@@ -151,7 +151,7 @@ export default function CustomerHome() {
               Arama
             </button>
           </div>
-          <div className="w-full flex flex-row overflow-x-auto whitespace-nowrap hide-scrollbar gap-2 pb-2 mt-3 md:max-w-3xl">
+          <div className="w-full flex flex-row overflow-x-auto whitespace-nowrap hide-scrollbar gap-2 pb-2 mt-3">
             {PILL_LABELS.map((label) => (
               <button
                 key={label}
@@ -167,17 +167,17 @@ export default function CustomerHome() {
 
         {/* 3. Hızlı işlem kartları – mobilde alt alta, md’de 3’lü */}
         <section className="w-full shrink-0">
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-3 gap-3">
             {CTA_CARDS.map((card) => (
               <Link
                 key={card.href}
                 href={card.href}
-                className="p-4 flex items-center gap-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left"
+                className="p-5 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 hover:bg-slate-50/50 transition-all text-center min-h-[100px]"
               >
-                <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center text-xl shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl shrink-0">
                   {card.icon}
                 </div>
-                <span className="font-semibold text-slate-800 text-sm sm:text-base">
+                <span className="font-semibold text-slate-800 text-sm">
                   {card.title}
                 </span>
               </Link>
@@ -195,7 +195,7 @@ export default function CustomerHome() {
                   <Link
                     key={s.id}
                     href={`/customer/services/${s.id}`}
-                    className="flex-shrink-0 w-[260px] snap-center rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 overflow-hidden transition-all"
+                    className="flex-shrink-0 w-[260px] snap-center rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <div className="aspect-[4/3] bg-slate-100 relative">
                       {s.image_url ? (
@@ -204,16 +204,16 @@ export default function CustomerHome() {
                         <div className="w-full h-full flex items-center justify-center text-3xl">🔧</div>
                       )}
                     </div>
-                    <div className="p-3">
+                    <div className="p-4">
                       <h4 className="font-bold text-slate-900 text-sm line-clamp-2">{s.title}</h4>
-                      <p className="text-xs text-slate-500 mt-0.5">{s.provider_name}</p>
-                      <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-slate-500 mt-1">{s.provider_name}</p>
+                      <div className="flex items-center justify-between mt-3">
                         {s.provider_rating != null && (
                           <span className="text-xs text-amber-600">★ {s.provider_rating.toFixed(1)}</span>
                         )}
                         <span className="font-bold text-blue-600">₺{Number(s.price).toFixed(0)}</span>
                       </div>
-                      <span className="inline-block mt-2 w-full text-center py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold">
+                      <span className="inline-block mt-3 w-full text-center py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold">
                         Hemen Çağır
                       </span>
                     </div>
@@ -230,10 +230,10 @@ export default function CustomerHome() {
                 <Link
                   key={cat.id}
                   href={`/customer/new-job?cat=${cat.id}`}
-                  className="aspect-[1.1] min-h-0 rounded-xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all flex flex-col items-start justify-center gap-2 p-3 text-left"
+                  className="rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col items-center justify-center gap-2 p-5 text-center min-h-[100px] hover:bg-slate-50/50"
                 >
-                  <span className="text-2xl sm:text-3xl" aria-hidden>{cat.emoji}</span>
-                  <span className="font-semibold text-slate-800 text-xs leading-tight line-clamp-2">
+                  <span className="text-3xl" aria-hidden>{cat.emoji}</span>
+                  <span className="font-semibold text-slate-800 text-sm leading-tight line-clamp-2">
                     {cat.name}
                   </span>
                 </Link>
