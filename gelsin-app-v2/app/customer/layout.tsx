@@ -19,7 +19,8 @@ const mobileNavItems = [
 const desktopNavItems = [
   { href: '/customer', icon: Home, label: 'Ana Sayfa', showBadge: false, tourId: 'tour-ana-sayfa' as const },
   { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', showBadge: false, tourId: 'tour-jobs' as const },
-  { href: '/customer/notifications', icon: Bell, label: 'Mesajlar', showBadge: true, tourId: 'tour-mesajlar' as const },
+  { href: '/customer/messages', icon: MessageSquare, label: 'Mesajlar', showBadge: true, tourId: 'tour-mesajlar' as const },
+  { href: '/customer/notifications', icon: Bell, label: 'Bildirimler', showBadge: false, tourId: null },
   { href: '/customer/panel', icon: Briefcase, label: 'Panel', showBadge: false, tourId: null },
   { href: '/customer/profile', icon: User, label: 'Profilim', showBadge: false, tourId: null },
 ]
