@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, MessageSquare, Briefcase, Menu, ClipboardList, LayoutDashboard, Bell, User, Plus } from 'lucide-react'
+import { Home, MessageSquare, Briefcase, Menu, ClipboardList, Bell, User, Plus } from 'lucide-react'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
 import { OnboardingTour } from '@/components/OnboardingTour'
@@ -18,8 +18,7 @@ const mobileNavItems = [
 /** Masaüstü sidebar: geniş menü – badgeType ile rozet: message=Mesajlar, notification=Bildirimler */
 const desktopNavItems = [
   { href: '/customer', icon: Home, label: 'Ana Sayfa', badgeType: null as 'message' | 'notification' | null, tourId: 'tour-ana-sayfa' as const },
-  { href: '/customer/dashboard', icon: LayoutDashboard, label: 'Dashboard', badgeType: null, tourId: 'tour-jobs' as const },
-  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', badgeType: null, tourId: null },
+  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', badgeType: null, tourId: 'tour-jobs' as const },
   { href: '/customer/messages', icon: MessageSquare, label: 'Mesajlar', badgeType: 'message' as const, tourId: 'tour-mesajlar' as const },
   { href: '/customer/notifications', icon: Bell, label: 'Bildirimler', badgeType: 'notification' as const, tourId: null },
   { href: '/customer/panel', icon: Briefcase, label: 'Panel', badgeType: null, tourId: null },
