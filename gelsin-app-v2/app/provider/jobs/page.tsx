@@ -251,27 +251,25 @@ export default function ProviderJobsPage() {
         <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-900">🔍 Radar</h1>
         <p className="text-slate-600 text-xs sm:text-sm mt-0.5">Yakınımdaki açık işler</p>
 
-        {/* Filters: mobilde yatay kaydırma, taşma yok */}
-        <div className="mt-3 sm:mt-4 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto overflow-y-hidden scrollbar-hide">
-          <div className="flex gap-2 flex-nowrap w-max min-w-0 pb-1">
-            {chips.map((c) => {
-              const active = filter === c.id
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setFilter(c.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 flex-shrink-0 whitespace-nowrap ${
-                    active
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {c.label}
-                </button>
-              )
-            })}
-          </div>
+        {/* Filtreler: mobilde satıra sığdır (wrap), taşma yok */}
+        <div className="mt-3 sm:mt-4 flex flex-wrap gap-2">
+          {chips.map((c) => {
+            const active = filter === c.id
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setFilter(c.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 whitespace-nowrap ${
+                  active
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {c.label}
+              </button>
+            )
+          })}
         </div>
       </header>
 
