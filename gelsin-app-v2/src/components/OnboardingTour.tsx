@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import Joyride, { STATUS, type Step, type CallBackProps } from 'react-joyride'
 
+/** Tur bir kez bitirildiğinde veya atlandığında localStorage'a yazılır; tekrar gösterilmez. */
 const STORAGE_KEY = 'gelsin_hasSeenTour'
 
+/** Müşteri paneli tur adımları. target değerleri customer layout'taki nav link id'leri ile eşleşmeli. */
 const CUSTOMER_STEPS: Step[] = [
   {
     target: '#tour-ana-sayfa',
@@ -29,6 +31,7 @@ const CUSTOMER_STEPS: Step[] = [
   },
 ]
 
+/** Uzman paneli tur adımları. target değerleri provider layout'taki nav link id'leri ile eşleşmeli. */
 const PROVIDER_STEPS: Step[] = [
   {
     target: '#tour-radar',
@@ -46,6 +49,7 @@ const PROVIDER_STEPS: Step[] = [
   },
 ]
 
+/** Joyride buton metinleri (Türkçe). */
 const LOCALE = {
   back: 'Geri',
   close: 'Kapat',
@@ -54,6 +58,7 @@ const LOCALE = {
   skip: 'Atla',
 }
 
+/** Gelsin temasına uygun tur baloncuk stilleri (primaryColor, zIndex, tooltip köşe/padding). */
 const STYLES = {
   options: {
     primaryColor: '#2563eb',
@@ -97,13 +102,13 @@ export function OnboardingTour({ role }: { role: 'customer' | 'provider' | null 
   useEffect(() => {
     if (typeof window === 'undefined' || !role) return
     if (localStorage.getItem(STORAGE_KEY) === 'true') return
-
     const stepList = role === 'customer' ? CUSTOMER_STEPS : PROVIDER_STEPS
     setSteps(stepList)
     const t = setTimeout(() => setRun(true), 800)
     return () => clearTimeout(t)
   }, [role])
 
+  /** Bitir / Kapat / Atla ile tur bittiğinde veya atlandığında: turu kapat, localStorage'a yaz. */
   const handleCallback = (data: CallBackProps) => {
     const { status } = data
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
