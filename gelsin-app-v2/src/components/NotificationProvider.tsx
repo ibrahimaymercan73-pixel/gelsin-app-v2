@@ -6,12 +6,16 @@ import { useRouter } from 'next/navigation'
 import { MessageCircle } from 'lucide-react'
 
 interface NotificationContextType {
-  unreadCount: number
+  /** Okunmamış sohbet mesajı sayısı – Mesajlar sekmesinde gösterilir */
+  unreadMessageCount: number
+  /** Okunmamış bildirim sayısı (teklif vb., chat_message hariç) – Bildirimler’de gösterilir */
+  unreadNotificationCount: number
   refreshUnreadCount: () => Promise<void>
 }
 
 const NotificationContext = createContext<NotificationContextType>({
-  unreadCount: 0,
+  unreadMessageCount: 0,
+  unreadNotificationCount: 0,
   refreshUnreadCount: async () => {},
 })
 
@@ -19,7 +23,8 @@ export const useNotifications = () => useContext(NotificationContext)
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
 
   const fetchUnreadCount = useCallback(async () => {
@@ -27,22 +32,30 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
-      setUnreadCount(0)
+      setUnreadMessageCount(0)
+      setUnreadNotificationCount(0)
       setUserId(null)
       return
     }
     
     setUserId(user.id)
 
-    // Rozet sadece pazarlık/teklif vb. bildirimleri saysın; mesajlar Sohbetler'de
-    const { count } = await supabase
+    // Okunmamış bildirimler (teklif, kabul vb. – chat_message hariç)
+    const { count: notifCount } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('is_read', false)
       .or('type.is.null,type.neq.chat_message')
+    setUnreadNotificationCount(notifCount ?? 0)
 
-    setUnreadCount(count ?? 0)
+    // Okunmamış sohbet mesajları (bana gelen, is_read = false)
+    const { count: msgCount } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('receiver_id', user.id)
+      .or('is_read.is.null,is_read.eq.false')
+    setUnreadMessageCount(msgCount ?? 0)
   }, [])
 
   // Auth state değişince (giriş/çıkış) userId güncelle – masaüstü/mobil fark etmez, her zaman senkron
@@ -79,11 +92,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           const newNotif = payload.new as any
           
           if (newNotif.user_id !== currentUserId) return
-          
-          setUnreadCount(prev => prev + 1)
-
-          // Mesaj bildiriminde toast gösterme – tek toast messages kanalından gelecek (gönderen adıyla)
           if (newNotif.type === 'chat_message') return
+
+          setUnreadNotificationCount(prev => prev + 1)
 
           toast(newNotif.title || 'Yeni Bildirim', {
             description: newNotif.body?.slice(0, 60) || '',
@@ -109,6 +120,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         async (payload) => {
           const msg = payload.new as any
           if (msg.receiver_id !== currentUserId) return
+
+          setUnreadMessageCount(prev => prev + 1)
 
           const { data: sender } = await supabase
             .from('profiles_public')
@@ -156,7 +169,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [userId, router])
 
   return (
-    <NotificationContext.Provider value={{ unreadCount, refreshUnreadCount: fetchUnreadCount }}>
+    <NotificationContext.Provider value={{ unreadMessageCount, unreadNotificationCount, refreshUnreadCount: fetchUnreadCount }}>
       <Toaster 
         position="top-center"
         expand={true}

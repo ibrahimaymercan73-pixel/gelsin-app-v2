@@ -9,26 +9,26 @@ import { OnboardingTour } from '@/components/OnboardingTour'
 
 /** Mobil bottom nav: 4’lü koyu menü (Bionluk tarzı) */
 const mobileNavItems = [
-  { href: '/customer', icon: Home, label: 'Keşfet', tourId: 'tour-ana-sayfa' as const },
-  { href: '/customer/messages', icon: MessageSquare, label: 'Mesajlar', showBadge: true, tourId: 'tour-mesajlar' as const },
-  { href: '/customer/panel', icon: Briefcase, label: 'Panel', tourId: null },
-  { href: '/customer/menu', icon: Menu, label: 'Diğer', tourId: null },
+  { href: '/customer', icon: Home, label: 'Keşfet', badgeType: null as 'message' | 'notification' | null, tourId: 'tour-ana-sayfa' as const },
+  { href: '/customer/messages', icon: MessageSquare, label: 'Mesajlar', badgeType: 'message' as const, tourId: 'tour-mesajlar' as const },
+  { href: '/customer/panel', icon: Briefcase, label: 'Panel', badgeType: null, tourId: null },
+  { href: '/customer/menu', icon: Menu, label: 'Diğer', badgeType: 'notification' as const, tourId: null },
 ]
 
-/** Masaüstü sidebar: geniş menü */
+/** Masaüstü sidebar: geniş menü – badgeType ile rozet: message=Mesajlar, notification=Bildirimler */
 const desktopNavItems = [
-  { href: '/customer', icon: Home, label: 'Ana Sayfa', showBadge: false, tourId: 'tour-ana-sayfa' as const },
-  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', showBadge: false, tourId: 'tour-jobs' as const },
-  { href: '/customer/messages', icon: MessageSquare, label: 'Mesajlar', showBadge: true, tourId: 'tour-mesajlar' as const },
-  { href: '/customer/notifications', icon: Bell, label: 'Bildirimler', showBadge: false, tourId: null },
-  { href: '/customer/panel', icon: Briefcase, label: 'Panel', showBadge: false, tourId: null },
-  { href: '/customer/profile', icon: User, label: 'Profilim', showBadge: false, tourId: null },
+  { href: '/customer', icon: Home, label: 'Ana Sayfa', badgeType: null as 'message' | 'notification' | null, tourId: 'tour-ana-sayfa' as const },
+  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', badgeType: null, tourId: 'tour-jobs' as const },
+  { href: '/customer/messages', icon: MessageSquare, label: 'Mesajlar', badgeType: 'message' as const, tourId: 'tour-mesajlar' as const },
+  { href: '/customer/notifications', icon: Bell, label: 'Bildirimler', badgeType: 'notification' as const, tourId: null },
+  { href: '/customer/panel', icon: Briefcase, label: 'Panel', badgeType: null, tourId: null },
+  { href: '/customer/profile', icon: User, label: 'Profilim', badgeType: null, tourId: null },
 ]
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { unreadCount } = useNotifications()
+  const { unreadMessageCount, unreadNotificationCount } = useNotifications()
   const [tourRole, setTourRole] = useState<'customer' | 'provider' | null>(null)
 
   useEffect(() => {
@@ -97,7 +97,8 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 }`}>
                 <span className="relative">
                   <Icon className="w-5 h-5 shrink-0" />
-                  {item.showBadge && <NotificationBadge count={unreadCount} />}
+                  {item.badgeType === 'message' && <NotificationBadge count={unreadMessageCount} />}
+                  {item.badgeType === 'notification' && <NotificationBadge count={unreadNotificationCount} />}
                 </span>
                 {item.label}
               </Link>
@@ -135,7 +136,8 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
               >
                 <span className="relative">
                   <Icon className="w-6 h-6 shrink-0" />
-                  {'showBadge' in item && item.showBadge && <NotificationBadge count={unreadCount} />}
+                  {item.badgeType === 'message' && <NotificationBadge count={unreadMessageCount} />}
+                  {item.badgeType === 'notification' && <NotificationBadge count={unreadNotificationCount} />}
                 </span>
                 <span className="text-[10px] mt-1 truncate w-full text-center">{item.label}</span>
               </Link>

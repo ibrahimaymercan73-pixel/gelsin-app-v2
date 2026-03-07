@@ -21,7 +21,8 @@ const navItems = [
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { unreadCount } = useNotifications()
+  const { unreadMessageCount, unreadNotificationCount } = useNotifications()
+  const unreadCount = unreadMessageCount + unreadNotificationCount
   const [tourRole, setTourRole] = useState<'customer' | 'provider' | null>(null)
   useUpdatePresence()
 
