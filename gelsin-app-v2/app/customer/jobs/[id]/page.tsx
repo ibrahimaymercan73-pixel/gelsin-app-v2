@@ -275,9 +275,7 @@ export default function JobDetailPage() {
       status === 'accepted' ||
       status === 'started' ||
       status === 'completed'
-
-    if (!phone) return 'Telefon yok'
-    return canShow ? phone : 'Numara Gizli'
+    return { phone: phone || null, canShow: !!phone && canShow }
   }
 
   const mediaUrls: string[] = Array.isArray(job?.media_urls)
@@ -733,15 +731,25 @@ export default function JobDetailPage() {
                           {offer.profiles?.full_name || offer.profiles?.phone || 'İsimsiz Uzman'}
                         </p>
                         <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                          <div className="flex items-center gap-1 text-[11px] text-gray-500 flex-wrap">
                             <span className="text-yellow-400 text-xs">★</span>
                             <span className="text-xs">
                               {offer.provider_profiles?.rating ?? 'Puan yok'}
                             </span>
                             <span className="mx-1">•</span>
-                            <span className="text-xs">
-                              {getOfferPhoneDisplay(offer)}
-                            </span>
+                            {(() => {
+                              const { phone, canShow } = getOfferPhoneDisplay(offer)
+                              if (!phone) return <span className="text-xs text-slate-400">Telefon yok</span>
+                              if (!canShow) return <span className="text-xs text-slate-400">🔒 Numara Gizli</span>
+                              return (
+                                <a
+                                  href={`tel:${phone}`}
+                                  className="inline-flex items-center gap-0.5 text-green-600 bg-green-50 hover:bg-green-100 border border-green-200 rounded-md px-1.5 py-0.5 text-xs font-medium"
+                                >
+                                  📞 Beni Ara
+                                </a>
+                              )
+                            })()}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-[11px] text-slate-500">
                             {typeof offer.provider_profiles?.avg_response_time_mins === 'number' && (

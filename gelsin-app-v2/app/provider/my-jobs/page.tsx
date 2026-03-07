@@ -371,16 +371,17 @@ export default function ProviderMyJobsPage() {
               ? { cls: 'badge-orange', text: '⚠️ Uyuşmazlık' }
               : { cls: 'badge-red', text: '✖ İptal' }
 
-          const customerPhone =
-            job.profiles?.phone || 'Telefon yok'
+          const customerPhone = job.profiles?.phone
           const customerHide = !!job.profiles?.hide_phone
           const canShowPhone =
-            !customerHide ||
-            job.status === 'accepted' ||
-            job.status === 'started' ||
-            job.status === 'completed'
+            !!customerPhone &&
+            (!customerHide ||
+              job.status === 'accepted' ||
+              job.status === 'started' ||
+              job.status === 'completed')
 
-          const phoneDisplay = canShowPhone ? customerPhone : 'Numara Gizli'
+          const showDirections =
+            job.status !== 'completed' && job.status !== 'cancelled'
 
           return (
             <div key={job.id} className="card p-2.5 animate-slide-up">
@@ -392,10 +393,19 @@ export default function ProviderMyJobsPage() {
                 <p className="font-bold text-gray-900 text-sm truncate">{job.title}</p>
                 <p className="text-[11px] text-gray-500 mt-0.5 truncate">📍 {job.address}</p>
                 <p className="text-[11px] text-gray-400">
-                  👤 {job.profiles?.full_name || (canShowPhone ? customerPhone : 'Müşteri')}
+                  👤 {job.profiles?.full_name || 'Müşteri'}
                 </p>
-                <p className="text-[10px] text-gray-500 mt-0.5">
-                  ☎ {phoneDisplay}
+                <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                  {canShowPhone ? (
+                    <a
+                      href={`tel:${customerPhone}`}
+                      className="inline-flex items-center gap-1 text-green-600 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg px-2 py-1 text-xs font-medium"
+                    >
+                      📞 Beni Ara
+                    </a>
+                  ) : (
+                    <span className="text-slate-400 text-xs">🔒 Numara Gizli</span>
+                  )}
                 </p>
               </div>
               <div className="flex-shrink-0 text-right">
@@ -434,11 +444,13 @@ export default function ProviderMyJobsPage() {
                   💬 Müşteriyle Mesajlaş
                 </button>
               )}
-              <a href={`https://maps.google.com/?q=${job.lat},${job.lng}`}
-                target="_blank" rel="noopener noreferrer"
-                className="btn-secondary py-2 text-xs text-center block w-full">
-                🗺️ Yol Tarifi Al
-              </a>
+              {showDirections && (
+                <a href={`https://maps.google.com/?q=${job.lat},${job.lng}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="btn-secondary py-2 text-xs text-center block w-full">
+                  🗺️ Yol Tarifi Al
+                </a>
+              )}
             </div>
             </div>
           )
