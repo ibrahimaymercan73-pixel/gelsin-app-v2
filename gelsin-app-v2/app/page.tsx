@@ -16,6 +16,7 @@ import {
 import { createClient } from '@/lib/supabase'
 import { getCurrentUserAndRole } from '@/lib/auth'
 import { SERVICE_CATEGORIES } from '@/lib/constants'
+import { Footer } from '@/components/Footer'
 
 // Super App için güncellenmiş arama placeholder'ları
 const SEARCH_PLACEHOLDERS = [
@@ -388,9 +389,7 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      <footer className="py-10 px-4 border-t border-slate-200 bg-white text-center text-sm text-slate-500">
-        GELSİN<span className="text-slate-800 font-semibold">.</span> — Kapınıza kadar hizmet
-      </footer>
+      <Footer />
     </div>
   )
 }
