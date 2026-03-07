@@ -77,7 +77,7 @@ export default function ProviderWallet() {
     const parsed = IBAN_SCHEMA.safeParse(form)
     if (!parsed.success) {
       const err: Partial<Record<keyof BankForm, string>> = {}
-      parsed.error.errors.forEach((e) => {
+      parsed.error.issues.forEach((e) => {
         const k = e.path[0] as keyof BankForm
         if (k) err[k] = e.message
       })
