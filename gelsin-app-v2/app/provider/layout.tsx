@@ -12,6 +12,7 @@ const navItems = [
   { href: '/provider', icon: '📊', label: 'Özet', showBadge: false, tourId: null as string | null },
   { href: '/provider/jobs', icon: '🔍', label: 'Radar', showBadge: false, tourId: 'tour-radar' as string | null },
   { href: '/provider/my-jobs', icon: '🔨', label: 'İşlerim', showBadge: false, tourId: null },
+  { href: '/provider/services', icon: '📌', label: 'İlanlarım', showBadge: false, tourId: null },
   { href: '/provider/notifications', icon: '🔔', label: 'Mesajlar', showBadge: true, tourId: null },
   { href: '/provider/wallet', icon: '💰', label: 'Cüzdan', showBadge: false, tourId: 'tour-wallet' as string | null },
   { href: '/provider/profile', icon: '👤', label: 'Profil', showBadge: false, tourId: null },

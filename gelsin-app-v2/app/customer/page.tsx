@@ -37,10 +37,22 @@ const HOW_IT_WORKS = [
   { icon: '✅', title: 'İşin Çözülsün', desc: 'Onayla ve arkanı yaslan' },
 ]
 
+type VitrinService = {
+  id: string
+  title: string
+  description: string | null
+  price: number
+  image_url: string | null
+  provider_id: string
+  provider_name: string
+  provider_rating: number | null
+}
+
 export default function CustomerHome() {
   const router = useRouter()
   const [userName, setUserName] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [vitrinList, setVitrinList] = useState<VitrinService[]>([])
 
   useEffect(() => {
     const load = async () => {
@@ -51,6 +63,52 @@ export default function CustomerHome() {
       setUserName(p?.full_name?.trim() || '')
     }
     load()
+  }, [])
+
+  useEffect(() => {
+    const loadVitrin = async () => {
+      const supabase = createClient()
+      const { data: rows } = await supabase
+        .from('provider_services')
+        .select('id, title, description, price, image_url, provider_id')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (!rows?.length) {
+        setVitrinList([])
+        return
+      }
+      const providerIds = [...new Set(rows.map((r: any) => r.provider_id))]
+      const { data: profiles } = await supabase
+        .from('profiles_public')
+        .select('id, full_name')
+        .in('id', providerIds)
+      const { data: pp } = await supabase
+        .from('provider_profiles')
+        .select('id, rating')
+        .in('id', providerIds)
+      const nameBy: Record<string, string> = {}
+      const ratingBy: Record<string, number> = {}
+      for (const x of profiles || []) {
+        nameBy[x.id] = x.full_name || 'Uzman'
+      }
+      for (const x of pp || []) {
+        ratingBy[x.id] = Number(x.rating) || 0
+      }
+      setVitrinList(
+        rows.map((r: any) => ({
+          id: r.id,
+          title: r.title,
+          description: r.description,
+          price: r.price,
+          image_url: r.image_url,
+          provider_id: r.provider_id,
+          provider_name: nameBy[r.provider_id] || 'Uzman',
+          provider_rating: ratingBy[r.provider_id] ?? null,
+        }))
+      )
+    }
+    loadVitrin()
   }, [])
 
   const handleSearch = () => {
@@ -130,6 +188,40 @@ export default function CustomerHome() {
             ))}
           </div>
         </section>
+
+        {/* Öne çıkan uzman ilanları (vitrin) */}
+        {vitrinList.length > 0 && (
+          <section className="mb-12">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Öne Çıkan Uzman İlanları</h3>
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0 hide-scrollbar snap-x snap-mandatory">
+              {vitrinList.map((s) => (
+                <Link
+                  key={s.id}
+                  href={`/customer/services/${s.id}`}
+                  className="flex-shrink-0 w-[280px] snap-center rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-blue-200 overflow-hidden transition-all"
+                >
+                  <div className="aspect-[4/3] bg-slate-100 relative">
+                    {s.image_url ? (
+                      <img src={s.image_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl">🔧</div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <h4 className="font-bold text-slate-900 text-sm line-clamp-2">{s.title}</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">{s.provider_name}</p>
+                    <div className="flex items-center justify-between mt-2">
+                      {s.provider_rating != null && (
+                        <span className="text-xs text-amber-600">★ {s.provider_rating.toFixed(1)}</span>
+                      )}
+                      <span className="font-black text-blue-600">₺{Number(s.price).toFixed(0)}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Gerçek ana kategoriler - new-job'a yönlendir */}
         <section className="mb-14">
