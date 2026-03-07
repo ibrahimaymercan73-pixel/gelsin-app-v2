@@ -36,9 +36,19 @@ export async function middleware(req: NextRequest) {
 
   const supabase = createSupabaseServerClient(req, res)
 
-  const {
+  let {
     data: { user },
   } = await supabase.auth.getUser()
+
+  if (!user) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      const { data: { session: refreshed } } = await supabase.auth.refreshSession()
+      if (refreshed?.user) user = refreshed.user
+    } else {
+      user = session.user
+    }
+  }
 
   const isAuthPage = pathname === '/login' || pathname === '/onboarding' || pathname === '/'
   const isCustomerArea = pathname.startsWith('/customer')

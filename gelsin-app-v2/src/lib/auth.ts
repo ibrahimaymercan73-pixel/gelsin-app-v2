@@ -29,6 +29,16 @@ export async function getCurrentUserAndRole(): Promise<AuthContext> {
   }
 }
 
+/** Oturum süresi dolmuş olabilir; önce yenile, sonra kullanıcı/rol al (layout için) */
+export async function getCurrentUserAndRoleWithRefresh(): Promise<AuthContext> {
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    await supabase.auth.refreshSession()
+  }
+  return getCurrentUserAndRole()
+}
+
 export async function getProviderStatus(userId: string): Promise<'pending' | 'approved' | 'suspended' | null> {
   const supabase = createClient()
 

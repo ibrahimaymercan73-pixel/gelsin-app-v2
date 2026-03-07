@@ -20,11 +20,23 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   const { unreadCount } = useNotifications()
 
   useEffect(() => {
-    const ensureAuthenticated = async () => {
-      const { user, role } = await getCurrentUserAndRole()
+    let cancelled = false
+    const ensureAuthenticated = async (retry = false) => {
+      const { getCurrentUserAndRoleWithRefresh } = await import('@/lib/auth')
+      let { user, role } = await getCurrentUserAndRoleWithRefresh()
 
+      if (cancelled) return
       if (!user) {
-        router.replace('/onboarding')
+        if (!retry) {
+          setTimeout(() => ensureAuthenticated(true), 400)
+          return
+        }
+        router.replace('/login')
+        return
+      }
+
+      if (!role) {
+        router.replace('/choose-role')
         return
       }
 
@@ -40,6 +52,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
     }
 
     ensureAuthenticated()
+    return () => { cancelled = true }
   }, [router])
 
   const hideBottomNav = pathname.startsWith('/customer/chat')
