@@ -89,13 +89,18 @@ export default function ProviderOnboardingPage() {
       })
       .eq('id', user.id)
 
-    setSaving(false)
-
     if (error) {
+      setSaving(false)
       alert('Kaydedilemedi: ' + error.message)
       return
     }
 
+    // Tam sayfa yönlendirme: client-side navigation bazen donmaya sebep oluyordu
+    if (typeof window !== 'undefined') {
+      window.location.href = '/provider'
+      return
+    }
+    setSaving(false)
     router.replace('/provider')
   }
 
