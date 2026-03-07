@@ -1,10 +1,24 @@
 import { createBrowserClient } from '@supabase/ssr'
 
-export const createClient = () =>
-  createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+if (typeof window !== 'undefined' && anonKey) {
+  try {
+    const payload = JSON.parse(atob(anonKey.split('.')[1]))
+    if (payload.role === 'service_role') {
+      console.error(
+        '[Supabase] 403 hatası: NEXT_PUBLIC_SUPABASE_ANON_KEY olarak SERVICE ROLE key kullanıyorsunuz. ' +
+          "Dashboard → Project Settings → API → 'anon public' key'i kopyalayıp .env.local ve Vercel'de tanımlayın. " +
+          "Service Role key sadece sunucu tarafında kullanılmalı, tarayıcıda asla kullanmayın."
+      )
+    }
+  } catch {
+    // JWT parse hatası – görmezden gel
+  }
+}
+
+export const createClient = () => createBrowserClient(url, anonKey)
 
 export type UserRole = 'customer' | 'provider' | 'admin'
 
