@@ -5,14 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { Search, Sparkles } from 'lucide-react'
-
-const POPULAR_SEARCHES = [
-  { label: 'Tesisat', category: 'plumbing' },
-  { label: 'Boya & Badana', category: 'painting' },
-  { label: 'Temizlik', category: 'cleaning' },
-  { label: 'Montaj', category: 'assembly' },
-  { label: 'Elektrik', category: 'electric' },
-]
+import { SERVICE_CATEGORIES } from '@/lib/constants'
 
 const CTA_CARDS = [
   {
@@ -35,12 +28,8 @@ const CTA_CARDS = [
   },
 ]
 
-const POPULAR_SERVICES = [
-  { icon: '🚰', label: 'Su Tesisatı', category: 'plumbing' },
-  { icon: '🧹', label: 'Ev Temizliği', category: 'cleaning' },
-  { icon: '🔌', label: 'Elektrik & Aydınlatma', category: 'electric' },
-  { icon: '🛋️', label: 'Mobilya Montajı', category: 'assembly' },
-]
+// Gerçek 4 ana kategori (new-job'a yönlendir)
+const MAIN_CATEGORIES = SERVICE_CATEGORIES.slice(0, 4)
 
 const HOW_IT_WORKS = [
   { icon: '📝', title: 'İhtiyacını Belirt', desc: 'Detayları ve konumu yaz' },
@@ -72,14 +61,10 @@ export default function CustomerHome() {
     }
   }
 
-  const handlePopularClick = (category: string) => {
-    router.push(`/customer/providers?category=${category}`)
-  }
-
   return (
-    <div className="min-h-screen bg-white">
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12">
-        {/* Hero - Kişiselleştirilmiş karşılama */}
+    <div className="min-h-screen bg-white w-full max-w-[100vw] overflow-x-hidden">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-8 sm:py-12 box-border">
+        {/* Hero */}
         <section className="text-center sm:text-left mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
             Merhaba {userName || ''} 👋
@@ -89,7 +74,7 @@ export default function CustomerHome() {
           </p>
         </section>
 
-        {/* Dinamik duyuru banner */}
+        {/* Duyuru banner */}
         <section className="mb-8">
           <div className="flex items-center justify-between gap-4 p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
             <p className="text-sm sm:text-base font-semibold leading-snug flex-1">
@@ -101,7 +86,7 @@ export default function CustomerHome() {
           </div>
         </section>
 
-        {/* Devasa arama çubuğu */}
+        {/* Arama çubuğu */}
         <section className="mb-8">
           <div className="flex flex-col sm:flex-row gap-3 p-2 bg-white rounded-2xl border border-gray-200 shadow-md">
             <input
@@ -123,31 +108,14 @@ export default function CustomerHome() {
           </div>
         </section>
 
-        {/* Popüler aramalar */}
-        <section className="mb-10">
-          <p className="text-xs text-gray-500 mb-3">Popüler Aramalar:</p>
-          <div className="flex flex-wrap gap-2">
-            {POPULAR_SEARCHES.map((item) => (
-              <button
-                key={item.category}
-                type="button"
-                onClick={() => handlePopularClick(item.category)}
-                className="px-4 py-2 rounded-full bg-white border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors"
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Hızlı eylem kartları - Bento grid */}
+        {/* Hızlı eylem kartları - Mobilde carousel, masaüstünde grid */}
         <section className="mb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-3 md:overflow-visible md:snap-none md:gap-4">
             {CTA_CARDS.map((card) => (
               <Link
                 key={card.href}
                 href={card.href}
-                className="group block p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left"
+                className="group flex-shrink-0 w-[85%] min-w-[85%] sm:min-w-[300px] snap-center md:min-w-0 md:w-auto p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all text-left"
               >
                 <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl mb-4 group-hover:bg-blue-100 transition-colors">
                   {card.icon}
@@ -163,39 +131,44 @@ export default function CustomerHome() {
           </div>
         </section>
 
-        {/* Popüler Hizmetler vitrini */}
+        {/* Gerçek ana kategoriler - new-job'a yönlendir */}
         <section className="mb-14">
           <h3 className="text-lg font-bold text-slate-900 mb-4">Popüler Hizmetler</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {POPULAR_SERVICES.map((s) => (
-              <button
-                key={s.category}
-                type="button"
-                onClick={() => handlePopularClick(s.category)}
-                className="aspect-square w-full rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:scale-105 transition-all flex flex-col items-center justify-center gap-3 p-4"
-              >
-                <span className="text-4xl">{s.icon}</span>
-                <span className="font-semibold text-slate-800 text-sm text-center leading-tight">
-                  {s.label}
-                </span>
-              </button>
-            ))}
+            {MAIN_CATEGORIES.map((cat) => (
+                <Link
+                  key={cat.id}
+                  href={`/customer/new-job?cat=${cat.id}`}
+                  className="aspect-square w-full min-w-0 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:scale-[1.02] transition-all flex flex-col items-center justify-center gap-3 p-4"
+                >
+                  <span className="text-4xl" aria-hidden>{cat.emoji}</span>
+                  <span className="font-semibold text-slate-800 text-sm text-center leading-tight">
+                    {cat.name}
+                  </span>
+                  <span className="text-xs text-slate-400 text-center line-clamp-2">
+                    {cat.sub.slice(0, 2).join(', ')}
+                  </span>
+                </Link>
+              ))}
           </div>
         </section>
       </div>
 
-      {/* Nasıl Çalışır? - Güven bandı */}
+      {/* Nasıl Çalışır? - Premium grid */}
       <section className="bg-slate-50 border-t border-slate-200">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-14">
           <h3 className="text-lg font-bold text-slate-900 text-center mb-8">Nasıl Çalışır?</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {HOW_IT_WORKS.map((step, i) => (
-              <div key={i} className="flex flex-col items-center text-center">
-                <div className="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center text-2xl mb-3 text-blue-600">
+              <div
+                key={i}
+                className="bg-white border border-gray-100 shadow-sm rounded-2xl p-6 flex flex-col items-center text-center"
+              >
+                <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-2xl mb-4">
                   {step.icon}
                 </div>
-                <h4 className="font-bold text-slate-900 text-base mb-1">Adım {i + 1}: {step.title}</h4>
-                <p className="text-sm text-slate-600">{step.desc}</p>
+                <h4 className="font-bold text-slate-900 text-base mb-1">{step.title}</h4>
+                <p className="text-sm text-slate-500">{step.desc}</p>
               </div>
             ))}
           </div>

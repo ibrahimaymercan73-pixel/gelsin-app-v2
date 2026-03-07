@@ -116,11 +116,11 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         </nav>
       )}
 
-      {/* FAB - Yeni İş (İşlerim ve Yeni İş sayfasında gizli) */}
-      {pathname !== '/customer/jobs' && pathname !== '/customer/new-job' && (
+      {/* FAB - Yeni İş (Ana sayfa, İşlerim ve Yeni İş sayfasında gizli; mobilde her zaman gizli) */}
+      {pathname !== '/customer' && pathname !== '/customer/jobs' && pathname !== '/customer/new-job' && (
         <Link
           href="/customer/new-job"
-          className="fixed right-5 bottom-24 lg:bottom-8 z-[95] bg-slate-900 hover:bg-slate-800 text-white w-14 h-14 rounded-2xl shadow-lg shadow-slate-900/30 flex items-center justify-center text-2xl font-bold hover:scale-105 active:scale-95 transition-transform"
+          className="hidden md:flex fixed right-5 bottom-8 z-[95] bg-slate-900 hover:bg-slate-800 text-white w-14 h-14 rounded-2xl shadow-lg shadow-slate-900/30 items-center justify-center text-2xl font-bold hover:scale-105 active:scale-95 transition-transform"
           aria-label="Yeni iş oluştur"
         >
           <Plus className="w-7 h-7" />
