@@ -93,23 +93,20 @@ export default function CustomerHome() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9F8] w-full overflow-x-hidden">
-      <div className="w-full max-w-6xl mx-auto flex flex-col justify-start items-start text-left pt-8 md:pt-12 pb-24 px-4 md:px-8 gap-8">
+    <div className="min-h-screen bg-[#F8F9F8] w-full max-w-[100vw] overflow-x-hidden">
+      <div className="w-full max-w-6xl mx-auto flex flex-col justify-start items-start text-left pt-6 sm:pt-8 lg:pt-12 pb-24 sm:pb-28 px-4 sm:px-6 lg:px-8 gap-6 sm:gap-8 min-w-0">
         {/* Karşılama */}
-        <section className="w-full">
-          <h1 className="text-xl md:text-2xl font-bold text-slate-800">
+        <section className="w-full min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
             Merhaba {userName || 'Misafir'}! 👋
           </h1>
           <p className="text-slate-500 text-sm mt-1">Bugün hangi konuda uzman bir ele ihtiyacın var?</p>
         </section>
 
-        {/* Arama – merkeze alınmış, beyaz, yeşilimsi glow */}
-        <section className="w-full flex flex-col items-center">
-          <div
-            className="w-full max-w-xl bg-white rounded-2xl shadow-md p-2 flex flex-col sm:flex-row gap-2 border border-slate-100"
-            style={{ boxShadow: '0 0 0 1px rgba(5, 198, 169, 0.15), 0 4px 14px rgba(0,0,0,0.06)' }}
-          >
-            <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-50/80">
+        {/* Arama – beyaz, mobilde tam genişlik */}
+        <section className="w-full flex flex-col items-center min-w-0">
+          <div className="w-full max-w-xl bg-white rounded-2xl shadow-md p-2 flex flex-col sm:flex-row gap-2 border border-slate-100">
+            <div className="flex-1 flex items-center gap-2 px-3 sm:px-4 py-3 rounded-xl bg-slate-50/80 min-w-0">
               <Search className="w-5 h-5 text-slate-400 shrink-0" />
               <input
                 type="text"
@@ -123,20 +120,19 @@ export default function CustomerHome() {
             <button
               type="button"
               onClick={() => handleSearch()}
-              className="flex items-center justify-center gap-2 bg-[#05C6A9] hover:bg-[#04b398] text-white px-5 py-3 rounded-xl font-semibold text-sm transition-colors shrink-0"
+              className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 px-4 sm:px-5 py-3 rounded-xl font-semibold text-sm transition-colors shrink-0"
             >
               <Search className="w-4 h-4" />
               Arama
             </button>
           </div>
-          {/* Hap etiketleri */}
-          <div className="w-full max-w-2xl flex flex-row overflow-x-auto hide-scrollbar gap-2 mt-4 pb-1">
+          <div className="w-full max-w-2xl flex flex-row overflow-x-auto hide-scrollbar gap-2 mt-4 pb-1 min-w-0 -mx-1 px-1">
             {PILL_LABELS.map((label) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => handleSearch(label)}
-                className="flex-shrink-0 px-4 py-1.5 text-sm bg-white border border-slate-200 rounded-full text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors"
+                className="flex-shrink-0 px-4 py-2 text-sm bg-white border border-slate-200 rounded-full text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors touch-manipulation"
               >
                 {label}
               </button>
@@ -145,18 +141,18 @@ export default function CustomerHome() {
         </section>
 
         {/* Hızlı işlem kartları – mobilde alt alta, md’de 3’lü grid */}
-        <section className="w-full">
-          <div className="w-full flex flex-col gap-4 md:grid md:grid-cols-3">
+        <section className="w-full min-w-0">
+          <div className="w-full flex flex-col gap-3 sm:gap-4 lg:grid lg:grid-cols-3">
             {CTA_CARDS.map((card) => (
               <Link
                 key={card.href}
                 href={card.href}
-                className="p-5 flex items-center gap-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-[#05C6A9]/20 transition-all text-left"
+                className="p-4 sm:p-5 flex items-center gap-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left min-h-[72px] sm:min-h-0 touch-manipulation"
               >
-                <div className="w-12 h-12 rounded-xl bg-[#05C6A9]/10 text-[#05C6A9] flex items-center justify-center text-2xl shrink-0">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl sm:text-2xl shrink-0">
                   {card.icon}
                 </div>
-                <span className="font-semibold text-slate-800 text-sm md:text-base">{card.title}</span>
+                <span className="font-semibold text-slate-800 text-sm sm:text-base">{card.title}</span>
               </Link>
             ))}
           </div>
@@ -164,14 +160,14 @@ export default function CustomerHome() {
 
         {/* Öne Çıkan Uzman İlanları – sola yaslı, yatay kaydırma */}
         {vitrinList.length > 0 && (
-          <section className="w-full">
+          <section className="w-full min-w-0">
             <h2 className="text-base font-bold text-slate-800 mb-3 text-left">Öne Çıkan Uzman İlanları</h2>
-            <div className="w-full flex overflow-x-auto gap-4 hide-scrollbar pb-2 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory">
+            <div className="w-full overflow-x-auto hide-scrollbar flex gap-4 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory">
               {vitrinList.map((s) => (
                 <Link
                   key={s.id}
                   href={`/customer/services/${s.id}`}
-                  className="flex-shrink-0 w-[260px] snap-center rounded-2xl bg-white border border-slate-100 shadow-md hover:shadow-lg overflow-hidden transition-all hover:border-[#05C6A9]/30"
+                  className="flex-shrink-0 w-[260px] sm:w-[280px] snap-center rounded-2xl bg-white border border-slate-100 shadow-md hover:shadow-lg overflow-hidden transition-all hover:border-slate-200 touch-manipulation"
                 >
                   <div className="aspect-[4/3] bg-slate-100">
                     {s.image_url ? (
@@ -187,9 +183,9 @@ export default function CustomerHome() {
                       {s.provider_rating != null && (
                         <span className="text-xs text-amber-600">★ {s.provider_rating.toFixed(1)}</span>
                       )}
-                      <span className="font-bold text-[#05C6A9]">₺{Number(s.price).toFixed(0)}</span>
+                      <span className="font-bold text-slate-800">₺{Number(s.price).toFixed(0)}</span>
                     </div>
-                    <span className="inline-block mt-3 w-full text-center py-2 rounded-xl bg-[#05C6A9] hover:bg-[#04b398] text-white text-xs font-semibold transition-colors">
+                    <span className="inline-block mt-3 w-full text-center py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-semibold hover:bg-slate-50 transition-colors">
                       Hemen Çağır
                     </span>
                   </div>
@@ -199,18 +195,17 @@ export default function CustomerHome() {
           </section>
         )}
 
-        {/* Popüler Hizmetler */}
-        <section className="w-full">
+        <section className="w-full min-w-0">
           <h2 className="text-base font-bold text-slate-800 mb-3 text-left">Popüler Hizmetler</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {MAIN_CATEGORIES.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/customer/new-job?cat=${cat.id}`}
-                className="rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-[#05C6A9]/20 flex flex-col items-center justify-center gap-2 p-5 min-h-[100px] transition-all"
+                className="rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 flex flex-col items-center justify-center gap-2 p-4 sm:p-5 min-h-[88px] sm:min-h-[100px] transition-all touch-manipulation"
               >
-                <span className="text-3xl" aria-hidden>{cat.emoji}</span>
-                <span className="font-semibold text-slate-800 text-sm text-center leading-tight line-clamp-2">{cat.name}</span>
+                <span className="text-2xl sm:text-3xl" aria-hidden>{cat.emoji}</span>
+                <span className="font-semibold text-slate-800 text-xs sm:text-sm text-center leading-tight line-clamp-2">{cat.name}</span>
               </Link>
             ))}
           </div>
