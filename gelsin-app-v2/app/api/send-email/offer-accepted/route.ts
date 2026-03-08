@@ -38,15 +38,15 @@ export async function POST(req: NextRequest) {
       supabase.from('profiles').select('full_name, phone').eq('id', job.customer_id).single(),
     ])
 
-    const { data: providerAuth } = await supabase.auth.admin.getUserById(provider_id)
-    const toEmail = providerAuth?.user?.email
+    const providerAuth = await supabase.auth.admin.getUserById(provider_id)
+    const toEmail = providerAuth.data?.user?.email
     if (!toEmail) {
       return NextResponse.json({ error: 'Usta e-postası bulunamadı' }, { status: 404 })
     }
 
     const customerName = (customerProfile?.data?.full_name as string) ?? 'Müşteri'
     const customerPhone = (customerProfile?.data?.phone as string) ?? null
-    const customerEmail = customerAuth?.user?.email ?? null
+    const customerEmail = customerAuth?.data?.user?.email ?? null
     const jobTitle = (job.title as string) ?? 'İş'
     const jobAddress = (job.address as string) ?? '—'
     const agreedPrice =

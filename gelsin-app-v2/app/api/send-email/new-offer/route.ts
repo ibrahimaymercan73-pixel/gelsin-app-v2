@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'İş veya müşteri bulunamadı' }, { status: 404 })
     }
 
-    const { data: authUser } = await supabase.auth.admin.getUserById(job.customer_id)
-    const toEmail = authUser?.user?.email
+    const authRes = await supabase.auth.admin.getUserById(job.customer_id)
+    const toEmail = authRes.data?.user?.email
     if (!toEmail) {
       return NextResponse.json({ error: 'Müşteri e-postası bulunamadı' }, { status: 404 })
     }
