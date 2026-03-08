@@ -35,6 +35,7 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const urlRole = searchParams.get('role') as 'customer' | 'provider' | null
+  const redirectTo = searchParams.get('redirect') || ''
 
   const [selectedRole, setSelectedRole] = useState<'customer' | 'provider'>(
     urlRole || 'customer'
@@ -47,9 +48,15 @@ function LoginForm() {
   const isProvider = selectedRole === 'provider'
 
   const goTo = (r: string) => {
-    if (r === 'admin') router.replace('/admin')
-    else if (r === 'provider') router.replace('/provider')
-    else router.replace('/customer')
+    const target =
+      redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//')
+        ? redirectTo
+        : r === 'admin'
+          ? '/admin'
+          : r === 'provider'
+            ? '/provider'
+            : '/customer'
+    router.replace(target)
   }
 
   const ensureProfileEmail = async (
@@ -98,12 +105,16 @@ function LoginForm() {
     const r = await ensureProfileEmail(supabase, data.user.id, email, selectedRole)
     if (!r) {
       router.replace('/choose-role')
-    } else if (r === 'provider') {
-      router.replace('/provider')
-    } else if (r === 'customer') {
-      router.replace('/customer')
-    } else if (r === 'admin') {
-      router.replace('/admin')
+    } else {
+      const allowedRedirect =
+        redirectTo &&
+        redirectTo.startsWith('/') &&
+        !redirectTo.startsWith('//') &&
+        ((r === 'customer' && redirectTo.startsWith('/customer')) ||
+          (r === 'provider' && redirectTo.startsWith('/provider')) ||
+          (r === 'admin' && redirectTo.startsWith('/admin')))
+      const target = allowedRedirect ? redirectTo : r === 'provider' ? '/provider' : r === 'customer' ? '/customer' : '/admin'
+      router.replace(target)
     }
     setLoading(false)
   }

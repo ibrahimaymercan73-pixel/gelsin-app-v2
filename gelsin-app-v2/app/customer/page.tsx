@@ -52,7 +52,7 @@ export default function CustomerHome() {
         .limit(1)
       if (jobs?.[0]) {
         const j = jobs[0]
-        const { data: offerRows } = await supabase.from('job_offers').select('id').eq('job_id', j.id).eq('status', 'pending')
+        const { data: offerRows } = await supabase.from('offers').select('id').eq('job_id', j.id).eq('status', 'pending')
         setOfferCount(offerRows?.length ?? 0)
         let providerName: string | undefined
         if (j.provider_id) {

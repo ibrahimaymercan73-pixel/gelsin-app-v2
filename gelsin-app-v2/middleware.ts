@@ -61,6 +61,7 @@ export async function middleware(req: NextRequest) {
   if (!user) {
     if (isCustomerArea || isProviderArea || isAdminArea || isChatArea) {
       const redirectUrl = new URL('/login', req.url)
+      redirectUrl.searchParams.set('redirect', pathname)
       const redirectRes = NextResponse.redirect(redirectUrl)
       // Supabase'in güncellediği cookie'leri redirect response'a kopyala (session refresh vb.)
       res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
