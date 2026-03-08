@@ -85,3 +85,37 @@ export const getSubServicesByCategoryId = (id: string) =>
 
 export const getAllSubServices = () =>
   SERVICE_CATEGORIES.flatMap((c) => c.sub.map((s) => ({ category: c.id, categoryName: c.name, service: s })))
+
+/** Kayıt / profil şehir seçenekleri */
+export const CITIES = [
+  'Ankara',
+  'İstanbul',
+  'İzmir',
+  'Bursa',
+  'Antalya',
+  'Adana',
+  'Gaziantep',
+  'Konya',
+  'Mersin',
+  'Kayseri',
+  'Eskişehir',
+  'Trabzon',
+  'Diğer',
+] as const
+
+/** İlan şehir seçenekleri (Türkiye Geneli dahil) */
+export const CITIES_SERVICE = [
+  'Ankara',
+  'İstanbul',
+  'İzmir',
+  'Bursa',
+  'Antalya',
+  'Adana',
+  'Gaziantep',
+  'Konya',
+  'Mersin',
+  'Kayseri',
+  'Eskişehir',
+  'Trabzon',
+  'Türkiye Geneli',
+] as const
