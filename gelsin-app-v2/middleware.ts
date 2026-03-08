@@ -79,9 +79,10 @@ export async function middleware(req: NextRequest) {
 
   const role = (profile?.role as UserRole | null) ?? null
 
-  // Rol yoksa: sadece choose-role'a izin ver, diğer her yeri choose-role'a yönlendir
+  // Rol yoksa: choose-role, şifre sıfırlama ve forgot-password sayfalarına izin ver
   if (!role) {
-    if (pathname !== '/choose-role') {
+    const allowedNoRole = ['/choose-role', '/update-password', '/forgot-password']
+    if (!allowedNoRole.includes(pathname)) {
       const redirectRes = NextResponse.redirect(new URL('/choose-role', req.url))
       res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
       return redirectRes
@@ -149,6 +150,8 @@ export const config = {
     '/choose-role',
     '/onboarding',
     '/login',
+    '/forgot-password',
+    '/update-password',
     '/',
   ],
 }
