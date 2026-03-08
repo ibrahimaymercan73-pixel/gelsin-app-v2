@@ -39,7 +39,12 @@ module.exports = {
           800: '#292524',
           900: '#1c1917',
           950: '#0c0a09',
-        }
+        },
+        step: {
+          active: 'hsl(var(--step-active))',
+          completed: 'hsl(var(--step-completed))',
+          inactive: 'hsl(var(--step-inactive))',
+        },
       },
       fontFamily: {
         display: ['var(--font-display)'],

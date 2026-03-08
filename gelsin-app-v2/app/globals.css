@@ -7,6 +7,9 @@
 :root {
   --accent: #1e293b;
   --safe-bottom: env(safe-area-inset-bottom, 16px);
+  --step-active: 220 70% 50%;
+  --step-completed: 150 60% 45%;
+  --step-inactive: 220 15% 85%;
   /* Landing design tokens */
   --primary: 24 95% 53%;
   --primary-foreground: 0 0% 100%;
