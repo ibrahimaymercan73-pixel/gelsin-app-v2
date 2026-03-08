@@ -1,18 +1,24 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { SERVICE_CATEGORIES, type ServiceCategory } from '@/lib/constants'
-import { ChevronLeft, Check } from 'lucide-react'
+import { ChevronLeft, Check, Camera } from 'lucide-react'
 
 export default function ProviderOnboardingPage() {
   const router = useRouter()
-  const [step, setStep] = useState<1 | 2>(1)
+  const [step, setStep] = useState<1 | 2 | 3>(1)
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null)
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [faceVerifying, setFaceVerifying] = useState(false)
+  const [faceError, setFaceError] = useState('')
+  const [cameraOn, setCameraOn] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -58,7 +64,11 @@ export default function ProviderOnboardingPage() {
   }
 
   const goBack = () => {
-    if (step === 2) {
+    if (step === 3) {
+      stopCamera()
+      setStep(2)
+      setFaceError('')
+    } else if (step === 2) {
       setStep(1)
       setSelectedCategory(null)
       setSelectedServices([])
@@ -94,13 +104,90 @@ export default function ProviderOnboardingPage() {
       alert('Kaydedilemedi: ' + error.message)
       return
     }
+    setSaving(false)
+    setStep(3)
+  }
 
-    // Tam sayfa yönlendirme: client-side navigation bazen donmaya sebep oluyordu
+  const startCamera = async () => {
+    setFaceError('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+      }
+      setCameraOn(true)
+    } catch (e) {
+      setFaceError('Kamera açılamadı. Tarayıcı izni verin.')
+    }
+  }
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop())
+      streamRef.current = null
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+    setCameraOn(false)
+  }
+
+  const captureAndVerify = async () => {
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas || !video.srcObject || video.readyState < 2) {
+      setFaceError('Önce kamerayı açın ve yüzünüzü hizalayın.')
+      return
+    }
+    setFaceVerifying(true)
+    setFaceError('')
+    try {
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        setFaceError('Görüntü işlenemedi.')
+        setFaceVerifying(false)
+        return
+      }
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      ctx.drawImage(video, 0, 0)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+      const base64 = dataUrl.split(',')[1] || ''
+
+      const res = await fetch('/api/verify-face', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64 }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (data.verified) {
+        stopCamera()
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await supabase.from('profiles').update({ face_verified: true }).eq('id', user.id)
+        }
+        if (typeof window !== 'undefined') {
+          window.location.href = '/provider'
+          return
+        }
+        router.replace('/provider')
+      } else {
+        setFaceError(data.message || 'Yüz tespit edilemedi, tekrar dene')
+      }
+    } catch (e) {
+      setFaceError('Bir hata oluştu, lütfen tekrar deneyin.')
+    }
+    setFaceVerifying(false)
+  }
+
+  const skipFaceVerify = () => {
+    stopCamera()
     if (typeof window !== 'undefined') {
       window.location.href = '/provider'
       return
     }
-    setSaving(false)
     router.replace('/provider')
   }
 
@@ -123,7 +210,7 @@ export default function ProviderOnboardingPage() {
           Geri
         </button>
         <div className="flex gap-2 mb-4">
-          {[1, 2].map((s) => (
+          {[1, 2, 3].map((s) => (
             <div
               key={s}
               className={`h-1.5 flex-1 rounded-full transition-all ${
@@ -133,15 +220,21 @@ export default function ProviderOnboardingPage() {
           ))}
         </div>
         <p className="text-xs font-bold text-blue-600 uppercase tracking-[0.2em]">
-          Adım {step} / 2
+          Adım {step} / 3
         </p>
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 mt-2">
-          {step === 1 ? 'Hangi alanda hizmet veriyorsun?' : 'Hangi hizmetleri sunuyorsun?'}
+          {step === 1
+            ? 'Hangi alanda hizmet veriyorsun?'
+            : step === 2
+              ? 'Hangi hizmetleri sunuyorsun?'
+              : 'Kimliğini Doğrula'}
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-2 max-w-2xl">
           {step === 1
             ? 'Önce ana uzmanlık alanını seç. Müşteriler seni bu kategoride bulacak.'
-            : `"${selectedCategory?.name}" kategorisinden sunduğun hizmetleri seç.`}
+            : step === 2
+              ? `"${selectedCategory?.name}" kategorisinden sunduğun hizmetleri seç.`
+              : 'Selfie çekerek hesabını doğrula. Onaylı uzman rozeti alırsın.'}
         </p>
       </header>
 
@@ -238,6 +331,64 @@ export default function ProviderOnboardingPage() {
               >
                 {saving ? 'Kaydediliyor...' : `✓ ${selectedServices.length} Hizmetle Kaydet ve Devam Et`}
               </button>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-6 animate-slide-up max-w-md mx-auto">
+              <div className="relative bg-white rounded-2xl border-2 border-slate-200 overflow-hidden aspect-[4/3] flex items-center justify-center bg-slate-100">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                />
+                {!cameraOn && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-500">
+                    <Camera className="w-12 h-12 text-slate-300" />
+                    <span className="text-sm font-medium">Kamerayı açmak için butona tıkla</span>
+                  </div>
+                )}
+              </div>
+              <canvas ref={canvasRef} className="hidden" />
+              {faceError && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl">
+                  {faceError}
+                </p>
+              )}
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={cameraOn ? captureAndVerify : startCamera}
+                  disabled={faceVerifying}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-4 rounded-2xl text-sm shadow-lg shadow-blue-600/25 disabled:shadow-none transition-all flex items-center justify-center gap-2"
+                >
+                  {faceVerifying ? (
+                    <>
+                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Doğrulanıyor...
+                    </>
+                  ) : cameraOn ? (
+                    '📸 Selfie Çek ve Doğrula'
+                  ) : (
+                    <>
+                      <Camera className="w-5 h-5" />
+                      Kamerayı Aç
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={skipFaceVerify}
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-2xl text-sm transition-all"
+                >
+                  Şimdi Değil
+                </button>
+                <p className="text-xs text-slate-500 text-center">
+                  Atlarsan onaylı uzman rozeti almazsın; istersen sonra profilinden doğrulayabilirsin.
+                </p>
+              </div>
             </div>
           )}
         </div>

@@ -11,7 +11,7 @@ export default function AdminApprovalsPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from('provider_profiles')
-      .select('*, profiles(full_name, phone, created_at)')
+      .select('*, profiles(full_name, phone, created_at, face_verified)')
       .eq('status', filter)
       .order('created_at', { ascending: false })
     setProviders(data || [])
@@ -98,6 +98,13 @@ export default function AdminApprovalsPage() {
                   <p className="text-surface-500">{p.profiles?.phone}</p>
                   <p className="text-xs text-surface-400 mt-0.5">
                     Kayıt: {new Date(p.profiles?.created_at).toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' })}
+                  </p>
+                  <p className="text-xs mt-1">
+                    {p.profiles?.face_verified ? (
+                      <span className="text-emerald-600 font-medium">✅ Yüz Doğrulandı</span>
+                    ) : (
+                      <span className="text-slate-500">⏳ Doğrulanmadı</span>
+                    )}
                   </p>
                 </div>
               </div>

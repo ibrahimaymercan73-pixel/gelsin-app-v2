@@ -24,6 +24,7 @@ type VitrinService = {
   provider_id: string
   provider_name: string
   provider_rating: number | null
+  provider_face_verified?: boolean
   category_name?: string
 }
 
@@ -90,11 +91,15 @@ export default function CustomerHome() {
         return
       }
       const providerIds = Array.from(new Set(rows.map((r: { provider_id: string }) => r.provider_id)))
-      const { data: profiles } = await supabase.from('profiles_public').select('id, full_name').in('id', providerIds)
+      const { data: profiles } = await supabase.from('profiles_public').select('id, full_name, face_verified').in('id', providerIds)
       const { data: pp } = await supabase.from('provider_profiles').select('id, rating').in('id', providerIds)
       const nameBy: Record<string, string> = {}
       const ratingBy: Record<string, number> = {}
-      for (const x of profiles || []) nameBy[x.id] = x.full_name || 'Uzman'
+      const faceVerifiedBy: Record<string, boolean> = {}
+      for (const x of profiles || []) {
+        nameBy[x.id] = x.full_name || 'Uzman'
+        faceVerifiedBy[x.id] = !!(x as { face_verified?: boolean }).face_verified
+      }
       for (const x of pp || []) ratingBy[x.id] = Number(x.rating) || 0
       setVitrinList(
         rows.map((r: { id: string; title: string; price: number; image_url: string | null; provider_id: string }) => ({
@@ -105,6 +110,7 @@ export default function CustomerHome() {
           provider_id: r.provider_id,
           provider_name: nameBy[r.provider_id] || 'Uzman',
           provider_rating: ratingBy[r.provider_id] ?? null,
+          provider_face_verified: faceVerifiedBy[r.provider_id],
         }))
       )
     }
@@ -267,8 +273,13 @@ export default function CustomerHome() {
                   <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center text-xl">
                     👨‍🔧
                   </div>
-                  <div>
-                    <p className="font-semibold text-slate-800 text-sm">{s.provider_name}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
+                      {s.provider_name}
+                      {s.provider_face_verified && (
+                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[10px]" title="Onaylı Uzman">✓</span>
+                      )}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">

@@ -19,6 +19,7 @@ export default function CustomerServiceDetailPage() {
     provider_id: string
     provider_name: string
     provider_rating: number | null
+    provider_face_verified?: boolean
   } | null>(null)
   const [loading, setLoading] = useState(true)
   const [booking, setBooking] = useState(false)
@@ -39,7 +40,7 @@ export default function CustomerServiceDetailPage() {
       }
       const { data: profile } = await supabase
         .from('profiles_public')
-        .select('full_name')
+        .select('full_name, face_verified')
         .eq('id', row.provider_id)
         .single()
       const { data: pp } = await supabase
@@ -56,6 +57,7 @@ export default function CustomerServiceDetailPage() {
         provider_id: row.provider_id,
         provider_name: profile?.full_name || 'Uzman',
         provider_rating: pp?.rating != null ? Number(pp.rating) : null,
+        provider_face_verified: !!(profile as { face_verified?: boolean } | null)?.face_verified,
       })
       setLoading(false)
     }
@@ -143,7 +145,12 @@ export default function CustomerServiceDetailPage() {
           </div>
           <div className="p-4">
             <h2 className="text-xl font-black text-slate-900">{service.title}</h2>
-            <p className="text-sm text-slate-500 mt-1">{service.provider_name}</p>
+            <p className="text-sm text-slate-500 mt-1 flex items-center gap-1.5">
+              {service.provider_name}
+              {service.provider_face_verified && (
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[10px]" title="Onaylı Uzman">✓</span>
+              )}
+            </p>
             {service.provider_rating != null && (
               <p className="text-xs text-amber-600 mt-0.5">★ {service.provider_rating.toFixed(1)}</p>
             )}
