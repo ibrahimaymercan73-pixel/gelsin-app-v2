@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { CITIES } from '@/lib/constants'
 
 export default function ChooseRolePage() {
   const router = useRouter()
@@ -12,6 +13,7 @@ export default function ChooseRolePage() {
   const [error, setError] = useState('')
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
+  const [city, setCity] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -27,7 +29,7 @@ export default function ChooseRolePage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role, full_name, phone')
+        .select('role, full_name, phone, city')
         .eq('id', user.id)
         .single()
 
@@ -53,6 +55,7 @@ export default function ChooseRolePage() {
 
       setFullName((profile?.full_name as string | null) || metaName || '')
       setPhone((profile?.phone as string | null) || (meta.phone as string | null) || '')
+      setCity((profile?.city as string | null) || '')
       setLoading(false)
     }
 
@@ -76,6 +79,11 @@ export default function ChooseRolePage() {
     }
     if (!isValidPhone(trimmedPhone)) {
       setError('Telefon numarası 0 ile başlamalı ve 11 haneli olmalı (örn: 0532 123 45 67).')
+      return
+    }
+    const trimmedCity = city.trim()
+    if (!trimmedCity) {
+      setError('Lütfen şehir seçin.')
       return
     }
 
@@ -133,7 +141,7 @@ export default function ChooseRolePage() {
       const { error: upsertErr } = await supabase
         .from('profiles')
         .upsert(
-          { id: user.id, role, full_name: trimmedName, phone: trimmedPhone },
+          { id: user.id, role, full_name: trimmedName, phone: trimmedPhone, city: trimmedCity },
           { onConflict: 'id' }
         )
       if (upsertErr) {

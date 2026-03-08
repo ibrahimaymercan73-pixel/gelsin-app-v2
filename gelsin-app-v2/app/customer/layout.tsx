@@ -83,12 +83,12 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       <div className="h-dvh max-h-dvh flex flex-col bg-[#F8FAFC] font-sans overflow-hidden">
         {/* Üst Menü – glass nav (şablondan) */}
         <nav className="flex-shrink-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-          <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <Link href="/customer" className="text-2xl font-black tracking-tighter text-slate-900">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-6">
+            <div className="flex items-center gap-6 md:gap-8 min-w-0 flex-1">
+              <Link href="/customer" className="text-2xl font-black tracking-tighter text-slate-900 shrink-0">
                 GELSİN<span className="text-blue-600">.</span>
               </Link>
-              <div className="hidden md:flex gap-8 font-medium text-sm text-slate-500">
+              <div className="hidden md:flex gap-6 font-medium text-sm text-slate-500">
                 {TOP_NAV_ITEMS.map((item) => {
                   const isActive = pathname === item.href
                   return (
@@ -105,7 +105,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 })}
               </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 shrink-0 ml-2">
               <Link
                 href="/customer/notifications"
                 className="relative w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-blue-600 transition shadow-sm"
@@ -132,27 +132,21 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
               </Link>
               <Link
                 href="/customer/profile"
-                className="flex items-center gap-3 bg-white border border-slate-200 py-1.5 pl-1.5 pr-4 rounded-full shadow-sm cursor-pointer hover:shadow-md transition"
+                className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm hover:shadow-md transition overflow-hidden"
+                aria-label="Profil"
+                title={profile?.full_name || 'Profil'}
               >
                 {profile?.avatar_url ? (
                   <img
                     src={profile.avatar_url}
                     alt=""
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-full h-full object-cover"
                   />
+                ) : profile?.full_name ? (
+                  <span className="text-xs font-bold text-slate-900">{getInitials(profile.full_name)}</span>
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold">
-                    {profile?.full_name ? getInitials(profile.full_name) : <User className="w-4 h-4" />}
-                  </div>
+                  <User className="w-5 h-5 text-slate-600" />
                 )}
-                <span className="font-semibold text-sm text-slate-700">
-                  {profile?.full_name
-                    ? (() => {
-                        const parts = profile.full_name.trim().split(/\s+/)
-                        return parts[0] + (parts[1] ? ' ' + parts[1][0] + '.' : '')
-                      })()
-                    : 'Profil'}
-                </span>
               </Link>
             </div>
           </div>
