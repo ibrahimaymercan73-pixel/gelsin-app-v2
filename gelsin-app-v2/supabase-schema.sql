@@ -252,6 +252,12 @@ DECLARE
   v_commission NUMERIC;
   v_provider_amount NUMERIC;
 BEGIN
+  IF (SELECT id FROM public.jobs WHERE id = p_job_id AND provider_id = auth.uid()) IS NULL
+     AND (SELECT role FROM public.profiles WHERE id = auth.uid()) IS DISTINCT FROM 'admin'
+  THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+
   SELECT * INTO v_job FROM jobs WHERE id = p_job_id;
   
   v_commission := v_job.agreed_price * 0.02;

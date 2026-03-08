@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { newOfferEmailHtml } from '../../../../lib/email-templates'
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
@@ -7,6 +9,25 @@ const FROM_EMAIL = process.env.GELSIN_FROM_EMAIL ?? 'Gelsin <bildirim@gelsin.dev
 
 export async function POST(req: NextRequest) {
   try {
+    const cookieStore = await cookies()
+    const supabaseAuth = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set() {},
+          remove() {},
+        },
+      }
+    )
+    const { data: { user } } = await supabaseAuth.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await req.json()
     const job_id = typeof body?.job_id === 'string' ? body.job_id : null
     const provider_id = typeof body?.provider_id === 'string' ? body.provider_id : null
@@ -14,6 +35,10 @@ export async function POST(req: NextRequest) {
 
     if (!job_id || !provider_id || price == null || !Number.isFinite(price)) {
       return NextResponse.json({ error: 'job_id, provider_id ve price gerekli' }, { status: 400 })
+    }
+
+    if (provider_id !== user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
