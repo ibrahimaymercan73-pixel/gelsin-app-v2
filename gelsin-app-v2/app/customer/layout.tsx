@@ -80,9 +80,9 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   return (
     <ChatOverlayProvider>
       <OnboardingTour role={tourRole} />
-      <div className="min-h-dvh bg-[#F8FAFC] font-sans">
+      <div className="h-dvh max-h-dvh flex flex-col bg-[#F8FAFC] font-sans overflow-hidden">
         {/* Üst Menü – glass nav (şablondan) */}
-        <nav className="fixed w-full top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+        <nav className="flex-shrink-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
           <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <div className="flex items-center gap-8">
               <Link href="/customer" className="text-2xl font-black tracking-tighter text-slate-900">
@@ -150,7 +150,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
           </div>
         </nav>
 
-        <main className="pt-20 min-w-0">
+        <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden">
           {children}
         </main>
       </div>
