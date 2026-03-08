@@ -33,20 +33,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'İş bulunamadı' }, { status: 404 })
     }
 
-    const [customerAuth, customerProfile] = await Promise.all([
-      supabase.auth.admin.getUserById(job.customer_id),
-      supabase.from('profiles').select('full_name, phone').eq('id', job.customer_id).single(),
-    ])
-
     const providerAuth = await supabase.auth.admin.getUserById(provider_id)
     const toEmail = providerAuth.data?.user?.email
     if (!toEmail) {
       return NextResponse.json({ error: 'Usta e-postası bulunamadı' }, { status: 404 })
     }
 
-    const customerName = (customerProfile?.data?.full_name as string) ?? 'Müşteri'
-    const customerPhone = (customerProfile?.data?.phone as string) ?? null
-    const customerEmail = customerAuth?.data?.user?.email ?? null
     const jobTitle = (job.title as string) ?? 'İş'
     const jobAddress = (job.address as string) ?? '—'
     const agreedPrice =
@@ -58,14 +50,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'RESEND_API_KEY tanımlı değil' }, { status: 500 })
     }
 
-    const html = offerAcceptedEmailHtml(
-      customerName,
-      customerPhone,
-      customerEmail,
-      jobTitle,
-      jobAddress,
-      agreedPrice
-    )
+    const html = offerAcceptedEmailHtml(jobTitle, jobAddress, agreedPrice)
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {

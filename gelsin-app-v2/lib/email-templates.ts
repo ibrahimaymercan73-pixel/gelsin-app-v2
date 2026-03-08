@@ -29,24 +29,20 @@ export function newOfferEmailHtml(providerName: string, offerPrice: string, jobT
   return wrapBody(content)
 }
 
+/** Ustaya: Teklif kabul – müşteri iletişim bilgisi maile eklenmez (gizlilik). */
 export function offerAcceptedEmailHtml(
-  customerName: string,
-  customerPhone: string | null,
-  customerEmail: string | null,
   jobTitle: string,
   jobAddress: string,
   agreedPrice: string
 ): string {
-  const contact = [customerName, customerPhone && `Tel: ${customerPhone}`, customerEmail && `E-posta: ${customerEmail}`].filter(Boolean).join(' · ')
   const content = `<h2 style="margin:0 0 .75rem;font-size:1.25rem;">Tebrikler, İş Senin! 🎉</h2>
-    <p style="margin:0 0 1rem;">Verdiğin teklif kabul edildi.</p>
+    <p style="margin:0 0 1rem;">Verdiğin teklif kabul edildi. İş detayları ve iletişim için uygulamaya giriş yap.</p>
     <div style="background:#fffbeb;border-left:4px solid #f59e0b;padding:1rem;margin:1rem 0;border-radius:0 .5rem .5rem 0;">
       <p style="margin:0;"><strong>📋 İş:</strong> ${esc(jobTitle)}</p>
       <p style="margin:.5rem 0 0;"><strong>📍 Adres:</strong> ${esc(jobAddress)}</p>
       <p style="margin:.5rem 0 0;"><strong>💰 Tutar:</strong> ${esc(agreedPrice)} ₺</p>
     </div>
-    <p style="margin:1rem 0 0;font-weight:600;">Müşteri iletişim:</p>
-    <p style="margin:.5rem 0 0;color:#475569;">${esc(contact)}</p>
+    <p style="margin:0;color:#64748b;font-size:.9rem;">Müşteri iletişim bilgisine GELSİN uygulaması üzerinden ulaşabilirsin.</p>
     <a href="https://gelsin.dev/provider/my-jobs" style="display:inline-block;margin-top:1rem;padding:.75rem 1.5rem;background:#2563eb;color:#fff;font-weight:700;border-radius:.75rem;text-decoration:none;">İşlerime Git →</a>`
   return wrapBody(content)
 }
