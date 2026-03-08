@@ -8,6 +8,7 @@ export default function ChooseRolePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [submittingRole, setSubmittingRole] = useState<'customer' | 'provider' | null>(null)
   const [error, setError] = useState('')
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
@@ -30,17 +31,15 @@ export default function ChooseRolePage() {
         .eq('id', user.id)
         .single()
 
-      // Rolü zaten seçilmiş kullanıcıları doğrudan paneline gönder
+      // Zaten profil tamamlanmışsa (rol seçilmişse) formu gösterme, doğrudan panele yönlendir
       if (profile?.role === 'customer') {
         router.replace('/customer')
         return
       }
-
       if (profile?.role === 'provider') {
         router.replace('/provider/onboarding')
         return
       }
-
       if (profile?.role === 'admin') {
         router.replace('/admin')
         return
@@ -81,6 +80,7 @@ export default function ChooseRolePage() {
     }
 
     setSubmitting(true)
+    setSubmittingRole(role)
     const supabase = createClient()
     const {
       data: { user },
@@ -88,10 +88,36 @@ export default function ChooseRolePage() {
     if (!user) {
       router.replace('/login')
       setSubmitting(false)
+      setSubmittingRole(null)
       return
     }
 
     try {
+      // Çift sekme açıksa: başka sekme zaten rol kaydetti mi kontrol et, varsa üzerine yazma sadece yönlendir
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      if (currentProfile?.role === 'customer') {
+        router.replace('/customer')
+        setSubmitting(false)
+        setSubmittingRole(null)
+        return
+      }
+      if (currentProfile?.role === 'provider') {
+        router.replace('/provider/onboarding')
+        setSubmitting(false)
+        setSubmittingRole(null)
+        return
+      }
+      if (currentProfile?.role === 'admin') {
+        router.replace('/admin')
+        setSubmitting(false)
+        setSubmittingRole(null)
+        return
+      }
+
       const { data: existing } = await supabase
         .from('profiles')
         .select('id')
@@ -117,6 +143,7 @@ export default function ChooseRolePage() {
           throw upsertErr
         }
         setSubmitting(false)
+        setSubmittingRole(null)
         return
       }
 
@@ -135,6 +162,7 @@ export default function ChooseRolePage() {
           : 'Rol kaydedilemedi.'
       setError(msg)
       setSubmitting(false)
+      setSubmittingRole(null)
     }
   }
 
@@ -212,7 +240,7 @@ export default function ChooseRolePage() {
               </div>
               <div className="space-y-1">
                 <p className="font-black text-white text-lg md:text-xl">
-                  Hizmet Almak İstiyorum
+                  {submittingRole === 'customer' ? 'Kaydediliyor...' : 'Hizmet Almak İstiyorum'}
                 </p>
                 <p className="text-slate-300 text-sm md:text-base">
                   Evimdeki işler için güvenilir uzmanlar arıyorum.
@@ -235,7 +263,7 @@ export default function ChooseRolePage() {
               </div>
               <div className="space-y-1">
                 <p className="font-black text-white text-lg md:text-xl">
-                  Hizmet Vermek İstiyorum
+                  {submittingRole === 'provider' ? 'Kaydediliyor...' : 'Hizmet Vermek İstiyorum'}
                 </p>
                 <p className="text-slate-300 text-sm md:text-base">
                   Uzmanlık alanımda iş alıp kazanç sağlamak istiyorum.

@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase'
 export default function CustomerProfile() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
+  const [email, setEmail] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [hidePhone, setHidePhone] = useState(false)
@@ -17,6 +18,7 @@ export default function CustomerProfile() {
     const load = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) setEmail(user.email)
       const { data } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
       setProfile(data)
       setName(data?.full_name || '')
@@ -102,7 +104,8 @@ export default function CustomerProfile() {
                 {initial}
               </div>
               <p className="font-black text-slate-800 text-xl">{name || 'Müşteri'}</p>
-              <p className="text-slate-400 text-sm mt-1 font-medium">{profile?.phone || ''}</p>
+              {email && <p className="text-slate-500 text-sm mt-1 font-medium">{email}</p>}
+              <p className="text-slate-400 text-sm mt-0.5 font-medium">{profile?.phone || ''}</p>
               <div className="mt-4 inline-flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-full">
                 <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                 <span className="text-xs font-bold text-blue-600">Müşteri Hesabı</span>
@@ -113,6 +116,10 @@ export default function CustomerProfile() {
             <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
               <p className="font-bold text-slate-700 text-sm mb-4 uppercase tracking-wider">Hesap Bilgileri</p>
               <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b border-slate-50">
+                  <span className="text-sm text-slate-500">E-posta (giriş)</span>
+                  <span className="text-sm font-bold text-slate-800 truncate max-w-[180px]" title={email || ''}>{email || '—'}</span>
+                </div>
                 <div className="flex items-center justify-between py-2 border-b border-slate-50">
                   <span className="text-sm text-slate-500">Rol</span>
                   <span className="text-sm font-bold text-slate-800">Müşteri</span>

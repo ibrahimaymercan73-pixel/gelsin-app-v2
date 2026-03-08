@@ -9,6 +9,7 @@ export default function ProviderProfile() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [pp, setPp] = useState<any>(null)
+  const [email, setEmail] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [bio, setBio] = useState('')
   const [cats, setCats] = useState<string[]>([])
@@ -24,6 +25,7 @@ export default function ProviderProfile() {
     const load = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) setEmail(user.email)
       const { data: p } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
       const { data: pData } = await supabase.from('provider_profiles').select('*').eq('id', user!.id).single()
       setProfile(p); setPp(pData)
@@ -146,6 +148,12 @@ export default function ProviderProfile() {
       <div className="px-4 py-5 space-y-4">
         <div className="card p-5 space-y-4">
           <p className="font-bold text-gray-800">Profil Bilgileri</p>
+          {email && (
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">E-posta (giriş / kayıt)</label>
+              <p className="text-sm font-medium text-slate-700 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">{email}</p>
+            </div>
+          )}
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Ad Soyad</label>
             <input className="input" placeholder="Adınızı girin" value={name} onChange={e => setName(e.target.value)} />
