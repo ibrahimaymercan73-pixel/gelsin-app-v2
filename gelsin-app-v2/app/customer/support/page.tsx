@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
+import { toast } from 'sonner'
 import { HelpCircle, Send, MessageSquare } from 'lucide-react'
 
 const CATEGORIES = [
@@ -13,18 +14,45 @@ const CATEGORIES = [
 
 type JobOption = { id: string; label: string }
 
-type TicketCard = {
+type TicketRow = {
   id: string
+  category: string
   title: string
-  status: 'pending' | 'resolved'
-  statusLabel: string
-  date: string
+  message: string
+  status: string
+  created_at: string
 }
 
-const DUMMY_TICKETS: TicketCard[] = [
-  { id: '1', title: 'Kombi Bakımı - Usta Gecikmesi', status: 'pending', statusLabel: 'İnceleniyor', date: 'Bugün, 14:30' },
-  { id: '2', title: 'Fatura Talebi', status: 'resolved', statusLabel: 'Çözüldü', date: 'Dün' },
-]
+function formatTicketDate(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const dDate = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  if (dDate.getTime() === today.getTime()) {
+    return `Bugün, ${d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`
+  }
+  if (dDate.getTime() === yesterday.getTime()) return 'Dün'
+  return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function statusToLabel(status: string): string {
+  switch (status) {
+    case 'pending': return 'Yanıt Bekliyor'
+    case 'in_progress': return 'İnceleniyor'
+    case 'resolved': return 'Çözüldü'
+    default: return status
+  }
+}
+
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case 'resolved': return 'bg-green-100 text-green-700'
+    case 'in_progress': return 'bg-blue-100 text-blue-700'
+    default: return 'bg-amber-100 text-amber-700'
+  }
+}
 
 export default function CustomerSupportPage() {
   const [userName, setUserName] = useState('')
@@ -33,15 +61,34 @@ export default function CustomerSupportPage() {
   const [relatedJobId, setRelatedJobId] = useState('')
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [tickets, setTickets] = useState<TicketCard[]>(DUMMY_TICKETS)
+  const [tickets, setTickets] = useState<TicketRow[]>([])
+  const [ticketsLoading, setTicketsLoading] = useState(true)
+
+  const loadTickets = async (userId: string) => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('support_tickets')
+      .select('id, category, title, message, status, created_at')
+      .eq('customer_id', userId)
+      .order('created_at', { ascending: false })
+    setTicketsLoading(false)
+    if (error) {
+      toast.error('Talepler yüklenemedi: ' + error.message)
+      return
+    }
+    setTickets((data as TicketRow[]) || [])
+  }
 
   useEffect(() => {
     const load = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+
       const { data: p } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
       setUserName(p?.full_name?.trim() || '')
+
+      loadTickets(user.id)
 
       const { data: jobsRows } = await supabase
         .from('jobs')
@@ -74,24 +121,39 @@ export default function CustomerSupportPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!message.trim()) return
-    setSubmitting(true)
-    await new Promise((r) => setTimeout(r, 600))
+    if (!message.trim()) {
+      toast.error('Lütfen mesajınızı yazın.')
+      return
+    }
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      toast.error('Oturum bulunamadı. Lütfen tekrar giriş yapın.')
+      return
+    }
+
     const catLabel = CATEGORIES.find((c) => c.value === category)?.label || category || 'Genel'
-    setTickets((prev) => [
-      {
-        id: Date.now().toString(),
-        title: catLabel,
-        status: 'pending',
-        statusLabel: 'Yanıt Bekliyor',
-        date: 'Az önce',
-      },
-      ...prev,
-    ])
+    setSubmitting(true)
+    const { error } = await supabase.from('support_tickets').insert({
+      customer_id: user.id,
+      category: category || 'feedback',
+      title: catLabel,
+      related_job_id: relatedJobId || null,
+      message: message.trim(),
+      status: 'pending',
+    })
+    setSubmitting(false)
+
+    if (error) {
+      toast.error('Talep oluşturulamadı: ' + error.message)
+      return
+    }
+
+    toast.success('Destek talebiniz alındı. En kısa sürede dönüş yapacağız.')
     setCategory('')
     setRelatedJobId('')
     setMessage('')
-    setSubmitting(false)
+    loadTickets(user.id)
   }
 
   return (
@@ -177,30 +239,32 @@ export default function CustomerSupportPage() {
           </div>
         </div>
 
-        {/* Sağ: Açık Taleplerim (1 birim) */}
+        {/* Sağ: Açık Taleplerim (1 birim) – Supabase verisi */}
         <div className="lg:col-span-1">
           <div className="bg-white shadow-sm rounded-[2rem] p-6 border border-slate-100">
             <h2 className="text-lg font-bold text-slate-900 mb-4">Açık Taleplerim</h2>
-            <div className="flex flex-col gap-4">
-              {tickets.map((t) => (
-                <div
-                  key={t.id}
-                  className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
-                >
-                  <h3 className="font-semibold text-slate-900 text-sm leading-tight mb-2">{t.title}</h3>
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span
-                      className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-bold ${
-                        t.status === 'resolved' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                      }`}
-                    >
-                      {t.statusLabel}
-                    </span>
-                    <span className="text-xs text-slate-500">{t.date}</span>
+            {ticketsLoading ? (
+              <p className="text-slate-500 text-sm">Yükleniyor...</p>
+            ) : tickets.length === 0 ? (
+              <p className="text-slate-500 text-sm py-4">Henüz bir destek talebiniz bulunmamaktadır.</p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {tickets.map((t) => (
+                  <div
+                    key={t.id}
+                    className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                  >
+                    <h3 className="font-semibold text-slate-900 text-sm leading-tight mb-2">{t.title}</h3>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-bold ${statusBadgeClass(t.status)}`}>
+                        {statusToLabel(t.status)}
+                      </span>
+                      <span className="text-xs text-slate-500">{formatTicketDate(t.created_at)}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
