@@ -152,9 +152,9 @@ export default function CustomerHome() {
               <Sparkles className="w-8 h-8" />
             </div>
             <div className="relative z-10">
-              <h3 className="text-3xl font-bold text-white mb-2">Özel İş Talebi Yarat</h3>
+              <h3 className="text-3xl font-bold text-white mb-2">Hizmet Talebi Oluştur</h3>
               <p className="text-slate-300 text-lg max-w-sm">
-                Detayları yaz, uzmanlar sana fiyat teklifi göndersin.
+                İhtiyacını detaylıca yaz, uzmanlardan anında fiyat teklifi al.
               </p>
               <div className="mt-6 flex items-center gap-2 text-sm font-bold text-white/80 group-hover:text-white transition-colors">
                 Hemen Başla <ArrowRight className="w-4 h-4" />
