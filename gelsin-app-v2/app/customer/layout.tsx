@@ -33,14 +33,17 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
 
   useEffect(() => {
     let cancelled = false
-    const ensureAuthenticated = async (retry = false) => {
+    const delays = [0, 300, 600, 1000]
+
+    const ensureAuthenticated = async (attempt = 0) => {
       const { getCurrentUserAndRoleWithRefresh } = await import('@/lib/auth')
       let { user, role } = await getCurrentUserAndRoleWithRefresh()
 
       if (cancelled) return
       if (!user) {
-        if (!retry) {
-          setTimeout(() => ensureAuthenticated(true), 400)
+        if (attempt < delays.length - 1) {
+          const delay = delays[attempt + 1]
+          setTimeout(() => ensureAuthenticated(attempt + 1), delay)
           return
         }
         router.replace('/login')
@@ -65,7 +68,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       if (role === 'customer') setTourRole('customer')
     }
 
-    ensureAuthenticated()
+    ensureAuthenticated(0)
     return () => { cancelled = true }
   }, [router])
 

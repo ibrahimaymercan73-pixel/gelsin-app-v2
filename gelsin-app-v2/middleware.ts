@@ -60,7 +60,10 @@ export async function middleware(req: NextRequest) {
   if (!user) {
     if (isCustomerArea || isProviderArea || isAdminArea) {
       const redirectUrl = new URL('/login', req.url)
-      return NextResponse.redirect(redirectUrl)
+      const redirectRes = NextResponse.redirect(redirectUrl)
+      // Supabase'in güncellediği cookie'leri redirect response'a kopyala (session refresh vb.)
+      res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+      return redirectRes
     }
 
     // Landing (/), onboarding ve login sayfaları herkes için serbest
@@ -79,7 +82,9 @@ export async function middleware(req: NextRequest) {
   // Rol yoksa: sadece choose-role'a izin ver, diğer her yeri choose-role'a yönlendir
   if (!role) {
     if (pathname !== '/choose-role') {
-      return NextResponse.redirect(new URL('/choose-role', req.url))
+      const redirectRes = NextResponse.redirect(new URL('/choose-role', req.url))
+      res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+      return redirectRes
     }
     return res
   }
@@ -97,46 +102,39 @@ export async function middleware(req: NextRequest) {
       !providerProfile?.is_onboarded || cats.length === 0
 
     if (needsOnboarding) {
-      return NextResponse.redirect(new URL('/provider/onboarding', req.url))
+      const redirectRes = NextResponse.redirect(new URL('/provider/onboarding', req.url))
+      res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+      return redirectRes
     }
+  }
+
+  // Redirect'lere cookie kopyala (session'ın kaybolmaması için)
+  const redirectWithCookies = (url: URL) => {
+    const redirectRes = NextResponse.redirect(url)
+    res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+    return redirectRes
   }
 
   // Panel alanlarında rol guard
   if (isCustomerArea) {
-    if (role === 'provider') {
-      return NextResponse.redirect(new URL('/provider', req.url))
-    }
-    if (role === 'admin') {
-      return NextResponse.redirect(new URL('/admin', req.url))
-    }
+    if (role === 'provider') return redirectWithCookies(new URL('/provider', req.url))
+    if (role === 'admin') return redirectWithCookies(new URL('/admin', req.url))
   }
 
   if (isProviderArea) {
-    if (role === 'customer') {
-      return NextResponse.redirect(new URL('/customer', req.url))
-    }
-    if (role === 'admin') {
-      return NextResponse.redirect(new URL('/admin', req.url))
-    }
+    if (role === 'customer') return redirectWithCookies(new URL('/customer', req.url))
+    if (role === 'admin') return redirectWithCookies(new URL('/admin', req.url))
   }
 
   if (isAdminArea) {
-    if (role !== 'admin') {
-      return NextResponse.redirect(new URL('/customer', req.url))
-    }
+    if (role !== 'admin') return redirectWithCookies(new URL('/customer', req.url))
   }
 
   // Auth sayfalarına giren giriş yapmış kullanıcıları doğrudan paneline yönlendir
   if (isAuthPage) {
-    if (role === 'customer') {
-      return NextResponse.redirect(new URL('/customer', req.url))
-    }
-    if (role === 'provider') {
-      return NextResponse.redirect(new URL('/provider', req.url))
-    }
-    if (role === 'admin') {
-      return NextResponse.redirect(new URL('/admin', req.url))
-    }
+    if (role === 'customer') return redirectWithCookies(new URL('/customer', req.url))
+    if (role === 'provider') return redirectWithCookies(new URL('/provider', req.url))
+    if (role === 'admin') return redirectWithCookies(new URL('/admin', req.url))
   }
 
   return res
