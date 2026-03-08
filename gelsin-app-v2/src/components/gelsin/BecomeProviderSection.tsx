@@ -50,7 +50,7 @@ export default function BecomeProviderSection() {
                 </div>
               </div>
               <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-sm"><span className="text-slate-500">Bu ay kazanc</span><span className="font-bold text-orange-600">12.450 TL</span></div>
+                <div className="flex justify-between text-sm"><span className="text-slate-500">Bu ay kazanç</span><span className="font-bold text-orange-600">12.450 TL</span></div>
                 <div className="flex justify-between text-sm"><span className="text-slate-500">Tamamlanan iş</span><span className="font-bold">23</span></div>
                 <div className="flex justify-between text-sm"><span className="text-slate-500">Müşteri puanı</span><span className="font-bold">4.9</span></div>
               </div>

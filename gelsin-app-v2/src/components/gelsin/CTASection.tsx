@@ -15,7 +15,7 @@ export default function CTASection() {
               Hemen Başla
             </h2>
             <p className="text-white/80 text-lg max-w-xl mx-auto mb-10">
-              Ücretsiz kayıt ol, isini ac veya uzman olarak katil. Binlerce kisi seni bekliyor.
+              Ücretsiz kayıt ol, işini aç veya uzman olarak katıl. Binlerce kişi seni bekliyor.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/customer/new-job" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-orange-600 bg-white hover:bg-slate-100 transition-colors">
