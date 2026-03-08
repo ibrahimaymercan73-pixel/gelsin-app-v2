@@ -11,6 +11,7 @@ export default function CustomerProfile() {
   const [hidePhone, setHidePhone] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -27,13 +28,37 @@ export default function CustomerProfile() {
 
   const save = async () => {
     if (!profile) return
+    setSaveError('')
     setSaving(true)
     const supabase = createClient()
-    await supabase
+    if (phone?.trim()) {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('phone', phone.trim())
+        .neq('id', profile.id)
+        .maybeSingle()
+      if (existing) {
+        setSaveError('Bu telefon numarası başka bir hesap tarafından kullanılıyor.')
+        setSaving(false)
+        return
+      }
+    }
+    const { error } = await supabase
       .from('profiles')
-      .update({ full_name: name, phone })
+      .update({ full_name: name, phone: phone?.trim() || null })
       .eq('id', profile.id)
-    setSaved(true); setSaving(false)
+    if (error) {
+      if (error.code === '23505') {
+        setSaveError('Bu telefon numarası başka bir hesap tarafından kullanılıyor.')
+      } else {
+        setSaveError(error.message || 'Profil güncellenemedi.')
+      }
+      setSaving(false)
+      return
+    }
+    setSaved(true)
+    setSaving(false)
     setTimeout(() => setSaved(false), 2500)
   }
 
@@ -160,6 +185,11 @@ export default function CustomerProfile() {
                   </div>
                 </div>
 
+                {saveError && (
+                  <p className="text-red-600 text-sm font-medium bg-red-50 p-4 rounded-xl border border-red-100">
+                    {saveError}
+                  </p>
+                )}
                 <button
                   onClick={save}
                   disabled={saving}

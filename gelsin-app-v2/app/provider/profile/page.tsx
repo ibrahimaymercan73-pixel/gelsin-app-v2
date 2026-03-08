@@ -17,6 +17,7 @@ export default function ProviderProfile() {
   const [hidePhone, setHidePhone] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [uploading, setUploading] = useState('')
 
   useEffect(() => {
@@ -37,14 +38,38 @@ export default function ProviderProfile() {
   }, [])
 
   const save = async () => {
+    setSaveError('')
     setSaving(true)
     const supabase = createClient()
-    await supabase
+    if (phone?.trim()) {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('phone', phone.trim())
+        .neq('id', profile.id)
+        .maybeSingle()
+      if (existing) {
+        setSaveError('Bu telefon numarası başka bir hesap tarafından kullanılıyor.')
+        setSaving(false)
+        return
+      }
+    }
+    const { error: profileError } = await supabase
       .from('profiles')
-      .update({ full_name: name, phone })
+      .update({ full_name: name, phone: phone?.trim() || null })
       .eq('id', profile.id)
+    if (profileError) {
+      if (profileError.code === '23505') {
+        setSaveError('Bu telefon numarası başka bir hesap tarafından kullanılıyor.')
+      } else {
+        setSaveError(profileError.message || 'Profil güncellenemedi.')
+      }
+      setSaving(false)
+      return
+    }
     await supabase.from('provider_profiles').update({ bio }).eq('id', profile.id)
-    setSaved(true); setSaving(false)
+    setSaved(true)
+    setSaving(false)
     setTimeout(() => setSaved(false), 2000)
   }
 
@@ -236,6 +261,11 @@ export default function ProviderProfile() {
           </div>
         </div>
 
+        {saveError && (
+          <p className="text-red-600 text-sm font-medium bg-red-50 p-4 rounded-xl border border-red-100">
+            {saveError}
+          </p>
+        )}
         <button className="btn-primary py-4" onClick={save} disabled={saving}>
           {saved ? '✅ Kaydedildi!' : saving ? 'Kaydediliyor...' : 'Kaydet'}
         </button>
