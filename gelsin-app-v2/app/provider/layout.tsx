@@ -9,13 +9,10 @@ import { useUpdatePresence } from '@/hooks/useUpdatePresence'
 import { OnboardingTour } from '@/components/OnboardingTour'
 
 const navItems = [
-  { href: '/provider', icon: '📊', label: 'Özet', showBadge: false, tourId: null as string | null },
+  { href: '/provider', icon: '🏠', label: 'Özet', showBadge: false, tourId: null as string | null },
   { href: '/provider/jobs', icon: '🔍', label: 'Radar', showBadge: false, tourId: 'tour-radar' as string | null },
-  { href: '/provider/my-jobs', icon: '🔨', label: 'İşlerim', showBadge: false, tourId: null },
-  { href: '/provider/services', icon: '📌', label: 'İlanlarım', showBadge: false, tourId: null },
-  { href: '/provider/notifications', icon: '🔔', label: 'Mesajlar', showBadge: true, tourId: null },
-  { href: '/provider/wallet', icon: '💰', label: 'Cüzdan', showBadge: false, tourId: 'tour-wallet' as string | null },
-  { href: '/provider/support', icon: '🆘', label: 'Destek', showBadge: false, tourId: null },
+  { href: '/provider/my-jobs', icon: '💼', label: 'İşlerim', showBadge: false, tourId: null },
+  { href: '/provider/notifications', icon: '💬', label: 'Mesajlar', showBadge: true, tourId: null },
   { href: '/provider/profile', icon: '👤', label: 'Profil', showBadge: false, tourId: null },
 ]
 
@@ -89,12 +86,12 @@ export default function ProviderLayout({ children }: { children: React.ReactNode
         </div>
       </aside>
 
-      <main className="flex-1 lg:ml-64 pb-24 lg:pb-0">
+      <main className="flex-1 lg:ml-64 pb-24 md:pb-0">
         {children}
       </main>
 
       {!hideBottomNav && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg px-1 py-2 flex justify-between items-center z-[100] rounded-t-3xl shadow-2xl border-t border-white/10 pb-[env(safe-area-inset-bottom,8px)]">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg px-1 py-2 flex justify-between items-center z-[100] rounded-t-3xl shadow-2xl border-t border-white/10 pb-[env(safe-area-inset-bottom,8px)]">
           {navItems.map(item => {
             const isActive = pathname === item.href
             return (
