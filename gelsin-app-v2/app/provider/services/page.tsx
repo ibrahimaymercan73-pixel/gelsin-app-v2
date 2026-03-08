@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { CITIES_SERVICE } from '@/lib/constants'
 
 type Service = {
   id: string
@@ -12,6 +13,7 @@ type Service = {
   category_slug: string
   image_url: string | null
   status: string
+  city?: string | null
 }
 
 const CATEGORY_OPTIONS = [
@@ -22,6 +24,7 @@ const CATEGORY_OPTIONS = [
 
 export default function ProviderServicesPage() {
   const [list, setList] = useState<Service[]>([])
+  const [profileCity, setProfileCity] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -32,10 +35,21 @@ export default function ProviderServicesPage() {
     category_slug: 'repair',
     image_url: '',
     status: 'active',
+    city: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
+
+  const allowedCategorySlugs = useMemo(() => {
+    const fromActive = [...new Set(list.filter(s => s.status === 'active').map(s => s.category_slug))]
+    if (fromActive.length > 0) return fromActive
+    return CATEGORY_OPTIONS.map(c => c.slug)
+  }, [list])
+
+  const categoryOptionsForDropdown = useMemo(() => {
+    return CATEGORY_OPTIONS.filter(c => allowedCategorySlugs.includes(c.slug))
+  }, [allowedCategorySlugs])
 
   const load = async () => {
     const supabase = createClient()
@@ -45,9 +59,11 @@ export default function ProviderServicesPage() {
       setLoading(false)
       return
     }
+    const { data: profile } = await supabase.from('profiles').select('city').eq('id', user.id).single()
+    setProfileCity(profile?.city || '')
     const { data } = await supabase
       .from('provider_services')
-      .select('id, title, description, price, category_slug, image_url, status')
+      .select('id, title, description, price, category_slug, image_url, status, city')
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false })
     setList((data as Service[]) || [])
@@ -61,13 +77,15 @@ export default function ProviderServicesPage() {
   const openNew = () => {
     setEditingId(null)
     setImageFile(null)
+    const defaultCity = profileCity && CITIES_SERVICE.includes(profileCity as any) ? profileCity : (CITIES_SERVICE[0] ?? '')
     setForm({
       title: '',
       description: '',
       price: '',
-      category_slug: 'repair',
+      category_slug: categoryOptionsForDropdown[0]?.slug ?? 'repair',
       image_url: '',
       status: 'active',
+      city: defaultCity,
     })
     setModalOpen(true)
   }
@@ -82,6 +100,7 @@ export default function ProviderServicesPage() {
       category_slug: s.category_slug || 'repair',
       image_url: s.image_url || '',
       status: s.status,
+      city: s.city || profileCity || CITIES_SERVICE[0] || '',
     })
     setModalOpen(true)
   }
@@ -133,6 +152,12 @@ export default function ProviderServicesPage() {
       setSubmitting(false)
       return
     }
+    const cityVal = form.city?.trim()
+    if (!cityVal) {
+      toast.error('Şehir seçin.')
+      setSubmitting(false)
+      return
+    }
     const payload = {
       title,
       description: form.description.trim() || null,
@@ -140,6 +165,7 @@ export default function ProviderServicesPage() {
       category_slug: form.category_slug,
       image_url: form.image_url.trim() || null,
       status: form.status,
+      city: cityVal,
       updated_at: new Date().toISOString(),
     }
     if (editingId) {
@@ -308,13 +334,32 @@ export default function ProviderServicesPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Kategori</label>
+                {categoryOptionsForDropdown.length === 0 ? (
+                  <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                    Önce Profil &gt; Hizmetlerim bölümünden hizmet ekleyin.
+                  </p>
+                ) : (
+                  <select
+                    value={form.category_slug}
+                    onChange={(e) => setForm((f) => ({ ...f, category_slug: e.target.value }))}
+                    className="input text-sm"
+                  >
+                    {categoryOptionsForDropdown.map((c) => (
+                      <option key={c.slug} value={c.slug}>{c.label}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Şehir *</label>
                 <select
-                  value={form.category_slug}
-                  onChange={(e) => setForm((f) => ({ ...f, category_slug: e.target.value }))}
+                  value={form.city}
+                  onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
                   className="input text-sm"
                 >
-                  {CATEGORY_OPTIONS.map((c) => (
-                    <option key={c.slug} value={c.slug}>{c.label}</option>
+                  <option value="">Şehir seçin</option>
+                  {CITIES_SERVICE.map((c) => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>

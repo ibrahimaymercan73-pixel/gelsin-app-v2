@@ -68,12 +68,21 @@ export default function CustomerHome() {
   useEffect(() => {
     const loadVitrin = async () => {
       const supabase = createClient()
-      const { data: rows } = await supabase
+      const { data: { user } } = await supabase.auth.getUser()
+      let query = supabase
         .from('provider_services')
-        .select('id, title, price, image_url, provider_id')
+        .select('id, title, price, image_url, provider_id, city')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(9)
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('city').eq('id', user.id).single()
+        const userCity = profile?.city?.trim()
+        if (userCity) {
+          query = query.or(`city.eq."${userCity}",city.eq."Türkiye Geneli"`)
+        }
+      }
+      const { data: rows } = await query
       if (!rows?.length) {
         setVitrinList([])
         return
