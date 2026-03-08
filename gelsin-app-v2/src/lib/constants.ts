@@ -6,6 +6,7 @@ import {
   Dog,
   MonitorSmartphone,
   Building,
+  TreePine,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -66,6 +67,13 @@ export const SERVICE_CATEGORIES: ServiceCategory[] = [
     icon: Building,
     emoji: '🏢',
     sub: ['Profesyonel İlaçlama', 'Endüstriyel Temizlik', 'Personel Tedariği'],
+  },
+  {
+    id: 'bahce_peyzaj',
+    name: 'Bahçe & Peyzaj',
+    icon: TreePine,
+    emoji: '🌳',
+    sub: ['Bahçe Düzenleme', 'Çim Biçme', 'Ağaç Budama', 'Peyzaj Tasarım'],
   },
 ]
 

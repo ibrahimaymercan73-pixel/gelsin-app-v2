@@ -42,6 +42,11 @@ const CATEGORY_PLACEHOLDERS: Record<string, { title: string; description: string
     description: 'İşyerinizin büyüklüğü, hizmet kapsamı ve tarih/saat tercihlerinizi belirtin...',
     address: 'İşyeri adresi...',
   },
+  bahce_peyzaj: {
+    title: 'Ör: Bahçe düzenleme, çim biçme',
+    description: 'Bahçe büyüklüğü, yapılacak işler ve tercih edilen tarih/saat...',
+    address: 'Bahçe adresi...',
+  },
   default: {
     title: 'Ör: İhtiyacınızı kısaca yazın',
     description: 'Detayları kısaca açıklayın...',

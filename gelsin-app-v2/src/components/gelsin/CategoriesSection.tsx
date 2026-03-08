@@ -15,6 +15,7 @@ const CAT_COLORS: Record<string, string> = {
   evcil_hayvan: '152 69% 40%',
   teknoloji: '200 80% 50%',
   kurumsal: '220 25% 30%',
+  bahce_peyzaj: '142 71% 35%',
 }
 
 export default function CategoriesSection() {
@@ -40,7 +41,7 @@ export default function CategoriesSection() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 justify-items-stretch"
         >
           {SERVICE_CATEGORIES.map((cat) => {
             const color = CAT_COLORS[cat.id] || '24 95% 53%'
