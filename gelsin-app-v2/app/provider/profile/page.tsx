@@ -262,50 +262,6 @@ export default function ProviderProfile() {
         </div>
 
         <div className="card p-5">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-bold text-gray-800">Uzmanlık Alanları</p>
-            <Link
-              href="/provider/onboarding"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-            >
-              ✏️ Düzenle
-            </Link>
-          </div>
-
-          {/* Ana Kategori */}
-          {mainCategoryInfo && (
-            <div className="flex items-center gap-2 mb-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-              <mainCategoryInfo.icon className="w-5 h-5 text-blue-600" />
-              <span className="font-semibold text-blue-900 text-sm">{mainCategoryInfo.name}</span>
-            </div>
-          )}
-          
-          {/* Alt Hizmetler - Dinamik Chips */}
-          {cats.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {cats.map((service, idx) => (
-                <span
-                  key={idx}
-                  className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium border border-blue-100"
-                >
-                  {service}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-6 bg-gray-50 rounded-xl">
-              <p className="text-sm text-gray-500 mb-2">Henüz uzmanlık alanı seçilmedi</p>
-              <Link 
-                href="/provider/onboarding"
-                className="text-sm font-semibold text-blue-600 hover:underline"
-              >
-                Uzmanlık alanlarını seç →
-              </Link>
-            </div>
-          )}
-        </div>
-
-        <div className="card p-5">
           <p className="font-bold text-gray-800 mb-1">Kimlik Belgeleri</p>
           <p className="text-xs text-gray-400 mb-4">Hesabınızın onaylanması için gereklidir</p>
           <div className="space-y-3">
