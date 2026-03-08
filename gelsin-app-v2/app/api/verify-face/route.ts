@@ -3,6 +3,36 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 const MIN_DETECTION_CONFIDENCE = 0.7
+const RATE_LIMIT_PER_MINUTE = 60
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(userId: string): { allowed: boolean } {
+  const now = Date.now()
+  const windowMs = 60_000
+  let entry = rateLimitMap.get(userId)
+  if (!entry) {
+    rateLimitMap.set(userId, { count: 1, resetAt: now + windowMs })
+    return { allowed: true }
+  }
+  if (now >= entry.resetAt) {
+    entry.count = 1
+    entry.resetAt = now + windowMs
+    return { allowed: true }
+  }
+  if (entry.count >= RATE_LIMIT_PER_MINUTE) {
+    return { allowed: false }
+  }
+  entry.count++
+  return { allowed: true }
+}
+
+type FaceAnnotation = {
+  detectionConfidence?: number
+  panAngle?: number
+  tiltAngle?: number
+  rollAngle?: number
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,6 +55,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ verified: false, error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
     }
 
+    const { allowed } = checkRateLimit(user.id)
+    if (!allowed) {
+      return NextResponse.json(
+        { verified: false, error: 'Çok fazla istek. Lütfen bir dakika bekleyin.' },
+        { status: 429 }
+      )
+    }
+
     if (!process.env.GOOGLE_VISION_API_KEY) {
       console.error('[verify-face] GOOGLE_VISION_API_KEY is not set')
       return NextResponse.json(
@@ -42,7 +80,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
-    // Strip data URL prefix if present (e.g. "data:image/jpeg;base64,")
     if (imageBase64.includes(',')) {
       imageBase64 = imageBase64.split(',')[1]?.trim() || imageBase64
     }
@@ -80,19 +117,29 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const response = (visionData as { responses?: unknown[] })?.responses?.[0]
-    const faceAnnotations = (response as { faceAnnotations?: { detectionConfidence?: number }[] })?.faceAnnotations
-    const hasFace =
-      Array.isArray(faceAnnotations) &&
-      faceAnnotations.length > 0 &&
-      (faceAnnotations[0].detectionConfidence ?? 0) >= MIN_DETECTION_CONFIDENCE
+    const response = (visionData as { responses?: { faceAnnotations?: FaceAnnotation[] }[] })?.responses?.[0]
+    const faceAnnotations = response?.faceAnnotations
+    const face = Array.isArray(faceAnnotations) && faceAnnotations.length > 0 ? faceAnnotations[0] : null
+    const confidence = face?.detectionConfidence ?? 0
+    const hasFace = confidence >= MIN_DETECTION_CONFIDENCE
 
-    if (hasFace) {
-      return NextResponse.json({ verified: true })
+    if (hasFace && face) {
+      const headEulerAngleY = face.panAngle ?? 0
+      const headEulerAngleX = face.tiltAngle ?? 0
+      return NextResponse.json({
+        verified: true,
+        headEulerAngleY,
+        headEulerAngleX,
+        detectionConfidence: confidence,
+      })
     }
+
     return NextResponse.json({
       verified: false,
       error: 'Yüz tespit edilemedi',
+      headEulerAngleY: undefined,
+      headEulerAngleX: undefined,
+      detectionConfidence: confidence || undefined,
     })
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : String(e)

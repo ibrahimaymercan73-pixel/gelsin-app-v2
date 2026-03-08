@@ -13,12 +13,20 @@ export default function ProviderOnboardingPage() {
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [faceVerifying, setFaceVerifying] = useState(false)
   const [faceError, setFaceError] = useState('')
   const [cameraOn, setCameraOn] = useState(false)
+  const [livenessStep, setLivenessStep] = useState(0)
+  const [livenessTimeout, setLivenessTimeout] = useState(false)
+  const [faceInFrame, setFaceInFrame] = useState(true)
+  const [verifyingRequest, setVerifyingRequest] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const step3StartRef = useRef<number>(0)
+  const livenessStepRef = useRef(0)
+  livenessStepRef.current = livenessStep
 
   useEffect(() => {
     const load = async () => {
@@ -50,6 +58,47 @@ export default function ProviderOnboardingPage() {
 
     load()
   }, [router])
+
+  useEffect(() => {
+    if (step === 3) {
+      startCamera()
+    }
+    return () => {
+      if (step === 3) stopCamera()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- startCamera/stopCamera stable enough
+  }, [step])
+
+  useEffect(() => {
+    if (step !== 3 || !cameraOn || livenessTimeout || livenessStep >= 3) return
+    const t = setTimeout(() => setLivenessTimeout(true), 30_000)
+    timeoutRef.current = t
+    const id = setInterval(captureFrameAndVerify, 1000)
+    pollIntervalRef.current = id
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- captureFrameAndVerify uses refs
+  }, [step, cameraOn, livenessTimeout, livenessStep])
+
+  useEffect(() => {
+    if (livenessStep !== 3) return
+    const done = async () => {
+      stopCamera()
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from('profiles').update({ face_verified: true }).eq('id', user.id)
+      }
+      if (typeof window !== 'undefined') {
+        window.location.href = '/provider'
+      } else {
+        router.replace('/provider')
+      }
+    }
+    done()
+  }, [livenessStep])
 
   const selectMainCategory = (cat: ServiceCategory) => {
     setSelectedCategory(cat)
@@ -110,6 +159,9 @@ export default function ProviderOnboardingPage() {
 
   const startCamera = async () => {
     setFaceError('')
+    setLivenessTimeout(false)
+    setLivenessStep(0)
+    setFaceInFrame(true)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       streamRef.current = stream
@@ -117,12 +169,21 @@ export default function ProviderOnboardingPage() {
         videoRef.current.srcObject = stream
       }
       setCameraOn(true)
+      step3StartRef.current = Date.now()
     } catch (e) {
       setFaceError('Kamera açılamadı. Tarayıcı izni verin.')
     }
   }
 
   const stopCamera = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop())
       streamRef.current = null
@@ -133,28 +194,19 @@ export default function ProviderOnboardingPage() {
     setCameraOn(false)
   }
 
-  const captureAndVerify = async () => {
+  const captureFrameAndVerify = async () => {
     const video = videoRef.current
     const canvas = canvasRef.current
-    if (!video || !canvas || !video.srcObject || video.readyState < 2) {
-      setFaceError('Önce kamerayı açın ve yüzünüzü hizalayın.')
-      return
-    }
-    setFaceVerifying(true)
-    setFaceError('')
+    if (!video || !canvas || !video.srcObject || video.readyState < 2 || verifyingRequest) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    ctx.drawImage(video, 0, 0)
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+    const base64 = dataUrl.split(',')[1] || ''
+    setVerifyingRequest(true)
     try {
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        setFaceError('Görüntü işlenemedi.')
-        setFaceVerifying(false)
-        return
-      }
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      ctx.drawImage(video, 0, 0)
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
-      const base64 = dataUrl.split(',')[1] || ''
-
       const res = await fetch('/api/verify-face', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -163,34 +215,34 @@ export default function ProviderOnboardingPage() {
       const data = await res.json().catch(() => ({}))
       console.log('[onboarding] verify-face response:', { status: res.status, data })
 
-      if (data.verified === true) {
-        stopCamera()
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          await supabase.from('profiles').update({ face_verified: true }).eq('id', user.id)
-        }
-        if (typeof window !== 'undefined') {
-          window.location.href = '/provider'
-          return
-        }
-        router.replace('/provider')
+      if (res.status === 429) {
+        setFaceError(data.error || 'Çok fazla istek. Bir dakika bekleyin.')
         return
       }
 
-      const errMsg = data.error ?? data.message
-      if (res.ok && errMsg) {
-        setFaceError(errMsg)
-      } else if (!res.ok) {
-        setFaceError('Bir hata oluştu: ' + (errMsg || `Sunucu ${res.status}`))
-      } else {
-        setFaceError('Yüz tespit edilemedi, tekrar dene')
+      if (!data.verified) {
+        setFaceInFrame(false)
+        if (data.error) setFaceError(data.error)
+        return
+      }
+
+      setFaceInFrame(true)
+      setFaceError('')
+      const y = Number(data.headEulerAngleY) || 0
+      const current = livenessStepRef.current
+      if (current === 0 && y > 15) {
+        setLivenessStep(1)
+      } else if (current === 1 && y < -15) {
+        setLivenessStep(2)
+      } else if (current === 2 && y >= -10 && y <= 10) {
+        setLivenessStep(3)
       }
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : 'Beklenmeyen hata'
       setFaceError('Bir hata oluştu: ' + errMsg)
+    } finally {
+      setVerifyingRequest(false)
     }
-    setFaceVerifying(false)
   }
 
   const skipFaceVerify = () => {
@@ -346,73 +398,122 @@ export default function ProviderOnboardingPage() {
           )}
 
           {step === 3 && (
-            <div className="space-y-6 animate-slide-up max-w-md mx-auto">
-              <div className="relative bg-white rounded-2xl border-2 border-slate-200 overflow-hidden aspect-[4/3] flex items-center justify-center bg-slate-100">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                />
-                {!cameraOn && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-slate-500">
-                    <Camera className="w-12 h-12 text-slate-300" />
-                    <span className="text-sm font-medium">Kamerayı açmak için butona tıkla</span>
-                  </div>
-                )}
-              </div>
+            <div className="space-y-6 animate-slide-up max-w-sm mx-auto">
               <canvas ref={canvasRef} className="hidden" />
+
+              <div className="rounded-3xl bg-slate-900 p-6 flex flex-col items-center">
+                <div
+                  className={`relative w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden border-4 transition-colors duration-300 ${
+                    !cameraOn ? 'border-slate-500 bg-slate-800' : livenessStep >= 3 ? 'border-emerald-500' : 'border-blue-500'
+                  }`}
+                >
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                  {!cameraOn && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
+                      <Camera className="w-12 h-12" />
+                      <span className="text-xs font-medium">Kamera açılıyor...</span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 pointer-events-none rounded-full border-2 border-white/30" />
+                  {cameraOn && (
+                    <>
+                      <div className="absolute top-2 left-2 w-8 h-8 border-l-2 border-t-2 border-white/60 rounded-tl-lg animate-pulse" />
+                      <div className="absolute top-2 right-2 w-8 h-8 border-r-2 border-t-2 border-white/60 rounded-tr-lg animate-pulse" />
+                      <div className="absolute bottom-2 left-2 w-8 h-8 border-l-2 border-b-2 border-white/60 rounded-bl-lg animate-pulse" />
+                      <div className="absolute bottom-2 right-2 w-8 h-8 border-r-2 border-b-2 border-white/60 rounded-br-lg animate-pulse" />
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-center gap-2 mt-6">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className={`inline-block w-2.5 h-2.5 rounded-full transition-all ${
+                        i < livenessStep ? 'bg-emerald-500' : i === livenessStep ? 'bg-blue-400 animate-pulse' : 'bg-slate-500'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-6 min-h-[4rem] flex flex-col items-center justify-center">
+                  {livenessStep === 0 && (
+                    <p className="text-lg sm:text-xl font-bold text-white animate-pulse">
+                      Sağa Bakın →
+                    </p>
+                  )}
+                  {livenessStep === 1 && (
+                    <p className="text-lg sm:text-xl font-bold text-white animate-pulse">
+                      ← Sola Bakın
+                    </p>
+                  )}
+                  {livenessStep === 2 && (
+                    <p className="text-lg sm:text-xl font-bold text-white animate-pulse">
+                      Düz Bakın
+                    </p>
+                  )}
+                  {livenessStep >= 3 && (
+                    <p className="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                      <Check className="w-6 h-6" /> Doğrulandı
+                    </p>
+                  )}
+                  {livenessStep > 0 && (
+                    <p className="text-sm text-slate-400 mt-1">
+                      {livenessStep >= 1 && '✓ Sağa baktınız '}
+                      {livenessStep >= 2 && '✓ Sola baktınız '}
+                      {livenessStep >= 3 && '✓ Düz baktınız'}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {!faceInFrame && cameraOn && livenessStep < 3 && (
+                <p className="text-center text-amber-400 text-sm font-medium bg-amber-500/10 border border-amber-500/30 rounded-xl py-2 px-4">
+                  Yüzünüzü çerçevede tutun
+                </p>
+              )}
               {faceError && (
+                <p className="text-center text-red-400 text-sm font-medium bg-red-500/10 border border-red-500/30 rounded-xl py-2 px-4">
+                  {faceError}
+                </p>
+              )}
+              {livenessTimeout && (
                 <div className="space-y-2">
-                  <p className="text-sm text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl">
-                    {faceError}
+                  <p className="text-center text-amber-400 text-sm font-medium">
+                    Süre doldu, tekrar deneyin
                   </p>
                   <button
                     type="button"
                     onClick={() => {
+                      setLivenessTimeout(false)
+                      setLivenessStep(0)
                       setFaceError('')
-                      if (cameraOn) captureAndVerify()
-                      else startCamera()
+                      step3StartRef.current = Date.now()
+                      startCamera()
                     }}
-                    className="w-full py-2.5 rounded-xl border-2 border-red-200 text-red-600 font-semibold text-sm hover:bg-red-50 transition-colors"
+                    className="w-full py-3 rounded-xl border-2 border-amber-400 text-amber-400 font-semibold text-sm hover:bg-amber-500/10 transition-colors"
                   >
                     Tekrar dene
                   </button>
                 </div>
               )}
-              <div className="flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={cameraOn ? captureAndVerify : startCamera}
-                  disabled={faceVerifying}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-4 rounded-2xl text-sm shadow-lg shadow-blue-600/25 disabled:shadow-none transition-all flex items-center justify-center gap-2"
-                >
-                  {faceVerifying ? (
-                    <>
-                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Doğrulanıyor...
-                    </>
-                  ) : cameraOn ? (
-                    '📸 Selfie Çek ve Doğrula'
-                  ) : (
-                    <>
-                      <Camera className="w-5 h-5" />
-                      Kamerayı Aç
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={skipFaceVerify}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-2xl text-sm transition-all"
-                >
-                  Şimdi Değil
-                </button>
-                <p className="text-xs text-slate-500 text-center">
-                  Atlarsan onaylı uzman rozeti almazsın; istersen sonra profilinden doğrulayabilirsin.
-                </p>
-              </div>
+
+              <button
+                type="button"
+                onClick={skipFaceVerify}
+                className="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-3 rounded-2xl text-sm transition-all"
+              >
+                Şimdi Değil
+              </button>
+              <p className="text-xs text-slate-500 text-center">
+                Atlarsan onaylı uzman rozeti almazsın; istersen sonra profilinden doğrulayabilirsin.
+              </p>
             </div>
           )}
         </div>
