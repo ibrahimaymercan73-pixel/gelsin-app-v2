@@ -124,6 +124,9 @@ export default function ProviderProfile() {
     suspended: '🚫 Askıya Alındı',
   }
   const ppStatus = (pp as { status?: string } | null)?.status
+  const faceVerified = ctxProfile?.face_verified
+  const displayStatus = faceVerified && ppStatus === 'pending' ? 'approved' : ppStatus
+  const displayLabel = displayStatus ? statusLabels[displayStatus] : (faceVerified ? '✅ Onaylı' : '—')
   const ppRating = (pp as { rating?: number } | null)?.rating
   const ppTotalReviews = (pp as { total_reviews?: number } | null)?.total_reviews
 
@@ -139,8 +142,8 @@ export default function ProviderProfile() {
           <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl">🔧</div>
           <div>
             <p className="font-black text-lg">{name || 'Uzman'}</p>
-            <span className={ppStatus ? statusColors[ppStatus] : 'badge-gray'}>
-              {ppStatus ? statusLabels[ppStatus] : '—'}
+            <span className={displayStatus ? statusColors[displayStatus] : 'badge-gray'}>
+              {displayLabel}
             </span>
             {typeof ppRating === 'number' && (
               <div className="mt-1 flex items-center gap-2 text-xs text-blue-100">

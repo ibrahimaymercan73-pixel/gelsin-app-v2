@@ -11,7 +11,7 @@ export default async function ProviderLayout({ children }: { children: React.Rea
   }
 
   const [{ data: profileRow }, { data: providerRow }] = await Promise.all([
-    supabase.from('profiles').select('id, role, full_name, phone, city, hide_phone').eq('id', session.user.id).single(),
+    supabase.from('profiles').select('id, role, full_name, phone, city, hide_phone, face_verified').eq('id', session.user.id).single(),
     supabase.from('provider_profiles').select('*').eq('id', session.user.id).single(),
   ])
 
@@ -34,6 +34,7 @@ export default async function ProviderLayout({ children }: { children: React.Rea
         phone: profileRow.phone || '',
         city: profileRow.city || '',
         hide_phone: !!profileRow.hide_phone,
+        face_verified: !!profileRow.face_verified,
       }
     : null
   const initialProviderProfile = providerRow ?? null

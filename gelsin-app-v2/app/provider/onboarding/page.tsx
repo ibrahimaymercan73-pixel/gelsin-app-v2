@@ -96,6 +96,7 @@ export default function ProviderOnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         await supabase.from('profiles').update({ face_verified: true }).eq('id', user.id)
+        await supabase.from('provider_profiles').update({ status: 'approved' }).eq('id', user.id)
       }
       if (typeof window !== 'undefined') {
         window.location.href = '/provider'

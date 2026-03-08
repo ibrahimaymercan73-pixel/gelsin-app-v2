@@ -6,8 +6,9 @@ import Link from 'next/link'
 import { useProviderAuth } from './ProviderLayoutClient'
 
 export default function ProviderDashboard() {
-  const { providerName } = useProviderAuth()
+  const { providerName, profile } = useProviderAuth()
   const [stats, setStats] = useState({ active: 0, pending: 0, wallet: 0, total: 0 })
+  const faceVerified = !!profile?.face_verified
   const [isOnline, setIsOnline] = useState(false)
 
   useEffect(() => {
@@ -98,6 +99,17 @@ export default function ProviderDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-8 space-y-8">
+        {!faceVerified && (
+          <Link href="/provider/onboarding">
+            <div className="rounded-2xl p-5 bg-amber-50 border border-amber-200 text-amber-800 flex items-center justify-between">
+              <div>
+                <p className="font-bold">Kimliğinizi doğrulayın</p>
+                <p className="text-sm text-amber-700 mt-0.5">Onaylı uzman rozeti için selfie ile kimlik doğrulaması yapın.</p>
+              </div>
+              <span className="bg-amber-500 text-white px-4 py-2 rounded-xl font-semibold text-sm shrink-0">Doğrula</span>
+            </div>
+          </Link>
+        )}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((s, i) => (
             <Link key={s.label} href={s.href}>

@@ -22,6 +22,7 @@ export type ProviderProfile = {
   phone: string
   city: string
   hide_phone: boolean
+  face_verified?: boolean
 } | null
 
 export type ProviderProfileExtra = Record<string, unknown> | null
