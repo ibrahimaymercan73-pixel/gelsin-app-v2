@@ -86,36 +86,22 @@ export const getSubServicesByCategoryId = (id: string) =>
 export const getAllSubServices = () =>
   SERVICE_CATEGORIES.flatMap((c) => c.sub.map((s) => ({ category: c.id, categoryName: c.name, service: s })))
 
-/** Kayıt / profil şehir seçenekleri */
+/** Kayıt / profil – 81 il (Türkiye) */
 export const CITIES = [
-  'Ankara',
-  'İstanbul',
-  'İzmir',
-  'Bursa',
-  'Antalya',
-  'Adana',
-  'Gaziantep',
-  'Konya',
-  'Mersin',
-  'Kayseri',
-  'Eskişehir',
-  'Trabzon',
-  'Diğer',
+  'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya',
+  'Ardahan', 'Artvin', 'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik',
+  'Bingöl', 'Bitlis', 'Bolu', 'Burdur', 'Bursa', 'Çanakkale', 'Çankırı', 'Çorum',
+  'Denizli', 'Diyarbakır', 'Düzce', 'Edirne', 'Elazığ', 'Erzincan', 'Erzurum', 'Eskişehir',
+  'Gaziantep', 'Giresun', 'Gümüşhane', 'Hakkari', 'Hatay', 'Iğdır', 'Isparta', 'İstanbul',
+  'İzmir', 'Kahramanmaraş', 'Karabük', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kilis',
+  'Kırıkkale', 'Kırklareli', 'Kırşehir', 'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa',
+  'Mardin', 'Mersin', 'Muğla', 'Muş', 'Nevşehir', 'Niğde', 'Ordu', 'Osmaniye',
+  'Rize', 'Sakarya', 'Samsun', 'Siirt', 'Sinop', 'Sivas', 'Şanlıurfa', 'Şırnak',
+  'Tekirdağ', 'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak',
 ] as const
 
-/** İlan şehir seçenekleri (Türkiye Geneli dahil) */
+/** İlan şehir seçenekleri: 81 il + Türkiye Geneli */
 export const CITIES_SERVICE = [
-  'Ankara',
-  'İstanbul',
-  'İzmir',
-  'Bursa',
-  'Antalya',
-  'Adana',
-  'Gaziantep',
-  'Konya',
-  'Mersin',
-  'Kayseri',
-  'Eskişehir',
-  'Trabzon',
+  ...CITIES,
   'Türkiye Geneli',
 ] as const
