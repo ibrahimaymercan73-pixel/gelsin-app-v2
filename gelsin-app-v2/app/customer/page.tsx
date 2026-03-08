@@ -293,8 +293,8 @@ export default function CustomerHome() {
         <div>
           <h4 className="text-white font-bold mb-4">Destek</h4>
           <ul className="space-y-2 text-sm text-slate-400">
-            <li><Link href="/customer" className="hover:text-white transition-colors">Yardım Merkezi</Link></li>
-            <li><Link href="/customer" className="hover:text-white transition-colors">İletişim</Link></li>
+            <li><Link href="/customer/support" className="hover:text-white transition-colors">Yardım Merkezi</Link></li>
+            <li><Link href="/customer/support" className="hover:text-white transition-colors">İletişim</Link></li>
           </ul>
         </div>
       </div>
