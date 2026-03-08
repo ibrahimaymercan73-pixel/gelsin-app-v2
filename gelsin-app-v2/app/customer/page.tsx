@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { useCustomerAuth } from './CustomerLayoutClient'
 import { Sparkles, MessageCircle, Search, ArrowRight, Droplet, Paintbrush, Wrench, Car, Zap, Scissors } from 'lucide-react'
 
 const POPULAR_SERVICES = [
@@ -28,22 +29,21 @@ type VitrinService = {
 
 export default function CustomerHome() {
   const router = useRouter()
-  const [userName, setUserName] = useState<string | null>(null)
+  const { profile } = useCustomerAuth()
   const [searchQuery, setSearchQuery] = useState('')
   const [vitrinList, setVitrinList] = useState<VitrinService[]>([])
   const [offerCount, setOfferCount] = useState(0)
   const [activeJob, setActiveJob] = useState<{ title: string; provider?: string } | null>(null)
 
+  const displayName = profile?.full_name?.trim()
+    ? profile.full_name.trim().split(/\s+/)[0]
+    : ''
+
   useEffect(() => {
     const load = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setUserName('')
-        return
-      }
-      const { data: p } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
-      setUserName(p?.full_name?.trim() ?? '')
+      if (!user) return
 
       const { data: jobs } = await supabase
         .from('jobs')
@@ -117,13 +117,6 @@ export default function CustomerHome() {
     else router.push('/customer/providers')
   }
 
-  const displayName =
-    userName === null
-      ? null
-      : userName.trim()
-        ? userName.trim().split(/\s+/)[0]
-        : ''
-
   return (
     <>
     <div className="max-w-7xl mx-auto px-6 pb-12">
@@ -133,12 +126,7 @@ export default function CustomerHome() {
           <div>
             <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
               Bugün neyi <span className="text-blue-600">çözüyoruz</span>
-              {displayName === null ? (
-                <span className="inline-block h-10 w-28 ml-2 align-middle bg-slate-200 rounded-lg animate-pulse" />
-              ) : displayName ? (
-                <> {displayName}</>
-              ) : null}
-              ?
+              {displayName ? <> {displayName}</> : null}?
             </h2>
             <p className="text-slate-500 mt-3 text-lg">
               Binlerce onaylı uzman, teklif vermek için seni bekliyor.

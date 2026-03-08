@@ -1,12 +1,14 @@
 'use client'
+
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import { useProviderAuth } from './ProviderLayoutClient'
 
 export default function ProviderDashboard() {
+  const { providerName } = useProviderAuth()
   const [stats, setStats] = useState({ active: 0, pending: 0, wallet: 0, total: 0 })
   const [isOnline, setIsOnline] = useState(false)
-  const [name, setName] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -15,17 +17,9 @@ export default function ProviderDashboard() {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) {
-        setName('')
         setStats({ active: 0, pending: 0, wallet: 0, total: 0 })
         return
       }
-
-      const { data: p } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single()
-      setName(p?.full_name ?? '')
       const { data: pp } = await supabase
         .from('provider_profiles')
         .select('wallet_balance, is_online')
@@ -92,11 +86,7 @@ export default function ProviderDashboard() {
       <header className="px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Hoş geldin</p>
-          {name === null ? (
-            <div className="h-7 w-32 mt-0.5 bg-slate-200 rounded animate-pulse" />
-          ) : (
-            <h1 className="text-xl lg:text-2xl font-black text-slate-800 mt-0.5">{name || 'Uzman'}</h1>
-          )}
+          <h1 className="text-xl lg:text-2xl font-black text-slate-800 mt-0.5">{providerName || 'Uzman'}</h1>
         </div>
         <button onClick={toggleOnline}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm transition-all shadow-sm ${
@@ -164,11 +154,7 @@ export default function ProviderDashboard() {
               <div className="w-14 h-14 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-center text-2xl">👤</div>
               <div>
                 <p className="text-sm text-slate-500 font-medium">Profilim</p>
-                <p className="text-lg font-black text-slate-800">{name === null ? (
-              <span className="inline-block h-5 w-28 bg-slate-200 rounded animate-pulse" />
-            ) : (
-              name || 'Profili Düzenle'
-            )}</p>
+                <p className="text-lg font-black text-slate-800">{providerName || 'Profili Düzenle'}</p>
               </div>
               <span className="ml-auto text-slate-300 text-2xl">→</span>
             </div>
