@@ -53,19 +53,19 @@ function LoginForm() {
   }
 
   const ensureProfileEmail = async (
+    supabaseInstance: ReturnType<typeof createClient>,
     userId: string,
     _emailValue: string,
     _intendedRole: 'customer' | 'provider'
   ) => {
-    const supabase = createClient()
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseInstance
       .from('profiles')
       .select('role')
       .eq('id', userId)
       .single()
 
     if (!profile) {
-      await supabase
+      await supabaseInstance
         .from('profiles')
         .upsert({ id: userId }, { onConflict: 'id' })
       return null
@@ -94,8 +94,8 @@ function LoginForm() {
       return
     }
 
-    // Giriş başarılıysa mevcut role'e göre yönlendir
-    const r = await ensureProfileEmail(data.user.id, email, selectedRole)
+    // Aynı client ile profil kontrolü (cookie henüz yazılmamış olabilir, 401 önlenir)
+    const r = await ensureProfileEmail(supabase, data.user.id, email, selectedRole)
     if (!r) {
       router.replace('/choose-role')
     } else if (r === 'provider') {
