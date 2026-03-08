@@ -55,7 +55,13 @@ export async function middleware(req: NextRequest) {
   const isProviderArea = pathname.startsWith('/provider')
   const isAdminArea = pathname.startsWith('/admin')
   const isChatArea = pathname.startsWith('/chat')
-  const isProviderOnboarding = pathname.startsWith('/provider/onboarding')
+
+  // Eski onboarding route → choose-role
+  if (pathname.startsWith('/provider/onboarding')) {
+    const redirectRes = NextResponse.redirect(new URL('/choose-role', req.url))
+    res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+    return redirectRes
+  }
 
   // Giriş yapılmamış kullanıcılar için panel ve sohbet sayfalarını koru
   if (!user) {
@@ -72,14 +78,16 @@ export async function middleware(req: NextRequest) {
     return res
   }
 
-  // Giriş yapılmışsa profil rolünü oku
+  // Giriş yapılmışsa profil rolünü ve şehrini oku
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, city')
     .eq('id', user.id)
     .single()
 
   const role = (profile?.role as UserRole | null) ?? null
+  const hasCity = !!(profile?.city && String(profile.city).trim())
+  const isChooseRole = pathname === '/choose-role'
 
   // Rol yoksa: choose-role, şifre sıfırlama ve forgot-password sayfalarına izin ver
   if (!role) {
@@ -92,20 +100,24 @@ export async function middleware(req: NextRequest) {
     return res
   }
 
-  // Usta onboarding zorunluluğu: kategori / onboarding tamamlanmamışsa provider alanlarına sokma
-  if (role === 'provider' && isProviderArea && !isProviderOnboarding) {
+  // Onboarding kontrolü: city yoksa choose-role'a yönlendir
+  if (role && !hasCity && !isChooseRole) {
+    const redirectRes = NextResponse.redirect(new URL('/choose-role', req.url))
+    res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+    return redirectRes
+  }
+
+  // Usta: onboarding (hizmetler) tamamlanmamışsa choose-role'a yönlendir
+  if (role === 'provider' && isProviderArea) {
     const { data: providerProfile } = await supabase
       .from('provider_profiles')
       .select('is_onboarded, service_categories')
       .eq('id', user.id)
       .single()
-
     const cats = (providerProfile?.service_categories as string[] | null) ?? []
-    const needsOnboarding =
-      !providerProfile?.is_onboarded || cats.length === 0
-
-    if (needsOnboarding) {
-      const redirectRes = NextResponse.redirect(new URL('/provider/onboarding', req.url))
+    const needsOnboarding = !providerProfile?.is_onboarded || cats.length === 0
+    if (needsOnboarding && !isChooseRole) {
+      const redirectRes = NextResponse.redirect(new URL('/choose-role', req.url))
       res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
       return redirectRes
     }

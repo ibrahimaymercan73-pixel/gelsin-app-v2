@@ -47,7 +47,7 @@ export default function UstaVerifyEmailPage() {
         )}
         <button
           type="button"
-          onClick={() => router.replace('/provider/onboarding')}
+          onClick={() => router.replace('/choose-role')}
           className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl text-sm"
         >
           Tamam, Devam Et

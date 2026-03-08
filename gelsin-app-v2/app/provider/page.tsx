@@ -100,7 +100,7 @@ export default function ProviderDashboard() {
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-8 space-y-8">
         {!faceVerified && (
-          <Link href="/provider/onboarding">
+          <Link href="/choose-role">
             <div className="rounded-2xl p-5 bg-amber-50 border border-amber-200 text-amber-800 flex items-center justify-between">
               <div>
                 <p className="font-bold">Kimliğinizi doğrulayın</p>

@@ -34,7 +34,7 @@ export default function RoleSelectionPage() {
       }
 
       if (profile?.role === 'provider') {
-        router.replace('/provider/onboarding')
+        router.replace('/choose-role')
         return
       }
 
@@ -72,7 +72,7 @@ export default function RoleSelectionPage() {
         await supabase
           .from('provider_profiles')
           .upsert({ id: user.id }, { onConflict: 'id' })
-        router.replace('/provider/onboarding')
+        router.replace('/choose-role')
       } else {
         router.replace('/customer')
       }

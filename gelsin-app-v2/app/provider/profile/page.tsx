@@ -229,7 +229,7 @@ export default function ProviderProfile() {
           <div className="flex items-center justify-between mb-3">
             <p className="font-bold text-gray-800">Uzmanlık Alanları</p>
             <Link
-              href="/provider/onboarding"
+              href="/choose-role"
               className="text-xs font-semibold text-blue-600 hover:text-blue-700"
             >
               ✏️ Düzenle
@@ -258,7 +258,7 @@ export default function ProviderProfile() {
             <div className="text-center py-6 bg-gray-50 rounded-xl">
               <p className="text-sm text-gray-500 mb-2">Henüz uzmanlık alanı seçilmedi</p>
               <Link
-                href="/provider/onboarding"
+                href="/choose-role"
                 className="text-sm font-semibold text-blue-600"
               >
                 Hizmet kategorilerini seç →
