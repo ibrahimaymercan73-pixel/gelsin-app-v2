@@ -161,7 +161,9 @@ export default function ProviderOnboardingPage() {
         body: JSON.stringify({ imageBase64: base64 }),
       })
       const data = await res.json().catch(() => ({}))
-      if (data.verified) {
+      console.log('[onboarding] verify-face response:', { status: res.status, data })
+
+      if (data.verified === true) {
         stopCamera()
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
@@ -173,11 +175,20 @@ export default function ProviderOnboardingPage() {
           return
         }
         router.replace('/provider')
+        return
+      }
+
+      const errMsg = data.error ?? data.message
+      if (res.ok && errMsg) {
+        setFaceError(errMsg)
+      } else if (!res.ok) {
+        setFaceError('Bir hata oluştu: ' + (errMsg || `Sunucu ${res.status}`))
       } else {
-        setFaceError(data.message || 'Yüz tespit edilemedi, tekrar dene')
+        setFaceError('Yüz tespit edilemedi, tekrar dene')
       }
     } catch (e) {
-      setFaceError('Bir hata oluştu, lütfen tekrar deneyin.')
+      const errMsg = e instanceof Error ? e.message : 'Beklenmeyen hata'
+      setFaceError('Bir hata oluştu: ' + errMsg)
     }
     setFaceVerifying(false)
   }
@@ -353,9 +364,22 @@ export default function ProviderOnboardingPage() {
               </div>
               <canvas ref={canvasRef} className="hidden" />
               {faceError && (
-                <p className="text-sm text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl">
-                  {faceError}
-                </p>
+                <div className="space-y-2">
+                  <p className="text-sm text-red-600 bg-red-50 border border-red-100 p-3 rounded-xl">
+                    {faceError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFaceError('')
+                      if (cameraOn) captureAndVerify()
+                      else startCamera()
+                    }}
+                    className="w-full py-2.5 rounded-xl border-2 border-red-200 text-red-600 font-semibold text-sm hover:bg-red-50 transition-colors"
+                  >
+                    Tekrar dene
+                  </button>
+                </div>
               )}
               <div className="flex flex-col gap-3">
                 <button
