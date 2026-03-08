@@ -242,9 +242,9 @@ export default function ProviderOnboardingPage() {
       const headEulerAngleY = Number(data.headEulerAngleY) || 0
       const correctedAngle = headEulerAngleY * -1
       const current = livenessStepRef.current
-      if (current === 0 && correctedAngle > 15) {
+      if (current === 0 && correctedAngle < -15) {
         setLivenessStep(1)
-      } else if (current === 1 && correctedAngle < -15) {
+      } else if (current === 1 && correctedAngle > 15) {
         setLivenessStep(2)
       } else if (current === 2 && correctedAngle >= -10 && correctedAngle <= 10) {
         setLivenessStep(3)
