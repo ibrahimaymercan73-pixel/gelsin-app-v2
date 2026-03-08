@@ -4,16 +4,15 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { SERVICE_CATEGORIES } from '@/lib/constants'
-import { Sparkles, MessageCircle, Search } from 'lucide-react'
+import { Sparkles, MessageCircle, Search, ArrowRight, Droplet, Paintbrush, Wrench, Car, Zap, Scissors } from 'lucide-react'
 
 const POPULAR_SERVICES = [
-  { name: 'Temizlik', cat: 'ev_yasam' },
-  { name: 'Boya & Badana', cat: 'ev_yasam' },
-  { name: 'Tesisat', cat: 'ev_yasam' },
-  { name: 'Araç Yardım', cat: 'arac_yol' },
-  { name: 'Elektrik', cat: 'ev_yasam' },
-  { name: 'Güzellik', cat: 'guzellik' },
+  { name: 'Temizlik', cat: 'ev_yasam', Icon: Droplet },
+  { name: 'Boya & Badana', cat: 'ev_yasam', Icon: Paintbrush },
+  { name: 'Tesisat', cat: 'ev_yasam', Icon: Wrench },
+  { name: 'Araç Yardım', cat: 'arac_yol', Icon: Car },
+  { name: 'Elektrik', cat: 'ev_yasam', Icon: Zap },
+  { name: 'Güzellik', cat: 'guzellik', Icon: Scissors },
 ]
 
 type VitrinService = {
@@ -110,6 +109,7 @@ export default function CustomerHome() {
   const displayName = userName.trim() ? userName.trim().split(/\s+/)[0] : 'Misafir'
 
   return (
+    <>
     <div className="max-w-7xl mx-auto px-6 pb-12">
       <div className="flex flex-col gap-10">
         {/* Header – hero + arama */}
@@ -156,12 +156,15 @@ export default function CustomerHome() {
               <p className="text-slate-300 text-lg max-w-sm">
                 Detayları yaz, uzmanlar sana fiyat teklifi göndersin.
               </p>
+              <div className="mt-6 flex items-center gap-2 text-sm font-bold text-white/80 group-hover:text-white transition-colors">
+                Hemen Başla <ArrowRight className="w-4 h-4" />
+              </div>
             </div>
           </Link>
 
           <Link
             href="/customer/jobs"
-            className="md:col-span-1 lg:col-span-1 bg-white rounded-[2rem] p-7 border border-slate-100 shadow-sm flex flex-col justify-between cursor-pointer hover:shadow-md transition-shadow min-h-[220px]"
+            className="group md:col-span-1 lg:col-span-1 bg-white rounded-[2rem] p-7 border border-slate-100 shadow-sm flex flex-col justify-between cursor-pointer hover:shadow-md transition-shadow min-h-[220px]"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -176,12 +179,15 @@ export default function CustomerHome() {
               <p className="text-sm text-slate-500 mt-1">
                 {activeJob?.provider ? `${activeJob.provider} yolda.` : 'Devam eden işlerini görüntüle.'}
               </p>
+              <div className="mt-4 text-sm font-bold text-blue-600 flex items-center gap-1 group-hover:gap-2 transition-all">
+                İncele <ArrowRight className="w-4 h-4" />
+              </div>
             </div>
           </Link>
 
           <Link
             href="/customer/jobs"
-            className="md:col-span-3 lg:col-span-1 bg-blue-50 rounded-[2rem] p-7 border border-blue-100 flex flex-col justify-between cursor-pointer hover:bg-blue-100 transition-colors min-h-[220px]"
+            className="group md:col-span-3 lg:col-span-1 bg-blue-50 rounded-[2rem] p-7 border border-blue-100 flex flex-col justify-between cursor-pointer hover:bg-blue-100 transition-colors min-h-[220px]"
           >
             <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-blue-600 mb-4">
               <MessageCircle className="w-7 h-7" />
@@ -193,6 +199,9 @@ export default function CustomerHome() {
               <p className="text-sm text-blue-800 mt-2">
                 {offerCount > 0 ? 'Talebin için yeni fiyatlar geldi.' : 'Gelen teklifleri incele.'}
               </p>
+              <div className="mt-4 text-sm font-bold text-blue-600 flex items-center gap-1 group-hover:gap-2 transition-all">
+                İncele <ArrowRight className="w-4 h-4" />
+              </div>
             </div>
           </Link>
         </section>
@@ -201,15 +210,19 @@ export default function CustomerHome() {
         <section>
           <h3 className="text-2xl font-bold text-slate-900 tracking-tight mb-6">Popüler Hizmetler</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {POPULAR_SERVICES.map((item) => (
-              <Link
-                key={item.name}
-                href={`/customer/new-job?cat=${item.cat}`}
-                className="bg-white p-6 rounded-2xl border border-slate-100 flex flex-col items-center justify-center gap-3 hover:shadow-md cursor-pointer transition-shadow"
-              >
-                <span className="font-semibold text-slate-700 text-sm">{item.name}</span>
-              </Link>
-            ))}
+            {POPULAR_SERVICES.map((item) => {
+              const Icon = item.Icon
+              return (
+                <Link
+                  key={item.name}
+                  href={`/customer/new-job?cat=${item.cat}`}
+                  className="bg-white p-6 rounded-2xl border border-slate-100 flex flex-col items-center justify-center gap-3 hover:border-blue-300 hover:shadow-md cursor-pointer transition-all group"
+                >
+                  <Icon className="w-8 h-8 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                  <span className="font-semibold text-slate-700 text-sm">{item.name}</span>
+                </Link>
+              )
+            })}
           </div>
         </section>
 
@@ -249,7 +262,7 @@ export default function CustomerHome() {
                 </div>
                 <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
                   <span className="font-black text-3xl text-slate-900">₺{Number(s.price).toFixed(0)}</span>
-                  <span className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 inline-block">
+                  <span className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors">
                     Hemen Çağır
                   </span>
                 </div>
@@ -257,31 +270,34 @@ export default function CustomerHome() {
             ))}
           </div>
         </section>
-
-        {/* Footer */}
-        <footer className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 pt-12 border-t border-slate-200">
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 mb-4">
-              GELSİN<span className="text-blue-500">.</span>
-            </h2>
-            <p className="text-sm text-slate-500">Türkiye&apos;nin en güvenilir hizmet platformu.</p>
-          </div>
-          <div>
-            <h4 className="text-slate-900 font-bold mb-4">Gelsin</h4>
-            <ul className="space-y-2 text-sm text-slate-600">
-              <li><Link href="/customer" className="hover:text-slate-900">Hakkımızda</Link></li>
-              <li><Link href="/customer" className="hover:text-slate-900">Nasıl Çalışır?</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-slate-900 font-bold mb-4">Destek</h4>
-            <ul className="space-y-2 text-sm text-slate-600">
-              <li><Link href="/customer" className="hover:text-slate-900">Yardım Merkezi</Link></li>
-              <li><Link href="/customer" className="hover:text-slate-900">İletişim</Link></li>
-            </ul>
-          </div>
-        </footer>
       </div>
     </div>
+
+    {/* Footer – tam genişlik koyu */}
+    <footer className="w-full bg-[#0F172A] text-slate-300 py-12 mt-16 border-t border-slate-800">
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div>
+          <h2 className="text-2xl font-black text-white mb-4">
+            GELSİN<span className="text-blue-500">.</span>
+          </h2>
+          <p className="text-sm text-slate-400">Türkiye&apos;nin en güvenilir hizmet platformu.</p>
+        </div>
+        <div>
+          <h4 className="text-white font-bold mb-4">Gelsin</h4>
+          <ul className="space-y-2 text-sm text-slate-400">
+            <li><Link href="/customer" className="hover:text-white transition-colors">Hakkımızda</Link></li>
+            <li><Link href="/customer" className="hover:text-white transition-colors">Nasıl Çalışır?</Link></li>
+          </ul>
+        </div>
+        <div>
+          <h4 className="text-white font-bold mb-4">Destek</h4>
+          <ul className="space-y-2 text-sm text-slate-400">
+            <li><Link href="/customer" className="hover:text-white transition-colors">Yardım Merkezi</Link></li>
+            <li><Link href="/customer" className="hover:text-white transition-colors">İletişim</Link></li>
+          </ul>
+        </div>
+      </div>
+    </footer>
+    </>
   )
 }
