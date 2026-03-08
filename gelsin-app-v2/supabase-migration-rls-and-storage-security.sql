@@ -22,13 +22,23 @@ CREATE OR REPLACE VIEW profiles_public AS
 GRANT SELECT ON profiles_public TO authenticated;
 GRANT SELECT ON profiles_public TO anon;
 
+-- Admin kontrolü: politikada profiles tablosuna tekrar sorgu atılmasın (sonsuz döngüyü önler)
+CREATE OR REPLACE FUNCTION public.is_current_user_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin');
+$$;
+
 -- Admin tüm profilleri okuyabilsin (onay/kullanıcı yönetimi için)
+DROP POLICY IF EXISTS "profiles_select_admin" ON profiles;
 CREATE POLICY "profiles_select_admin"
   ON profiles
   FOR SELECT
-  USING (
-    auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin')
-  );
+  USING (public.is_current_user_admin());
 
 -- Liste sayfaları için: telefon hide_phone ise null
 CREATE OR REPLACE VIEW profiles_public_with_phone AS
