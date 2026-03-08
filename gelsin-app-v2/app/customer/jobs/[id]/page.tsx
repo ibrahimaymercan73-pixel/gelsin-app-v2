@@ -160,6 +160,13 @@ export default function JobDetailPage() {
       body: 'Adrese gidin ve başlangıç QR kodunu okutun.',
       type: 'offer_accepted', related_job_id: id
     })
+    // Ustaya mail bildirimi (fire-and-forget)
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    fetch(`${origin}/api/send-email/offer-accepted`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_id: id, provider_id: providerId }),
+    }).catch(() => {})
     await load()
     setAccepting('')
   }

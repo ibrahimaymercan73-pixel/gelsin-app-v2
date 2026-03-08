@@ -197,6 +197,14 @@ function ProviderJobsPageContent() {
         related_job_id: jobId
       })
 
+      // Müşteriye mail bildirimi (fire-and-forget)
+      const origin = typeof window !== 'undefined' ? window.location.origin : ''
+      fetch(`${origin}/api/send-email/new-offer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId, provider_id: user.id, price: newPrice }),
+      }).catch(() => {})
+
       const next = new Set(Array.from(myOffers))
       next.add(jobId)
       setMyOffers(next)
