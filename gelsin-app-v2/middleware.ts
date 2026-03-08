@@ -54,11 +54,12 @@ export async function middleware(req: NextRequest) {
   const isCustomerArea = pathname.startsWith('/customer')
   const isProviderArea = pathname.startsWith('/provider')
   const isAdminArea = pathname.startsWith('/admin')
+  const isChatArea = pathname.startsWith('/chat')
   const isProviderOnboarding = pathname.startsWith('/provider/onboarding')
 
-  // Giriş yapılmamış kullanıcılar için panel sayfalarını koru
+  // Giriş yapılmamış kullanıcılar için panel ve sohbet sayfalarını koru
   if (!user) {
-    if (isCustomerArea || isProviderArea || isAdminArea) {
+    if (isCustomerArea || isProviderArea || isAdminArea || isChatArea) {
       const redirectUrl = new URL('/login', req.url)
       const redirectRes = NextResponse.redirect(redirectUrl)
       // Supabase'in güncellediği cookie'leri redirect response'a kopyala (session refresh vb.)
@@ -146,6 +147,7 @@ export const config = {
     '/customer/:path*',
     '/provider/:path*',
     '/admin/:path*',
+    '/chat/:path*',
     '/role-selection',
     '/choose-role',
     '/onboarding',

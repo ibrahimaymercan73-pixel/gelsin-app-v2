@@ -69,6 +69,7 @@ status TEXT DEFAULT 'open' CHECK (status IN (
   provider_amount NUMERIC(10,2),
   qr_token TEXT UNIQUE,  -- Dinamik QR için token
   qr_scanned_at TIMESTAMPTZ,
+  qr_used_at TIMESTAMPTZ,  -- Bitiş QR ilk kullanıldığında set; replay engeli
   escrow_held BOOLEAN DEFAULT false,
   payment_released BOOLEAN DEFAULT false,
   images TEXT[] DEFAULT '{}',
@@ -160,7 +161,9 @@ CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "profiles_insert" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Provider profiles: Herkese açık okuma, sadece kendi kaydını değiştirebilir
-CREATE POLICY "provider_profiles_select" ON provider_profiles FOR SELECT USING (true);
+CREATE POLICY "provider_profiles_select" ON provider_profiles FOR SELECT USING (
+  auth.uid() = id OR (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
+);
 CREATE POLICY "provider_profiles_update" ON provider_profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "provider_profiles_insert" ON provider_profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
@@ -189,6 +192,17 @@ CREATE POLICY "offers_update" ON offers FOR UPDATE USING (
 -- Notifications: Sadece kendi bildirimleri
 CREATE POLICY "notifications_select" ON notifications FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "notifications_update" ON notifications FOR UPDATE USING (auth.uid() = user_id);
+-- INSERT: sadece kendi işi (related_job_id) ile ilişkili bildirimler veya admin
+CREATE POLICY "notifications_insert" ON notifications FOR INSERT WITH CHECK (
+  user_id IS NOT NULL AND user_id <> auth.uid()
+  AND (
+    (related_job_id IS NOT NULL AND (
+      auth.uid() = (SELECT customer_id FROM jobs WHERE id = related_job_id)
+      OR auth.uid() = (SELECT provider_id FROM jobs WHERE id = related_job_id)
+    ))
+    OR (SELECT role FROM profiles WHERE id = auth.uid()) = 'admin'
+  )
+);
 
 -- Messages: ilgili taraflar VE adminler görebilir, sadece gönderen ekleyebilir
 CREATE POLICY "messages_select" ON messages
@@ -259,16 +273,21 @@ BEGIN
   END IF;
 
   SELECT * INTO v_job FROM jobs WHERE id = p_job_id;
-  
+
+  IF v_job.payment_released THEN
+    RAISE EXCEPTION 'Ödeme zaten serbest bırakıldı';
+  END IF;
+
   v_commission := v_job.agreed_price * 0.02;
   v_provider_amount := v_job.agreed_price - v_commission;
-  
-  -- İşi güncelle
+
+  -- İşi güncelle (qr_used_at = tek kullanım replay engeli)
   UPDATE jobs SET
     status = 'completed',
     platform_fee = v_commission,
     provider_amount = v_provider_amount,
     payment_released = true,
+    qr_used_at = NOW(),
     updated_at = NOW()
   WHERE id = p_job_id;
   
