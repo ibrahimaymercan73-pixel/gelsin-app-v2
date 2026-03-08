@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { Plus, ClipboardList, History } from 'lucide-react'
+import { SERVICE_CATEGORIES } from '@/lib/constants'
+import { Plus, ClipboardList, History, Search } from 'lucide-react'
 
 const CTA_CARDS = [
   {
@@ -29,6 +31,16 @@ const CTA_CARDS = [
   },
 ]
 
+const PILL_LABELS = [
+  'Kombi Tamiri',
+  'Boya & Badana',
+  'Temizlik',
+  'Tesisat',
+  ...SERVICE_CATEGORIES.flatMap((c) => [c.name, ...c.sub.slice(0, 1)]),
+].filter((v, i, a) => a.indexOf(v) === i).slice(0, 12)
+
+const MAIN_CATEGORIES = SERVICE_CATEGORIES.slice(0, 8)
+
 type VitrinService = {
   id: string
   title: string
@@ -41,7 +53,9 @@ type VitrinService = {
 }
 
 export default function CustomerHome() {
+  const router = useRouter()
   const [userName, setUserName] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [vitrinList, setVitrinList] = useState<VitrinService[]>([])
 
   useEffect(() => {
@@ -98,44 +112,89 @@ export default function CustomerHome() {
     loadVitrin()
   }, [])
 
+  const handleSearch = (q?: string) => {
+    const term = (q ?? searchQuery).trim()
+    if (term) router.push(`/customer/providers?q=${encodeURIComponent(term)}`)
+    else router.push('/customer/providers')
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 w-full max-w-[100vw] overflow-x-hidden">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex flex-col gap-8">
-        {/* Karşılama Banner'ı (Hero) – ferah degrade, yuvarlatılmış */}
-        <section className="w-full rounded-2xl bg-gradient-to-r from-blue-50 to-slate-100 p-6 sm:p-8 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col gap-10">
+        {/* Devasa Hero Section – karşılama + arama + hap etiketleri */}
+        <section className="w-full min-h-[260px] p-8 md:p-12 rounded-3xl bg-gradient-to-br from-blue-50 via-slate-50 to-teal-50/30 flex flex-col justify-center relative overflow-hidden min-w-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800">
             Merhaba {userName || 'Misafir'} 👋
           </h1>
-          <p className="text-slate-600 text-sm sm:text-base mt-1">
+          <p className="text-slate-600 text-base md:text-lg mt-2">
             Bugün hangi konuda uzman bir ele ihtiyacın var?
           </p>
+
+          {/* Devasa arama çubuğu – Hero'nun içinde */}
+          <div className="mt-6 md:mt-8 w-full max-w-2xl">
+            <div className="w-full bg-white rounded-2xl shadow-md border border-slate-100 p-2 flex flex-col sm:flex-row gap-2">
+              <div className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50/80 min-w-0">
+                <Search className="w-5 h-5 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Hangi uzmana ihtiyacın var? (Örn: Kombi, Boya, Temizlik...)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  className="flex-1 min-w-0 bg-transparent text-slate-800 placeholder:text-slate-500 text-sm md:text-base focus:outline-none"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSearch()}
+                className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-5 py-3 rounded-xl font-semibold text-sm transition-colors shrink-0"
+              >
+                <Search className="w-5 h-5" />
+                Ara
+              </button>
+            </div>
+          </div>
+
+          {/* Hap etiketleri – Hero'nun içinde, arama barının altında */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {PILL_LABELS.map((label) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => handleSearch(label)}
+                className="px-4 py-2 text-sm font-medium bg-white/90 hover:bg-white border border-slate-200/80 rounded-full text-slate-700 hover:shadow-sm transition-all"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </section>
 
-        {/* 3'lü işlem kartları – bembeyaz, gölgeli, grid-cols-3 */}
+        {/* 3'lü hızlı aksiyon kartları – tok, şişkin */}
         <section className="w-full min-w-0">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-6">
             {CTA_CARDS.map((card) => {
               const Icon = card.icon
               return (
                 <Link
                   key={card.href}
                   href={card.href}
-                  className={`rounded-2xl bg-white shadow-md border border-slate-100 p-5 sm:p-6 flex flex-col gap-3 transition-all text-left min-h-[120px] ${
+                  className={`rounded-2xl bg-white shadow-md border border-slate-100 p-6 md:p-8 flex flex-col gap-4 transition-all text-left min-h-[160px] ${
                     card.prominent
                       ? 'hover:shadow-lg hover:border-slate-200 ring-2 ring-slate-100 ring-offset-2 hover:ring-slate-200'
                       : 'hover:shadow-lg hover:border-slate-200'
                   }`}
                 >
                   <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                    className={`w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center shrink-0 ${
                       card.prominent ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-600'
                     }`}
                   >
-                    <Icon className="w-6 h-6" />
+                    <Icon className="w-6 h-6 md:w-7 md:h-7" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-slate-800 text-base">{card.title}</h2>
-                    <p className="text-slate-500 text-sm mt-0.5">{card.sub}</p>
+                    <h2 className="font-bold text-slate-800 text-lg md:text-xl">{card.title}</h2>
+                    <p className="text-slate-500 text-sm md:text-base mt-1">{card.sub}</p>
                   </div>
                 </Link>
               )
@@ -146,8 +205,8 @@ export default function CustomerHome() {
         {/* Öne Çıkan Uzman İlanları – yatay kaydırmalı vitrin */}
         {vitrinList.length > 0 && (
           <section className="w-full min-w-0">
-            <h2 className="text-base font-bold text-slate-800 mb-4">Öne Çıkan Uzman İlanları</h2>
-            <div className="overflow-x-auto hide-scrollbar flex gap-4 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory">
+            <h2 className="text-lg font-bold text-slate-800 mb-4">Öne Çıkan Uzman İlanları</h2>
+            <div className="overflow-x-auto hide-scrollbar flex gap-4 pb-2 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory">
               {vitrinList.map((s) => (
                 <Link
                   key={s.id}
@@ -179,6 +238,23 @@ export default function CustomerHome() {
             </div>
           </section>
         )}
+
+        {/* Popüler Hizmetler – vitrinin altında, sayfa aşağıya aksın */}
+        <section className="w-full min-w-0">
+          <h2 className="text-lg font-bold text-slate-800 mb-4">Popüler Hizmetler</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {MAIN_CATEGORIES.map((cat) => (
+              <Link
+                key={cat.id}
+                href={`/customer/new-job?cat=${cat.id}`}
+                className="rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 flex flex-col items-center justify-center gap-3 p-5 md:p-6 min-h-[100px] transition-all"
+              >
+                <span className="text-3xl md:text-4xl" aria-hidden>{cat.emoji}</span>
+                <span className="font-semibold text-slate-800 text-sm md:text-base text-center leading-tight line-clamp-2">{cat.name}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   )
