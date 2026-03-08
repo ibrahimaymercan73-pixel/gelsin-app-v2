@@ -2,91 +2,35 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { motion } from 'framer-motion'
-import {
-  Search,
-  ArrowRight,
-  ChevronRight,
-  BadgeCheck,
-  FileText,
-  Wallet,
-  Lock,
-} from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { getCurrentUserAndRole } from '@/lib/auth'
-import { SERVICE_CATEGORIES } from '@/lib/constants'
 import { Footer } from '@/components/Footer'
+import Navbar from '@/components/gelsin/Navbar'
+import HeroSection from '@/components/gelsin/HeroSection'
+import CategoriesSection from '@/components/gelsin/CategoriesSection'
+import TrendingSection from '@/components/gelsin/TrendingSection'
+import HowItWorksSection from '@/components/gelsin/HowItWorksSection'
+import TrustSection from '@/components/gelsin/TrustSection'
+import TopProvidersSection from '@/components/gelsin/TopProvidersSection'
+import BecomeProviderSection from '@/components/gelsin/BecomeProviderSection'
+import TestimonialsSection from '@/components/gelsin/TestimonialsSection'
+import StatsSection from '@/components/gelsin/StatsSection'
+import FAQAndCitiesSection from '@/components/gelsin/FAQAndCitiesSection'
+import CTASection from '@/components/gelsin/CTASection'
 
-// Super App için güncellenmiş arama placeholder'ları
-const SEARCH_PLACEHOLDERS = [
-  'Çekici hizmeti',
-  'İngilizce özel ders',
-  'Gelin makyajı',
-  'Musluk tamiri',
-  'Ev temizliği',
-  'Köpek gezdirici',
-  'Laptop tamiri',
-]
-
-// Kategori renkleri
-const CATEGORY_COLORS = [
-  'bg-blue-50 text-blue-600',
-  'bg-cyan-50 text-cyan-600',
-  'bg-rose-50 text-rose-600',
-  'bg-amber-50 text-amber-600',
-  'bg-emerald-50 text-emerald-600',
-  'bg-violet-50 text-violet-600',
-  'bg-slate-100 text-slate-600',
-]
-
-const HOW_IT_WORKS = [
-  { step: 1, title: 'İşini Anlat', desc: 'İhtiyacını kısaca yaz, konumunu seç.', icon: FileText },
-  { step: 2, title: 'Teklif Al', desc: 'Onaylı uzmanlardan anında fiyat teklifleri al.', icon: Wallet },
-  { step: 3, title: 'Güvenle Öde', desc: 'İş bitene kadar ödemen güvende, sonra onayla.', icon: Lock },
-]
-
-const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } }
-const itemUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } }
-
-function StarRating({ value }: { value: number }) {
-  const v = Math.min(5, Math.max(0, value))
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <span
-          key={i}
-          className={i <= v ? 'text-amber-400' : 'text-slate-200'}
-          style={{ color: i <= v ? undefined : undefined }}
-        >
-          <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-        </span>
-      ))}
-    </div>
-  )
-}
+type ProviderRow = { id: string; full_name?: string | null; rating?: number | null; total_reviews?: number | null }
 
 export default function LandingPage() {
   const router = useRouter()
-  const [searchPlaceholder, setSearchPlaceholder] = useState(SEARCH_PLACEHOLDERS[0])
-  const [providers, setProviders] = useState<Array<{ id: string; rating: number | null; total_reviews: number | null; profiles?: { full_name: string | null } | null }>>([])
+  const [providers, setProviders] = useState<ProviderRow[]>([])
   const [stats, setStats] = useState({ jobs: 0, providers: 0 })
 
   useEffect(() => {
-    let i = 0
-    const t = setInterval(() => {
-      i = (i + 1) % SEARCH_PLACEHOLDERS.length
-      setSearchPlaceholder(SEARCH_PLACEHOLDERS[i])
-    }, 2800)
-    return () => clearInterval(t)
-  }, [])
-
-  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash?.includes('type=recovery')) {
+      router.replace('/update-password' + window.location.hash)
+      return
+    }
     const check = async () => {
-      if (typeof window !== 'undefined' && window.location.hash?.includes('type=recovery')) {
-        router.replace('/update-password' + window.location.hash)
-        return
-      }
       const { user, role } = await getCurrentUserAndRole()
       if (!user) return
       if (!role) {
@@ -103,296 +47,41 @@ export default function LandingPage() {
   useEffect(() => {
     const load = async () => {
       const supabase = createClient()
-      const { data: prov } = await supabase
-        .from('provider_list_public')
-        .select('id, rating, total_reviews, full_name')
-        .eq('status', 'approved')
-        .limit(6)
-      setProviders(((prov || []).map((p: any) => ({ ...p, profiles: p.full_name != null ? { full_name: p.full_name } : null })) as unknown) as typeof providers)
-      const { count: jobsCount } = await supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'completed')
-      const { count: provCount } = await supabase.from('provider_profiles').select('*', { count: 'exact', head: true }).eq('status', 'approved')
-      setStats({ jobs: jobsCount ?? 0, providers: provCount ?? 0 })
+      try {
+        const { data: prov } = await supabase
+          .from('provider_list_public')
+          .select('id, rating, total_reviews, full_name')
+          .eq('status', 'approved')
+          .limit(6)
+        setProviders((prov || []).map((p: any) => ({ id: p.id, full_name: p.full_name ?? null, rating: p.rating ?? null, total_reviews: p.total_reviews ?? null })))
+      } catch {
+        setProviders([])
+      }
+      try {
+        const { count: jobsCount } = await supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('status', 'completed')
+        const { count: provCount } = await supabase.from('provider_profiles').select('*', { count: 'exact', head: true }).eq('status', 'approved')
+        setStats({ jobs: jobsCount ?? 0, providers: provCount ?? 0 })
+      } catch {
+        setStats({ jobs: 0, providers: 0 })
+      }
     }
     load()
   }, [])
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      {/* Navbar */}
-      <motion.header
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4 bg-white/90 backdrop-blur-md border-b border-slate-200/80"
-      >
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold text-slate-900 tracking-tight">
-            GELSİN<span className="text-slate-800">.</span>
-          </Link>
-          <nav className="flex items-center gap-3">
-            <Link href="/login" className="px-4 py-2.5 rounded-xl font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors text-sm">
-              Giriş Yap
-            </Link>
-            <Link href="/register" className="px-5 py-2.5 rounded-xl font-bold text-white bg-slate-800 hover:bg-slate-700 active:scale-[0.98] transition-all text-sm">
-              Kayıt Ol
-            </Link>
-          </nav>
-        </div>
-      </motion.header>
-
-      {/* Hero - grid + radial glow, vurgulu başlık */}
-      <section className="relative hero-bg pt-32 pb-24 sm:pt-40 sm:pb-32 px-4 overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_80%_50%_at_50%_-15%,rgba(59,130,246,0.07),transparent_50%)]" />
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_60%_40%_at_85%_10%,rgba(148,163,184,0.06),transparent_45%)]" />
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-4xl sm:text-5xl md:text-6xl font-bold text-slate-900 tracking-tight leading-[1.15] mb-5"
-          >
-            <span className="text-slate-900">Aradığın uzmanı </span>
-            <span className="bg-gradient-to-r from-orange-500 to-indigo-600 bg-clip-text text-transparent font-extrabold">
-              hemen bul
-            </span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08, duration: 0.4 }}
-            className="text-lg sm:text-xl text-slate-500 mb-12 max-w-3xl mx-auto font-medium"
-          >
-            Özel ders, yol yardım, kuaför, tamir ve temizlik... İhtiyacın olan tüm uzmanlar tek tıkla kapında.
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.4 }}
-            className="max-w-3xl mx-auto w-full px-4"
-          >
-            <Link
-              href="/customer/new-job"
-              className="flex items-center justify-center gap-3 w-full mx-auto h-16 sm:h-[4.25rem] px-6 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/60 hover:shadow-xl hover:border-slate-300 focus:ring-2 focus:ring-slate-800 focus:border-slate-800 outline-none transition-all text-left"
-            >
-              <Search className="w-6 h-6 text-slate-500 shrink-0" />
-              <span className="text-slate-400 flex-1 text-sm sm:text-base truncate">Hangi uzmana ihtiyacın var? ({searchPlaceholder}...)</span>
-              <span className="text-slate-800 font-bold text-sm shrink-0">İş Aç</span>
-            </Link>
-            <p className="mt-4 text-sm text-slate-400">
-              Kayıt gerekmez · Önce uzmanları incele, sonra giriş yap
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Categories - Dinamik Super App kategorileri */}
-      <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4 text-center"
-          >
-            Tüm Hizmet Kategorileri
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-slate-500 text-center mb-10 max-w-xl mx-auto"
-          >
-            İhtiyacınıza uygun kategoriyi seçin, hemen iş talebi oluşturun
-          </motion.p>
-          <motion.div
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5"
-          >
-            {SERVICE_CATEGORIES.map((cat, idx) => {
-              const Icon = cat.icon
-              const colorClass = CATEGORY_COLORS[idx % CATEGORY_COLORS.length]
-              return (
-                <motion.div key={cat.id} variants={itemUp} className="flex">
-                  <Link
-                    href={`/customer/new-job?cat=${cat.id}`}
-                    className="flex flex-col items-center justify-center gap-3 flex-1 w-full min-w-0 p-4 sm:p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-slate-200 transition-all duration-200 active:scale-[0.98] text-center group"
-                  >
-                    <div className={`inline-flex p-3.5 sm:p-4 rounded-2xl ${colorClass} group-hover:scale-110 transition-transform`}>
-                      <Icon className="w-7 h-7 sm:w-8 sm:h-8" />
-                    </div>
-                    <div className="space-y-1">
-                      <span className="block text-sm sm:text-base font-bold text-slate-800">
-                        {cat.name}
-                      </span>
-                      <span className="block text-[11px] sm:text-xs text-slate-400 line-clamp-1">
-                        {cat.sub.slice(0, 2).join(', ')}
-                      </span>
-                    </div>
-                  </Link>
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* How it works - Lucide ikonlar */}
-      <section className="py-20 px-4 bg-white border-y border-slate-200/80">
-        <div className="max-w-4xl mx-auto">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-2xl sm:text-3xl font-bold text-slate-900 mb-14 text-center"
-          >
-            Nasıl Çalışır?
-          </motion.h2>
-          <motion.div
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-            className="grid sm:grid-cols-3 gap-8"
-          >
-            {HOW_IT_WORKS.map((h) => {
-              const Icon = h.icon
-              return (
-                <motion.div key={h.step} variants={itemUp} className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 text-slate-700 mx-auto mb-5">
-                    <Icon className="w-8 h-8" />
-                  </div>
-                  <div className="text-slate-800 font-bold text-sm mb-1">Adım {h.step}</div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">{h.title}</h3>
-                  <p className="text-slate-500 text-base">{h.desc}</p>
-                </motion.div>
-              )
-            })}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Uzman kartları - avatar, Onaylı rozet, 5 yıldız, Profili İncele */}
-      {providers.length > 0 && (
-        <section className="py-20 px-4">
-          <div className="max-w-6xl mx-auto">
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-2xl sm:text-3xl font-bold text-slate-900 mb-10 text-center"
-            >
-              En İyi Uzmanlarımız
-            </motion.h2>
-            <motion.div
-              variants={container}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true }}
-              className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {providers.slice(0, 6).map((p) => {
-                const name = p.profiles?.full_name || 'Uzman'
-                const initial = name[0]?.toUpperCase() || 'U'
-                const rating = typeof p.rating === 'number' ? p.rating : 0
-                const reviews = p.total_reviews ?? 0
-                return (
-                  <motion.div key={p.id} variants={itemUp}>
-                    <Link
-                      href="/providers"
-                      className="flex flex-col gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-md hover:shadow-lg hover:-translate-y-0.5 hover:border-slate-200 transition-all duration-200 active:scale-[0.99] group"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-lg font-bold text-slate-800 shrink-0 ring-2 ring-white ring-offset-2 shadow-sm">
-                          {initial}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-bold text-slate-900 truncate">{name}</p>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold shrink-0">
-                              <BadgeCheck className="w-3.5 h-3.5" />
-                              Onaylı Uzman
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <StarRating value={rating} />
-                            <span className="text-xs text-slate-500">({reviews} iş)</span>
-                          </div>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all shrink-0" />
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                        <span className="text-xs text-slate-400">Profesyonel hizmet</span>
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-900 text-white group-hover:bg-slate-800 transition-colors">
-                          Hemen Teklif İste
-                          <ArrowRight className="w-3 h-3" />
-                        </span>
-                      </div>
-                    </Link>
-                  </motion.div>
-                )
-              })}
-            </motion.div>
-          </div>
-        </section>
-      )}
-
-      {/* Stats */}
-      <section className="py-20 px-4 bg-slate-800 text-white">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="grid grid-cols-3 gap-10 text-center"
-          >
-            <div>
-              <div className="text-3xl sm:text-4xl font-bold text-white">{stats.jobs > 0 ? `${stats.jobs}+` : '1000+'}</div>
-              <div className="text-slate-400 text-sm font-medium mt-1">Tamamlanan İş</div>
-            </div>
-            <div>
-              <div className="text-3xl sm:text-4xl font-bold text-white">{stats.providers > 0 ? `${stats.providers}+` : '200+'}</div>
-              <div className="text-slate-400 text-sm font-medium mt-1">Onaylı Uzman</div>
-            </div>
-            <div>
-              <div className="text-3xl sm:text-4xl font-bold text-white">500+</div>
-              <div className="text-slate-400 text-sm font-medium mt-1">Mutlu Müşteri</div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* CTA - koyu kutu, beyaz yazı, belirgin butonlar */}
-      <section className="py-24 px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="max-w-4xl mx-auto rounded-3xl bg-slate-900 px-8 sm:px-12 py-14 sm:py-16 text-center"
-        >
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">Hemen başla</h2>
-          <p className="text-slate-300 text-lg mb-10 max-w-xl mx-auto">
-            Ücretsiz kayıt ol, işini aç veya uzman olarak katıl.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-slate-900 bg-white hover:bg-slate-100 active:scale-[0.98] transition-all text-base shadow-lg"
-            >
-              Kayıt Ol <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-white border-2 border-slate-600 hover:border-slate-500 hover:bg-slate-800/50 active:scale-[0.98] transition-all text-base"
-            >
-              Giriş Yap
-            </Link>
-          </div>
-        </motion.div>
-      </section>
-
+      <Navbar />
+      <HeroSection />
+      <CategoriesSection />
+      <TrendingSection />
+      <HowItWorksSection />
+      <TrustSection />
+      <TopProvidersSection providers={providers} />
+      <BecomeProviderSection />
+      <TestimonialsSection />
+      <StatsSection stats={stats} />
+      <FAQAndCitiesSection />
+      <CTASection />
       <Footer />
     </div>
   )

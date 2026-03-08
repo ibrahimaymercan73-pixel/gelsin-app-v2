@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,6 +7,19 @@
 :root {
   --accent: #1e293b;
   --safe-bottom: env(safe-area-inset-bottom, 16px);
+  /* Landing design tokens */
+  --primary: 24 95% 53%;
+  --primary-foreground: 0 0% 100%;
+  --muted-foreground: 220 10% 46%;
+  --border: 220 13% 91%;
+  --card: 0 0% 100%;
+  --foreground: 220 25% 10%;
+  --surface-warm: 30 50% 98%;
+  --surface-cool: 220 30% 97%;
+  --hero-gradient: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(340 82% 52%) 50%, hsl(262 83% 58%) 100%);
+  --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --card-shadow-hover: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.08);
+  --font-display: 'Plus Jakarta Sans', sans-serif;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -110,3 +123,17 @@ html, body {
 .delay-2 { animation-delay: 0.16s; }
 .delay-3 { animation-delay: 0.24s; }
 .delay-4 { animation-delay: 0.32s; }
+
+/* Landing – gelsin design */
+.text-gradient {
+  background: var(--hero-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.bg-surface-warm { background-color: hsl(var(--surface-warm)); }
+.bg-surface-cool { background-color: hsl(var(--surface-cool)); }
+.shadow-card { box-shadow: var(--card-shadow); }
+.shadow-card-hover { box-shadow: var(--card-shadow-hover); }
+.font-display { font-family: var(--font-display); }
+.bg-hero-gradient { background: var(--hero-gradient); }
