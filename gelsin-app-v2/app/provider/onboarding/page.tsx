@@ -19,6 +19,7 @@ export default function ProviderOnboardingPage() {
   const [livenessTimeout, setLivenessTimeout] = useState(false)
   const [faceInFrame, setFaceInFrame] = useState(true)
   const [verifyingRequest, setVerifyingRequest] = useState(false)
+  const [showSuccessScreen, setShowSuccessScreen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -84,8 +85,13 @@ export default function ProviderOnboardingPage() {
 
   useEffect(() => {
     if (livenessStep !== 3) return
-    const done = async () => {
-      stopCamera()
+    stopCamera()
+    setShowSuccessScreen(true)
+  }, [livenessStep])
+
+  useEffect(() => {
+    if (!showSuccessScreen) return
+    const t = setTimeout(async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
@@ -96,9 +102,9 @@ export default function ProviderOnboardingPage() {
       } else {
         router.replace('/provider')
       }
-    }
-    done()
-  }, [livenessStep])
+    }, 2000)
+    return () => clearTimeout(t)
+  }, [showSuccessScreen, router])
 
   const selectMainCategory = (cat: ServiceCategory) => {
     setSelectedCategory(cat)
@@ -161,6 +167,7 @@ export default function ProviderOnboardingPage() {
     setFaceError('')
     setLivenessTimeout(false)
     setLivenessStep(0)
+    setShowSuccessScreen(false)
     setFaceInFrame(true)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
@@ -202,7 +209,11 @@ export default function ProviderOnboardingPage() {
     if (!ctx) return
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
+    ctx.save()
+    ctx.translate(canvas.width, 0)
+    ctx.scale(-1, 1)
     ctx.drawImage(video, 0, 0)
+    ctx.restore()
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
     const base64 = dataUrl.split(',')[1] || ''
     setVerifyingRequest(true)
@@ -228,13 +239,14 @@ export default function ProviderOnboardingPage() {
 
       setFaceInFrame(true)
       setFaceError('')
-      const y = Number(data.headEulerAngleY) || 0
+      const headEulerAngleY = Number(data.headEulerAngleY) || 0
+      const correctedAngle = headEulerAngleY * -1
       const current = livenessStepRef.current
-      if (current === 0 && y > 15) {
+      if (current === 0 && correctedAngle > 15) {
         setLivenessStep(1)
-      } else if (current === 1 && y < -15) {
+      } else if (current === 1 && correctedAngle < -15) {
         setLivenessStep(2)
-      } else if (current === 2 && y >= -10 && y <= 10) {
+      } else if (current === 2 && correctedAngle >= -10 && correctedAngle <= 10) {
         setLivenessStep(3)
       }
     } catch (e) {
@@ -401,6 +413,20 @@ export default function ProviderOnboardingPage() {
             <div className="space-y-6 animate-slide-up max-w-sm mx-auto">
               <canvas ref={canvasRef} className="hidden" />
 
+              {showSuccessScreen ? (
+                <div className="rounded-3xl bg-slate-900 p-8 flex flex-col items-center justify-center min-h-[320px]">
+                  <div className="w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center text-white animate-scale-in">
+                    <Check className="w-12 h-12 stroke-[3]" strokeWidth={3} />
+                  </div>
+                  <p className="text-xl sm:text-2xl font-bold text-white mt-6 text-center">
+                    Kimliğiniz Doğrulandı! ✓
+                  </p>
+                  <p className="text-emerald-400 font-medium mt-2 text-center">
+                    Onaylı Uzman rozetini kazandınız 🎉
+                  </p>
+                  <p className="text-slate-400 text-sm mt-4">Yönlendiriliyorsunuz...</p>
+                </div>
+              ) : (
               <div className="rounded-3xl bg-slate-900 p-6 flex flex-col items-center">
                 <div
                   className={`relative w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden border-4 transition-colors duration-300 ${
@@ -413,6 +439,7 @@ export default function ProviderOnboardingPage() {
                     playsInline
                     muted
                     className="w-full h-full object-cover rounded-full"
+                    style={{ transform: 'scaleX(-1)' }}
                   />
                   {!cameraOn && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
@@ -514,6 +541,8 @@ export default function ProviderOnboardingPage() {
               <p className="text-xs text-slate-500 text-center">
                 Atlarsan onaylı uzman rozeti almazsın; istersen sonra profilinden doğrulayabilirsin.
               </p>
+            </div>
+              )}
             </div>
           )}
         </div>
