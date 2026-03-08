@@ -1,28 +1,19 @@
 'use client'
+
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, MessageSquare, Briefcase, Menu, ClipboardList, Bell, User, Plus } from 'lucide-react'
+import { Home, MessageSquare, Briefcase, ClipboardList, Bell, Search, User } from 'lucide-react'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
 import { OnboardingTour } from '@/components/OnboardingTour'
+import { createClient } from '@/lib/supabase'
 
-/** Mobil bottom nav: 4’lü koyu menü (Bionluk tarzı) */
-const mobileNavItems = [
-  { href: '/customer', icon: Home, label: 'Keşfet', badgeType: null as 'message' | 'notification' | null, tourId: 'tour-ana-sayfa' as const },
-  { href: '/customer/messages', icon: MessageSquare, label: 'Mesajlar', badgeType: 'message' as const, tourId: 'tour-mesajlar' as const },
-  { href: '/customer/panel', icon: Briefcase, label: 'Panel', badgeType: null, tourId: null },
-  { href: '/customer/menu', icon: Menu, label: 'Diğer', badgeType: 'notification' as const, tourId: null },
-]
-
-/** Masaüstü sidebar: geniş menü – badgeType ile rozet: message=Mesajlar, notification=Bildirimler */
-const desktopNavItems = [
-  { href: '/customer', icon: Home, label: 'Ana Sayfa', badgeType: null as 'message' | 'notification' | null, tourId: 'tour-ana-sayfa' as const },
-  { href: '/customer/jobs', icon: ClipboardList, label: 'İşlerim', badgeType: null, tourId: 'tour-jobs' as const },
-  { href: '/customer/messages', icon: MessageSquare, label: 'Mesajlar', badgeType: 'message' as const, tourId: 'tour-mesajlar' as const },
-  { href: '/customer/notifications', icon: Bell, label: 'Bildirimler', badgeType: 'notification' as const, tourId: null },
-  { href: '/customer/panel', icon: Briefcase, label: 'Panel', badgeType: null, tourId: null },
-  { href: '/customer/profile', icon: User, label: 'Profilim', badgeType: null, tourId: null },
+const TOP_NAV_ITEMS = [
+  { href: '/customer', label: 'Ana Sayfa' },
+  { href: '/customer/jobs', label: 'İşlerim' },
+  { href: '/customer/messages', label: 'Mesajlar' },
+  { href: '/customer/panel', label: 'Panel' },
 ]
 
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
@@ -30,6 +21,8 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   const pathname = usePathname()
   const { unreadMessageCount, unreadNotificationCount } = useNotifications()
   const [tourRole, setTourRole] = useState<'customer' | 'provider' | null>(null)
+  const [profile, setProfile] = useState<{ full_name: string; avatar_url?: string } | null>(null)
+  const [headerSearch, setHeaderSearch] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -65,101 +58,131 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
         return
       }
 
-      if (role === 'customer') setTourRole('customer')
+      if (role === 'customer') {
+        setTourRole('customer')
+        const supabase = createClient()
+        const { data } = await supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).single()
+        if (!cancelled && data) setProfile({ full_name: data.full_name || '', avatar_url: data.avatar_url })
+      }
     }
 
     ensureAuthenticated(0)
     return () => { cancelled = true }
   }, [router])
 
-  const hideBottomNav = pathname.startsWith('/customer/chat')
+  const handleHeaderSearch = () => {
+    const q = headerSearch.trim()
+    if (q) router.push(`/customer/providers?q=${encodeURIComponent(q)}`)
+    else router.push('/customer/providers')
+  }
 
   return (
     <ChatOverlayProvider>
       <OnboardingTour role={tourRole} />
-      <div className="min-h-dvh bg-[#F8F9F8] flex font-sans">
-
-      {/* DESKTOP SIDEBAR – derin lacivert/teal (mobilde gizli) */}
-      <aside className="hidden lg:flex w-[220px] bg-[#112F3D] flex-col fixed h-full z-50 border-r border-[#0d2430]">
-        <div className="px-4 py-5 border-b border-[#0d2430]">
-          <span className="text-xl font-black text-white tracking-tight">
-            GELSİN<span className="text-white">.</span>
-          </span>
-          <p className="text-slate-400 text-xs font-semibold mt-1 uppercase tracking-widest">Müşteri Paneli</p>
-        </div>
-
-        <nav className="p-2.5 space-y-0.5 mt-2 flex-1">
-          {desktopNavItems.map(item => {
-            const isActive = pathname === item.href
-            const Icon = item.icon
-            return (
-              <Link key={item.href} href={item.href}
-                {...(item.tourId ? { id: item.tourId } : {})}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all ${
-                  isActive ? 'bg-white text-slate-800' : 'text-slate-300 hover:bg-white/10 hover:text-white'
-                }`}>
-                <span className="relative">
-                  <Icon className="w-5 h-5 shrink-0" />
-                  {item.badgeType === 'message' && <NotificationBadge count={unreadMessageCount} />}
-                  {item.badgeType === 'notification' && <NotificationBadge count={unreadNotificationCount} />}
+      <div className="min-h-dvh bg-slate-50 font-sans flex flex-col">
+        {/* Üst Menü (Top Navigation) – sticky, bembeyaz */}
+        <header className="sticky top-0 z-50 w-full bg-white shadow-sm border-b border-slate-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-14 sm:h-16">
+              {/* Sol: Logo */}
+              <Link href="/customer" className="flex items-center shrink-0">
+                <span className="text-xl font-black text-slate-800 tracking-tight">
+                  GELSİN<span className="text-slate-500">.</span>
                 </span>
-                {item.label}
               </Link>
-            )
-          })}
-        </nav>
 
-        <div className="p-2.5 border-t border-[#0d2430]">
-          <Link href="/customer/new-job"
-            className="flex items-center justify-center gap-2 w-full bg-white hover:bg-slate-100 text-slate-800 py-3 rounded-xl font-bold text-sm transition-all">
-            <Plus className="w-5 h-5" /> Yeni İş Talebi
-          </Link>
-        </div>
-      </aside>
+              {/* Orta: Navigasyon linkleri (masaüstü) */}
+              <nav className="hidden md:flex items-center gap-1">
+                {TOP_NAV_ITEMS.map((item) => {
+                  const isActive = pathname === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        isActive ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  )
+                })}
+              </nav>
 
-      {/* ANA İÇERİK */}
-      <main className="flex-1 lg:ml-[220px] pb-20 lg:pb-0 min-w-0">
-        {children}
-      </main>
+              {/* Sağ: Arama, Bildirim, Profil */}
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                {/* Kompakt arama */}
+                <div className="hidden sm:flex items-center max-w-[180px] lg:max-w-[220px]">
+                  <div className="relative w-full">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Uzman ara..."
+                      value={headerSearch}
+                      onChange={(e) => setHeaderSearch(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleHeaderSearch()}
+                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-200 bg-slate-50/80 text-slate-800 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-300"
+                    />
+                  </div>
+                </div>
 
-      {/* MOBİL BOTTOM NAV – koyu teal (Bionluk tarzı) */}
-      {!hideBottomNav && (
-        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#112F3D] px-2 py-2 flex justify-around items-stretch z-[90] border-t border-[#0d2430] pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-          {mobileNavItems.map(item => {
-            const isActive = pathname === item.href
-            const Icon = item.icon
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                {...(item.tourId ? { id: item.tourId } : {})}
-                className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-w-0 min-h-[56px] transition-colors active:opacity-80 ${
-                  isActive ? 'text-white font-semibold' : 'text-slate-400 font-normal'
-                }`}
-              >
-                <span className="relative">
-                  <Icon className="w-6 h-6 shrink-0" />
-                  {item.badgeType === 'message' && <NotificationBadge count={unreadMessageCount} />}
-                  {item.badgeType === 'notification' && <NotificationBadge count={unreadNotificationCount} />}
-                </span>
-                <span className="text-[10px] mt-1 truncate w-full text-center">{item.label}</span>
-              </Link>
-            )
-          })}
-        </nav>
-      )}
+                {/* Bildirim */}
+                <Link
+                  href="/customer/notifications"
+                  className="relative p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+                  aria-label="Bildirimler"
+                >
+                  <Bell className="w-5 h-5" />
+                  <NotificationBadge count={unreadNotificationCount} />
+                </Link>
 
-      {/* FAB - Yeni İş (Ana sayfa, İşlerim ve Yeni İş sayfasında gizli; mobilde her zaman gizli) */}
-      {pathname !== '/customer' && pathname !== '/customer/dashboard' && pathname !== '/customer/jobs' && pathname !== '/customer/new-job' && (
-        <Link
-          href="/customer/new-job"
-          className="hidden lg:flex fixed right-5 bottom-8 z-[95] bg-white hover:bg-slate-100 text-slate-800 w-14 h-14 rounded-2xl shadow-lg border border-slate-200 items-center justify-center text-2xl font-bold hover:scale-105 active:scale-95 transition-transform"
-          aria-label="Yeni iş oluştur"
-        >
-          <Plus className="w-7 h-7" />
-        </Link>
-      )}
+                {/* Profil avatarı – tıklanınca menü veya profil sayfası */}
+                <Link
+                  href="/customer/profile"
+                  className="flex items-center gap-2 p-1.5 pr-2 rounded-full hover:bg-slate-100 transition-colors"
+                >
+                  {profile?.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt=""
+                      className="w-8 h-8 rounded-full object-cover border border-slate-200"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
+                      <User className="w-4 h-4 text-slate-500" />
+                    </div>
+                  )}
+                  <span className="hidden lg:inline text-sm font-medium text-slate-700 max-w-[120px] truncate">
+                    {profile?.full_name || 'Profil'}
+                  </span>
+                </Link>
+              </div>
+            </div>
 
+            {/* Mobil: alt satırda nav linkleri (kaydırılabilir) */}
+            <nav className="md:hidden flex items-center gap-1 overflow-x-auto hide-scrollbar pb-2 -mx-4 px-4">
+              {TOP_NAV_ITEMS.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive ? 'bg-slate-100 text-slate-800' : 'text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </nav>
+          </div>
+        </header>
+
+        {/* Ana içerik – padding altında bottom nav yok */}
+        <main className="flex-1 min-w-0">
+          {children}
+        </main>
       </div>
     </ChatOverlayProvider>
   )

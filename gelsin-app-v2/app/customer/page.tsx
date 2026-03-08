@@ -2,25 +2,32 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { Search } from 'lucide-react'
-import { SERVICE_CATEGORIES } from '@/lib/constants'
+import { Plus, ClipboardList, History } from 'lucide-react'
 
 const CTA_CARDS = [
-  { title: 'Yeni İş Talebi Oluştur', icon: '➕', href: '/customer/new-job' },
-  { title: 'Aktif İşlerim', icon: '📋', href: '/customer/jobs' },
-  { title: 'Geçmiş İşler', icon: '🕒', href: '/customer/jobs' },
+  {
+    title: 'Yeni İş Aç',
+    sub: 'Hemen teklifleri topla',
+    href: '/customer/new-job',
+    icon: Plus,
+    prominent: true,
+  },
+  {
+    title: 'Aktif İşlerim',
+    sub: 'Devam eden işlerini takip et',
+    href: '/customer/jobs',
+    icon: ClipboardList,
+    prominent: false,
+  },
+  {
+    title: 'Geçmiş İşlerim',
+    sub: 'Tamamlanan hizmetlerin',
+    href: '/customer/jobs?filter=completed',
+    icon: History,
+    prominent: false,
+  },
 ]
-
-const MAIN_CATEGORIES = SERVICE_CATEGORIES.slice(0, 4)
-const PILL_LABELS = [
-  'Kombi Tamiri',
-  'Boya & Badana',
-  'Temizlik',
-  'Tesisat',
-  ...MAIN_CATEGORIES.flatMap((c) => [c.name, ...c.sub.slice(0, 1)]),
-].filter((v, i, a) => a.indexOf(v) === i).slice(0, 10)
 
 type VitrinService = {
   id: string
@@ -34,9 +41,7 @@ type VitrinService = {
 }
 
 export default function CustomerHome() {
-  const router = useRouter()
   const [userName, setUserName] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
   const [vitrinList, setVitrinList] = useState<VitrinService[]>([])
 
   useEffect(() => {
@@ -63,7 +68,7 @@ export default function CustomerHome() {
         setVitrinList([])
         return
       }
-      const providerIds = Array.from(new Set(rows.map((r: any) => r.provider_id)))
+      const providerIds = Array.from(new Set(rows.map((r: { provider_id: string }) => r.provider_id)))
       const { data: profiles } = await supabase.from('profiles_public').select('id, full_name').in('id', providerIds)
       const { data: pp } = await supabase.from('provider_profiles').select('id, rating').in('id', providerIds)
       const nameBy: Record<string, string> = {}
@@ -71,7 +76,14 @@ export default function CustomerHome() {
       for (const x of profiles || []) nameBy[x.id] = x.full_name || 'Uzman'
       for (const x of pp || []) ratingBy[x.id] = Number(x.rating) || 0
       setVitrinList(
-        rows.map((r: any) => ({
+        rows.map((r: {
+          id: string
+          title: string
+          description: string | null
+          price: number
+          image_url: string | null
+          provider_id: string
+        }) => ({
           id: r.id,
           title: r.title,
           description: r.description,
@@ -86,88 +98,61 @@ export default function CustomerHome() {
     loadVitrin()
   }, [])
 
-  const handleSearch = (q?: string) => {
-    const term = (q ?? searchQuery).trim()
-    if (term) router.push(`/customer/providers?q=${encodeURIComponent(term)}`)
-    else router.push('/customer/providers')
-  }
-
   return (
-    <div className="min-h-screen bg-[#F8F9F8] w-full max-w-[100vw] overflow-x-hidden">
-      <div className="w-full max-w-6xl mx-auto flex flex-col justify-start items-start text-left pt-6 sm:pt-8 lg:pt-12 pb-24 sm:pb-28 px-4 sm:px-6 lg:px-8 gap-6 sm:gap-8 min-w-0">
-        {/* Karşılama */}
-        <section className="w-full min-w-0">
+    <div className="min-h-screen bg-slate-50 w-full max-w-[100vw] overflow-x-hidden">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex flex-col gap-8">
+        {/* Karşılama Banner'ı (Hero) – ferah degrade, yuvarlatılmış */}
+        <section className="w-full rounded-2xl bg-gradient-to-r from-blue-50 to-slate-100 p-6 sm:p-8 min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">
-            Merhaba {userName || 'Misafir'}! 👋
+            Merhaba {userName || 'Misafir'} 👋
           </h1>
-          <p className="text-slate-500 text-sm mt-1">Bugün hangi konuda uzman bir ele ihtiyacın var?</p>
+          <p className="text-slate-600 text-sm sm:text-base mt-1">
+            Bugün hangi konuda uzman bir ele ihtiyacın var?
+          </p>
         </section>
 
-        {/* Arama – beyaz, mobilde tam genişlik */}
-        <section className="w-full flex flex-col items-center min-w-0">
-          <div className="w-full max-w-xl bg-white rounded-2xl shadow-md p-2 flex flex-col sm:flex-row gap-2 border border-slate-100">
-            <div className="flex-1 flex items-center gap-2 px-3 sm:px-4 py-3 rounded-xl bg-slate-50/80 min-w-0">
-              <Search className="w-5 h-5 text-slate-400 shrink-0" />
-              <input
-                type="text"
-                placeholder="Hangi uzmana ihtiyacın var? (Örn: Kombi, Boya...)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="flex-1 min-w-0 bg-transparent text-slate-800 placeholder:text-slate-400 text-sm focus:outline-none"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => handleSearch()}
-              className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 px-4 sm:px-5 py-3 rounded-xl font-semibold text-sm transition-colors shrink-0"
-            >
-              <Search className="w-4 h-4" />
-              Arama
-            </button>
-          </div>
-          <div className="w-full max-w-2xl flex flex-row overflow-x-auto hide-scrollbar gap-2 mt-4 pb-1 min-w-0 -mx-1 px-1">
-            {PILL_LABELS.map((label) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => handleSearch(label)}
-                className="flex-shrink-0 px-4 py-2 text-sm bg-white border border-slate-200 rounded-full text-slate-700 hover:bg-slate-50 cursor-pointer transition-colors touch-manipulation"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Hızlı işlem kartları – mobilde alt alta, md’de 3’lü grid */}
+        {/* 3'lü işlem kartları – bembeyaz, gölgeli, grid-cols-3 */}
         <section className="w-full min-w-0">
-          <div className="w-full flex flex-col gap-3 sm:gap-4 lg:grid lg:grid-cols-3">
-            {CTA_CARDS.map((card) => (
-              <Link
-                key={card.href}
-                href={card.href}
-                className="p-4 sm:p-5 flex items-center gap-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all text-left min-h-[72px] sm:min-h-0 touch-manipulation"
-              >
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl sm:text-2xl shrink-0">
-                  {card.icon}
-                </div>
-                <span className="font-semibold text-slate-800 text-sm sm:text-base">{card.title}</span>
-              </Link>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            {CTA_CARDS.map((card) => {
+              const Icon = card.icon
+              return (
+                <Link
+                  key={card.href}
+                  href={card.href}
+                  className={`rounded-2xl bg-white shadow-md border border-slate-100 p-5 sm:p-6 flex flex-col gap-3 transition-all text-left min-h-[120px] ${
+                    card.prominent
+                      ? 'hover:shadow-lg hover:border-slate-200 ring-2 ring-slate-100 ring-offset-2 hover:ring-slate-200'
+                      : 'hover:shadow-lg hover:border-slate-200'
+                  }`}
+                >
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                      card.prominent ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-slate-800 text-base">{card.title}</h2>
+                    <p className="text-slate-500 text-sm mt-0.5">{card.sub}</p>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         </section>
 
-        {/* Öne Çıkan Uzman İlanları – sola yaslı, yatay kaydırma */}
+        {/* Öne Çıkan Uzman İlanları – yatay kaydırmalı vitrin */}
         {vitrinList.length > 0 && (
           <section className="w-full min-w-0">
-            <h2 className="text-base font-bold text-slate-800 mb-3 text-left">Öne Çıkan Uzman İlanları</h2>
-            <div className="w-full overflow-x-auto hide-scrollbar flex gap-4 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory">
+            <h2 className="text-base font-bold text-slate-800 mb-4">Öne Çıkan Uzman İlanları</h2>
+            <div className="overflow-x-auto hide-scrollbar flex gap-4 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory">
               {vitrinList.map((s) => (
                 <Link
                   key={s.id}
                   href={`/customer/services/${s.id}`}
-                  className="flex-shrink-0 w-[260px] sm:w-[280px] snap-center rounded-2xl bg-white border border-slate-100 shadow-md hover:shadow-lg overflow-hidden transition-all hover:border-slate-200 touch-manipulation"
+                  className="flex-shrink-0 w-[260px] sm:w-[280px] snap-center rounded-2xl bg-white border border-slate-100 shadow-md hover:shadow-lg overflow-hidden transition-all hover:border-slate-200"
                 >
                   <div className="aspect-[4/3] bg-slate-100">
                     {s.image_url ? (
@@ -185,7 +170,7 @@ export default function CustomerHome() {
                       )}
                       <span className="font-bold text-slate-800">₺{Number(s.price).toFixed(0)}</span>
                     </div>
-                    <span className="inline-block mt-3 w-full text-center py-2.5 rounded-xl bg-white border border-slate-200 text-slate-800 text-xs font-semibold hover:bg-slate-50 transition-colors">
+                    <span className="inline-block mt-3 w-full text-center py-2.5 rounded-xl bg-slate-100 text-slate-800 text-xs font-semibold hover:bg-slate-200 transition-colors">
                       Hemen Çağır
                     </span>
                   </div>
@@ -194,22 +179,6 @@ export default function CustomerHome() {
             </div>
           </section>
         )}
-
-        <section className="w-full min-w-0">
-          <h2 className="text-base font-bold text-slate-800 mb-3 text-left">Popüler Hizmetler</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {MAIN_CATEGORIES.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/customer/new-job?cat=${cat.id}`}
-                className="rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 flex flex-col items-center justify-center gap-2 p-4 sm:p-5 min-h-[88px] sm:min-h-[100px] transition-all touch-manipulation"
-              >
-                <span className="text-2xl sm:text-3xl" aria-hidden>{cat.emoji}</span>
-                <span className="font-semibold text-slate-800 text-xs sm:text-sm text-center leading-tight line-clamp-2">{cat.name}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   )
