@@ -40,8 +40,11 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [emailConfirmMessage, setEmailConfirmMessage] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [kvkkAccepted, setKvkkAccepted] = useState(false)
 
   const isProvider = selectedRole === 'provider'
+  const consentOk = termsAccepted && kvkkAccepted
 
   const register = async () => {
     setError('')
@@ -149,12 +152,44 @@ export default function RegisterPage() {
             </button>
           </div>
 
+          {/* Zorunlu onay kutuları – Kayıt Ol / Google butonlarının üstü */}
+          <div className="flex flex-col gap-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <span className="text-slate-700 text-sm">
+                <a href="/sozlesme" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold hover:underline">Kullanıcı Sözleşmesi</a>
+                &apos;ni okudum ve kabul ediyorum.
+              </span>
+            </label>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={kvkkAccepted}
+                onChange={(e) => setKvkkAccepted(e.target.checked)}
+                className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <span className="text-slate-700 text-sm">
+                <a href="/kvkk" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold hover:underline">KVKK Aydınlatma Metni</a>
+                &apos;ni okudum ve onaylıyorum.
+              </span>
+            </label>
+          </div>
+
           {/* Google ile kayıt */}
           <button
             type="button"
             onClick={registerWithGoogle}
-            disabled={loading}
-            className="w-full border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-3 shadow-sm disabled:opacity-60"
+            disabled={loading || !consentOk}
+            className={`w-full border py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-3 shadow-sm ${
+              consentOk && !loading
+                ? 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700'
+                : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed opacity-60'
+            }`}
           >
             <GoogleIcon />
             <span>Google ile Devam Et</span>
@@ -237,12 +272,17 @@ export default function RegisterPage() {
               onClick={register}
               disabled={
                 loading ||
+                !consentOk ||
                 !email ||
                 password.length < 6 ||
                 confirmPassword.length < 6 ||
                 emailConfirmMessage
               }
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-2xl text-base font-bold transition-all shadow-lg disabled:opacity-50"
+              className={`w-full py-4 rounded-2xl text-base font-bold transition-all shadow-lg ${
+                consentOk && !loading && email && password.length >= 6 && confirmPassword.length >= 6 && !emailConfirmMessage
+                  ? 'bg-slate-900 hover:bg-slate-800 text-white'
+                  : 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60'
+              }`}
             >
               {loading ? 'Kayıt oluşturuluyor...' : 'Kayıt Ol →'}
             </button>

@@ -28,9 +28,6 @@ const slides = [
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
-  const [termsAccepted, setTermsAccepted] = useState(false)
-  const [kvkkAccepted, setKvkkAccepted] = useState(false)
-  const [marketingAccepted, setMarketingAccepted] = useState(false)
 
   useEffect(() => {
     const check = async () => {
@@ -119,61 +116,14 @@ export default function OnboardingPage() {
             </>
           ) : (
             <>
-              <div className="flex flex-col gap-4 mt-6 mb-8">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={termsAccepted}
-                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                    className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span className="text-slate-700">
-                    <a href="/sozlesme" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold hover:underline">Kullanıcı Sözleşmesi</a>
-                    &apos;ni okudum ve kabul ediyorum.
-                  </span>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={kvkkAccepted}
-                    onChange={(e) => setKvkkAccepted(e.target.checked)}
-                    className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span className="text-slate-700">
-                    <a href="/kvkk" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold hover:underline">KVKK Aydınlatma Metni</a>
-                    &apos;ni okudum ve kişisel verilerimin işlenmesini onaylıyorum.
-                  </span>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={marketingAccepted}
-                    onChange={(e) => setMarketingAccepted(e.target.checked)}
-                    className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span className="text-slate-600">
-                    Kampanya ve duyurulardan haberdar olmak için tarafıma SMS ve E-posta gönderilmesini onaylıyorum.
-                  </span>
-                </label>
-              </div>
               <button
-                disabled={!termsAccepted || !kvkkAccepted}
-                className={`w-full py-4 md:py-5 rounded-2xl text-lg md:text-xl font-bold transition-all shadow-lg flex items-center justify-center gap-3 active:scale-[0.98] ${
-                  termsAccepted && kvkkAccepted
-                    ? 'bg-brand-500 hover:bg-brand-600 text-white shadow-brand-500/25 hover:-translate-y-0.5'
-                    : 'bg-stone-300 text-stone-500 cursor-not-allowed opacity-50'
-                }`}
+                className="w-full bg-brand-500 hover:bg-brand-600 text-white py-4 md:py-5 rounded-2xl text-lg md:text-xl font-bold transition-all shadow-lg shadow-brand-500/25 hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center gap-3"
                 onClick={() => router.push('/login?role=customer')}
               >
                 <span className="text-2xl">🏡</span> Hizmet Almak İstiyorum
               </button>
               <button
-                disabled={!termsAccepted || !kvkkAccepted}
-                className={`w-full py-4 md:py-5 rounded-2xl text-lg md:text-xl font-bold transition-all border flex items-center justify-center gap-3 active:scale-[0.98] ${
-                  termsAccepted && kvkkAccepted
-                    ? 'bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200'
-                    : 'bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed opacity-50'
-                }`}
+                className="w-full bg-stone-50 hover:bg-stone-100 text-stone-700 py-4 md:py-5 rounded-2xl text-lg md:text-xl font-bold transition-all border border-stone-200 flex items-center justify-center gap-3 active:scale-[0.98]"
                 onClick={() => router.push('/login?role=provider')}
               >
                 <span className="text-2xl">🔧</span> Uzman Olarak Katıl
