@@ -427,6 +427,7 @@ export default function ProviderOnboardingPage() {
                   <p className="text-slate-400 text-sm mt-4">Yönlendiriliyorsunuz...</p>
                 </div>
               ) : (
+              <>
               <div className="rounded-3xl bg-slate-900 p-6 flex flex-col items-center">
                 <div
                   className={`relative w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden border-4 transition-colors duration-300 ${
@@ -541,7 +542,7 @@ export default function ProviderOnboardingPage() {
               <p className="text-xs text-slate-500 text-center">
                 Atlarsan onaylı uzman rozeti almazsın; istersen sonra profilinden doğrulayabilirsin.
               </p>
-            </div>
+              </>
               )}
             </div>
           )}
