@@ -5,14 +5,14 @@ import { MapPin } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
-const cities = ['Istanbul', 'Ankara', 'Izmir', 'Bursa', 'Antalya', 'Adana', 'Gaziantep', 'Konya', 'Mersin', 'Kayseri', 'Eskisehir', 'Trabzon']
+const cities = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Adana', 'Gaziantep', 'Konya', 'Mersin', 'Kayseri', 'Eskişehir', 'Trabzon']
 
 const faqs = [
-  { q: 'GELSIN nasil calisir?', a: 'Ihtiyacinizi belirtin, onayli uzmanlardan teklif alin. Odemeniz is tamamlanana kadar emanette tutulur.' },
-  { q: 'Odeme nasil yapilir?', a: 'Kredi karti veya banka kartiyla guvenli odeme. Odemeniz isi onaylayana kadar guvende tutulur.' },
-  { q: 'Uzman nasil olunur?', a: 'Ucretsiz kayit olun, kimlik dogrulamasini tamamlayin, hizmet kategorinizi secin.' },
-  { q: 'Isi begendinmezsem ne olur?', a: 'Destek ekibimiz devreye girer. Iade veya yeniden hizmet secenekleri sunulur.' },
-  { q: 'Platform ucretsiz mi?', a: 'Musteriler icin ucretsiz. Uzmanlar kabul ettikleri islerden kucuk komisyon oder.' },
+  { q: 'GELSİN nasıl çalışır?', a: 'İhtiyacınızı belirtin, onaylı uzmanlardan teklif alın. Ödemeniz iş tamamlanana kadar emanette tutulur.' },
+  { q: 'Ödeme nasıl yapılır?', a: 'Kredi kartı veya banka kartıyla güvenli ödeme. Ödemeniz işi onaylayana kadar güvende tutulur.' },
+  { q: 'Uzman nasıl olunur?', a: 'Ücretsiz kayıt olun, kimlik doğrulamasını tamamlayın, hizmet kategorinizi seçin.' },
+  { q: 'İşi beğenmezsem ne olur?', a: 'Destek ekibimiz devreye girer. İade veya yeniden hizmet seçenekleri sunulur.' },
+  { q: 'Platform ücretsiz mi?', a: 'Müşteriler için ücretsiz. Uzmanlar kabul ettikleri işlerden küçük komisyon öder.' },
 ]
 
 export default function FAQAndCitiesSection() {
@@ -37,8 +37,8 @@ export default function FAQAndCitiesSection() {
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="font-display text-3xl font-bold mb-2 text-slate-900">Sehirler</h2>
-            <p className="text-slate-500 mb-8">Turkiye genelinde hizmet</p>
+            <h2 className="font-display text-3xl font-bold mb-2 text-slate-900">Şehirler</h2>
+            <p className="text-slate-500 mb-8">Türkiye genelinde hizmet</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {cities.map((city) => (
                 <Link key={city} href="/customer/new-job" className="flex items-center gap-2 p-4 rounded-xl bg-white border border-slate-200 shadow-card hover:shadow-card-hover group">
@@ -47,7 +47,7 @@ export default function FAQAndCitiesSection() {
                 </Link>
               ))}
             </div>
-            <p className="text-sm text-slate-500 mt-6 text-center">ve 50+ sehir</p>
+            <p className="text-sm text-slate-500 mt-6 text-center">ve 50+ şehir</p>
           </motion.div>
         </div>
       </div>

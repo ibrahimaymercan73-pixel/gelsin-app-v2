@@ -4,9 +4,9 @@ import { motion } from 'framer-motion'
 import { Star, Quote } from 'lucide-react'
 
 const testimonials = [
-  { name: 'Ayse K.', role: 'Ev Sahibi', text: 'Tesisatciya ihtiyacim vardi, 10 dakikada 3 teklif aldim. Fiyatlar cok uygundu.', rating: 5, avatar: 'AK' },
-  { name: 'Burak T.', role: 'Ogrenci', text: 'Matematik ozel ders icin basvurdum, hocam harikaydi. Sinav notlarim yükseldi!', rating: 5, avatar: 'BT' },
-  { name: 'Selin M.', role: 'Calisan Anne', text: 'Eve gelen kuaför hizmeti hayat kurtarici. Guzellik ayagima geliyor.', rating: 5, avatar: 'SM' },
+  { name: 'Ayşe K.', role: 'Ev Sahibi', text: 'Tesisatçıya ihtiyacım vardı, 10 dakikada 3 teklif aldım. Fiyatlar çok uygundu.', rating: 5, avatar: 'AK' },
+  { name: 'Burak T.', role: 'Öğrenci', text: 'Matematik özel ders için başvurdum, hocam harikaydı. Sınav notlarım yükseldi!', rating: 5, avatar: 'BT' },
+  { name: 'Selin M.', role: 'Çalışan Anne', text: 'Eve gelen kuaför hizmeti hayat kurtarıcı. Güzellik ayağıma geliyor.', rating: 5, avatar: 'SM' },
 ]
 
 export default function TestimonialsSection() {
@@ -15,7 +15,7 @@ export default function TestimonialsSection() {
       <div className="max-w-7xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
           <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4 text-slate-900">Kullanıcılarımız Ne Diyor?</h2>
-          <p className="text-slate-500 text-lg max-w-xl mx-auto">Gerçek deneyimler, gercek memnuniyet</p>
+          <p className="text-slate-500 text-lg max-w-xl mx-auto">Gerçek deneyimler, gerçek memnuniyet</p>
         </motion.div>
         <div className="grid md:grid-cols-3 gap-6">
           {testimonials.map((t, i) => (

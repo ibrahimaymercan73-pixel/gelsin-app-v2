@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { Wallet, Calendar, Users, TrendingUp, ArrowRight } from 'lucide-react'
 
 const perks = [
-  { icon: Wallet, text: 'Kendi fiyatini belirle' },
-  { icon: Calendar, text: 'Esnek calisma saatleri' },
-  { icon: Users, text: 'Binlerce potansiyel musteri' },
-  { icon: TrendingUp, text: 'Kazancini buyut' },
+  { icon: Wallet, text: 'Kendi fiyatını belirle' },
+  { icon: Calendar, text: 'Esnek çalışma saatleri' },
+  { icon: Users, text: 'Binlerce potansiyel müşteri' },
+  { icon: TrendingUp, text: 'Kazancını büyüt' },
 ]
 
 export default function BecomeProviderSection() {
@@ -22,7 +22,7 @@ export default function BecomeProviderSection() {
               Yeteneğini paraya çevir, <span className="text-gradient">müşteriler seni bulsun</span>
             </h2>
             <p className="text-slate-500 text-lg mb-8 leading-relaxed">
-              GELSIN platformuna uzman olarak katil. Profilini olustur, gelen is taleplerini degerlendir. Kayit ucretsiz.
+              GELSIN platformuna uzman olarak katıl. Profilini oluştur, gelen iş taleplerini değerlendir. Kayıt ücretsiz.
             </p>
             <div className="grid grid-cols-2 gap-4 mb-8">
               {perks.map((perk) => (
@@ -46,18 +46,18 @@ export default function BecomeProviderSection() {
                 <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center font-display font-bold text-orange-600">EK</div>
                 <div>
                   <h4 className="font-display font-bold text-slate-900">Emre K.</h4>
-                  <p className="text-xs text-slate-500">Elektrik Ustasi, Istanbul</p>
+                  <p className="text-xs text-slate-500">Elektrik Ustası, İstanbul</p>
                 </div>
               </div>
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-sm"><span className="text-slate-500">Bu ay kazanc</span><span className="font-bold text-orange-600">12.450 TL</span></div>
-                <div className="flex justify-between text-sm"><span className="text-slate-500">Tamamlanan is</span><span className="font-bold">23</span></div>
-                <div className="flex justify-between text-sm"><span className="text-slate-500">Musteri puani</span><span className="font-bold">4.9</span></div>
+                <div className="flex justify-between text-sm"><span className="text-slate-500">Tamamlanan iş</span><span className="font-bold">23</span></div>
+                <div className="flex justify-between text-sm"><span className="text-slate-500">Müşteri puanı</span><span className="font-bold">4.9</span></div>
               </div>
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div className="h-full w-[85%] bg-orange-500 rounded-full" />
               </div>
-              <p className="text-xs text-slate-500 mt-2">Aylik hedefin yuzde 85 tamamlandi</p>
+              <p className="text-xs text-slate-500 mt-2">Aylık hedefin yüzde 85 tamamlandı</p>
             </div>
           </motion.div>
         </div>

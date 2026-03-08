@@ -23,10 +23,10 @@ export default function TopProvidersSection(props: { providers?: Provider[] }) {
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-12 gap-4">
           <div>
             <h2 className="font-display text-3xl sm:text-4xl font-bold mb-2 text-slate-900">En İyi Uzmanlar</h2>
-            <p className="text-slate-500 text-lg">En cok tercih edilen profesyoneller</p>
+            <p className="text-slate-500 text-lg">En çok tercih edilen profesyoneller</p>
           </div>
           <Link href="/customer/jobs" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 font-medium text-slate-700 hover:bg-slate-50">
-            Tumunu Gor <ArrowRight className="h-4 w-4" />
+            Tümünü Gör <ArrowRight className="h-4 w-4" />
           </Link>
         </motion.div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
