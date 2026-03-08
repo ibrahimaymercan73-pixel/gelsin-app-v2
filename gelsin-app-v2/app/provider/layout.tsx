@@ -1,8 +1,9 @@
 'use client'
+
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { getCurrentUserAndRole } from '@/lib/auth'
+import { useAuth } from '@/hooks/useAuth'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
 import { useUpdatePresence } from '@/hooks/useUpdatePresence'
@@ -16,39 +17,64 @@ const navItems = [
   { href: '/provider/profile', icon: '👤', label: 'Profil', showBadge: false, tourId: null },
 ]
 
+function ProviderShellSkeleton() {
+  return (
+    <div className="min-h-dvh bg-[#F4F7FA] flex font-sans">
+      <main className="flex-1 pb-24 md:pb-0">
+        <div className="px-6 lg:px-10 py-6 flex items-center justify-between border-b border-slate-200/50">
+          <div>
+            <div className="h-3 w-16 bg-slate-200 rounded animate-pulse" />
+            <div className="h-7 w-32 mt-2 bg-slate-200 rounded animate-pulse" />
+          </div>
+          <div className="h-10 w-24 bg-slate-200 rounded-full animate-pulse" />
+        </div>
+        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-32 bg-slate-100 rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
+
 export default function ProviderLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const { user, role, loading: authLoading } = useAuth()
   const { unreadMessageCount, unreadNotificationCount } = useNotifications()
   const unreadCount = unreadMessageCount + unreadNotificationCount
   const [tourRole, setTourRole] = useState<'customer' | 'provider' | null>(null)
   useUpdatePresence()
 
   useEffect(() => {
-    const check = async () => {
-      const { user, role } = await getCurrentUserAndRole()
-
-      if (!user) {
-        router.replace('/onboarding')
-        return
-      }
-
-      if (role === 'customer') {
-        router.replace('/customer')
-        return
-      }
-
-      if (role === 'admin') {
-        router.replace('/admin')
-        return
-      }
-
-      if (role === 'provider') setTourRole('provider')
+    if (authLoading) return
+    if (!user) {
+      router.replace('/onboarding')
+      return
     }
-    check()
-  }, [router])
+    if (role === 'customer') {
+      router.replace('/customer')
+      return
+    }
+    if (role === 'admin') {
+      router.replace('/admin')
+      return
+    }
+    if (role === 'provider') setTourRole('provider')
+  }, [authLoading, user, role, router])
 
   const hideBottomNav = pathname.startsWith('/provider/chat')
+
+  if (authLoading) {
+    return <ProviderShellSkeleton />
+  }
+
+  if (!user || role !== 'provider') {
+    return null
+  }
 
   return (
     <ChatOverlayProvider>

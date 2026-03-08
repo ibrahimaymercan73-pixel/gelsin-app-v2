@@ -28,7 +28,7 @@ type VitrinService = {
 
 export default function CustomerHome() {
   const router = useRouter()
-  const [userName, setUserName] = useState('')
+  const [userName, setUserName] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [vitrinList, setVitrinList] = useState<VitrinService[]>([])
   const [offerCount, setOfferCount] = useState(0)
@@ -38,10 +38,12 @@ export default function CustomerHome() {
     const load = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      if (!user) {
+        setUserName('')
+        return
+      }
       const { data: p } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
-      setUserName(p?.full_name?.trim() || '')
-      const first = (p?.full_name?.trim() || '').split(/\s+/)[0] || ''
+      setUserName(p?.full_name?.trim() ?? '')
 
       const { data: jobs } = await supabase
         .from('jobs')
@@ -115,7 +117,12 @@ export default function CustomerHome() {
     else router.push('/customer/providers')
   }
 
-  const displayName = userName.trim() ? userName.trim().split(/\s+/)[0] : 'Misafir'
+  const displayName =
+    userName === null
+      ? null
+      : userName.trim()
+        ? userName.trim().split(/\s+/)[0]
+        : ''
 
   return (
     <>
@@ -125,7 +132,13 @@ export default function CustomerHome() {
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
-              Bugün neyi <span className="text-blue-600">çözüyoruz</span> {displayName}?
+              Bugün neyi <span className="text-blue-600">çözüyoruz</span>
+              {displayName === null ? (
+                <span className="inline-block h-10 w-28 ml-2 align-middle bg-slate-200 rounded-lg animate-pulse" />
+              ) : displayName ? (
+                <> {displayName}</>
+              ) : null}
+              ?
             </h2>
             <p className="text-slate-500 mt-3 text-lg">
               Binlerce onaylı uzman, teklif vermek için seni bekliyor.

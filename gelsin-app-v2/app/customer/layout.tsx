@@ -7,6 +7,7 @@ import { Bell, MessageCircle, User } from 'lucide-react'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
 import { OnboardingTour } from '@/components/OnboardingTour'
+import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase'
 
 const TOP_NAV_ITEMS = [
@@ -25,63 +26,89 @@ function getInitials(name: string) {
     .slice(0, 2)
 }
 
+function CustomerNavSkeleton() {
+  return (
+    <nav className="flex-shrink-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-6">
+        <div className="h-8 w-24 bg-slate-200 rounded animate-pulse" />
+        <div className="flex items-center gap-2">
+          <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
+          <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
+          <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
+        </div>
+      </div>
+    </nav>
+  )
+}
+
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
+  const { user, role, loading: authLoading } = useAuth()
   const { unreadNotificationCount } = useNotifications()
   const [tourRole, setTourRole] = useState<'customer' | 'provider' | null>(null)
   const [profile, setProfile] = useState<{ full_name: string; avatar_url?: string } | null>(null)
+  const [profileLoaded, setProfileLoaded] = useState(false)
 
   useEffect(() => {
+    if (!user || role !== 'customer') return
+    setTourRole('customer')
     let cancelled = false
-    const delays = [0, 300, 600, 1000]
-
-    const ensureAuthenticated = async (attempt = 0) => {
-      const { getCurrentUserAndRoleWithRefresh } = await import('@/lib/auth')
-      let { user, role } = await getCurrentUserAndRoleWithRefresh()
-
-      if (cancelled) return
-      if (!user) {
-        if (attempt < delays.length - 1) {
-          setTimeout(() => ensureAuthenticated(attempt + 1), delays[attempt + 1])
-          return
-        }
-        router.replace('/login')
-        return
-      }
-
-      if (!role) {
-        router.replace('/choose-role')
-        return
-      }
-
-      if (role === 'provider') {
-        router.replace('/provider')
-        return
-      }
-
-      if (role === 'admin') {
-        router.replace('/admin')
-        return
-      }
-
-      if (role === 'customer') {
-        setTourRole('customer')
-        const supabase = createClient()
-        const { data } = await supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).single()
-        if (!cancelled && data) setProfile({ full_name: data.full_name || '', avatar_url: data.avatar_url })
-      }
-    }
-
-    ensureAuthenticated(0)
+    const supabase = createClient()
+    supabase.from('profiles').select('full_name, avatar_url').eq('id', user.id).single().then(({ data }) => {
+      if (!cancelled && data) setProfile({ full_name: data.full_name || '', avatar_url: data.avatar_url })
+      if (!cancelled) setProfileLoaded(true)
+    })
     return () => { cancelled = true }
-  }, [router])
+  }, [user?.id, role])
+
+  useEffect(() => {
+    if (authLoading) return
+    if (!user) {
+      router.replace('/login')
+      return
+    }
+    if (!role) {
+      router.replace('/choose-role')
+      return
+    }
+    if (role === 'provider') {
+      router.replace('/provider')
+      return
+    }
+    if (role === 'admin') {
+      router.replace('/admin')
+      return
+    }
+  }, [authLoading, user, role, router])
+
+  if (authLoading) {
+    return (
+      <div className="h-dvh max-h-dvh flex flex-col bg-[#F8FAFC] font-sans overflow-hidden">
+        <CustomerNavSkeleton />
+        <main className="flex-1 min-h-0 overflow-y-auto p-6">
+          <div className="max-w-7xl mx-auto space-y-6">
+            <div className="h-12 w-3/4 max-w-md bg-slate-200 rounded-xl animate-pulse" />
+            <div className="h-4 w-1/2 bg-slate-100 rounded animate-pulse" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-52 bg-slate-100 rounded-2xl animate-pulse" />
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (!user || role !== 'customer') {
+    return null
+  }
 
   return (
     <ChatOverlayProvider>
       <OnboardingTour role={tourRole} />
       <div className="h-dvh max-h-dvh flex flex-col bg-[#F8FAFC] font-sans overflow-hidden">
-        {/* Üst Menü – glass nav (şablondan) */}
         <nav className="flex-shrink-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-6">
             <div className="flex items-center gap-6 md:gap-8 min-w-0 flex-1">
@@ -124,11 +151,13 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
               </Link>
               <Link
                 href="/customer/profile"
-                className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm hover:shadow-md transition overflow-hidden"
+                className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center shadow-sm hover:shadow-md transition overflow-hidden min-w-[2.5rem] min-h-[2.5rem]"
                 aria-label="Profil"
                 title={profile?.full_name || 'Profil'}
               >
-                {profile?.avatar_url ? (
+                {!profileLoaded ? (
+                  <div className="w-full h-full rounded-full bg-slate-200 animate-pulse" />
+                ) : profile?.avatar_url ? (
                   <img
                     src={profile.avatar_url}
                     alt=""
