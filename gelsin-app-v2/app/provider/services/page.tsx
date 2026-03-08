@@ -42,7 +42,7 @@ export default function ProviderServicesPage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
 
   const allowedCategorySlugs = useMemo(() => {
-    const fromActive = [...new Set(list.filter(s => s.status === 'active').map(s => s.category_slug))]
+    const fromActive = Array.from(new Set(list.filter(s => s.status === 'active').map(s => s.category_slug)))
     if (fromActive.length > 0) return fromActive
     return CATEGORY_OPTIONS.map(c => c.slug)
   }, [list])
