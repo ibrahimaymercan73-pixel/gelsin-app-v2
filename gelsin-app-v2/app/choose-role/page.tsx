@@ -92,13 +92,33 @@ export default function ChooseRolePage() {
     }
 
     try {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('phone', trimmedPhone)
+        .neq('id', user.id)
+        .maybeSingle()
+      if (existing) {
+        setError('Bu telefon numarası başka bir hesap tarafından kullanılıyor.')
+        setSubmitting(false)
+        return
+      }
+
       const { error: upsertErr } = await supabase
         .from('profiles')
         .upsert(
           { id: user.id, role, full_name: trimmedName, phone: trimmedPhone },
           { onConflict: 'id' }
         )
-      if (upsertErr) throw upsertErr
+      if (upsertErr) {
+        if ((upsertErr as { code?: string }).code === '23505') {
+          setError('Bu telefon numarası başka bir hesap tarafından kullanılıyor.')
+        } else {
+          throw upsertErr
+        }
+        setSubmitting(false)
+        return
+      }
 
       if (role === 'provider') {
         await supabase
