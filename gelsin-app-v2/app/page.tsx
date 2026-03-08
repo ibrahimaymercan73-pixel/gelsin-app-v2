@@ -83,6 +83,10 @@ export default function LandingPage() {
 
   useEffect(() => {
     const check = async () => {
+      if (typeof window !== 'undefined' && window.location.hash?.includes('type=recovery')) {
+        router.replace('/update-password' + window.location.hash)
+        return
+      }
       const { user, role } = await getCurrentUserAndRole()
       if (!user) return
       if (!role) {
