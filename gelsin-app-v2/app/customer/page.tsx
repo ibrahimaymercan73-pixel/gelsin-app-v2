@@ -79,7 +79,7 @@ export default function CustomerHome() {
         setVitrinList([])
         return
       }
-      const providerIds = [...new Set(rows.map((r: { provider_id: string }) => r.provider_id))]
+      const providerIds = Array.from(new Set(rows.map((r: { provider_id: string }) => r.provider_id)))
       const { data: profiles } = await supabase.from('profiles_public').select('id, full_name').in('id', providerIds)
       const { data: pp } = await supabase.from('provider_profiles').select('id, rating').in('id', providerIds)
       const nameBy: Record<string, string> = {}
