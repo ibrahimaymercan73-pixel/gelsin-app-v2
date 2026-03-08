@@ -225,6 +225,22 @@ export default function ChooseRolePage() {
               disabled={submitting}
             />
           </div>
+          <div className="text-left">
+            <label className="block text-xs font-semibold text-slate-300 tracking-wide mb-1.5">
+              Hangi şehirdesiniz? <span className="text-slate-500">(zorunlu)</span>
+            </label>
+            <select
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl bg-slate-900/40 border border-slate-700 text-sm md:text-base text-white focus:outline-none focus:ring-2 focus:ring-slate-400/80 focus:border-slate-300 transition [color-scheme:dark]"
+              disabled={submitting}
+            >
+              <option value="">Şehir seçin</option>
+              {CITIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
 
           {error && (
             <p className="text-red-400 text-sm font-medium bg-red-500/20 border border-red-400/50 rounded-xl px-4 py-3">

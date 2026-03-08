@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { CITIES } from '@/lib/constants'
 
 export default function CustomerProfile() {
   const router = useRouter()
@@ -9,6 +10,7 @@ export default function CustomerProfile() {
   const [email, setEmail] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [city, setCity] = useState('')
   const [hidePhone, setHidePhone] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -23,6 +25,7 @@ export default function CustomerProfile() {
       setProfile(data)
       setName(data?.full_name || '')
       setPhone(data?.phone || '')
+      setCity(data?.city || '')
       setHidePhone(!!data?.hide_phone)
     }
     load()
@@ -48,7 +51,7 @@ export default function CustomerProfile() {
     }
     const { error } = await supabase
       .from('profiles')
-      .update({ full_name: name, phone: phone?.trim() || null })
+      .update({ full_name: name, phone: phone?.trim() || null, city: city?.trim() || null })
       .eq('id', profile.id)
     if (error) {
       if (error.code === '23505') {
@@ -94,6 +97,11 @@ export default function CustomerProfile() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-8">
+        {profile && !profile.city && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium">
+            Şehrinizi güncelleyin. Böylece size uygun ilanlar ve uzmanlar listelenecek.
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* SOL: Profil Kartı */}
@@ -190,6 +198,19 @@ export default function CustomerProfile() {
                       Karşı taraf, gizliyken numaranızı göremez.
                     </span>
                   </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Şehir</label>
+                  <select
+                    value={city}
+                    onChange={e => setCity(e.target.value)}
+                    className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-white text-slate-900 text-base font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+                  >
+                    <option value="">Şehir seçin</option>
+                    {CITIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {saveError && (

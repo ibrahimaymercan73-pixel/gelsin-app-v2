@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-import { SERVICE_CATEGORIES } from '@/lib/constants'
+import { SERVICE_CATEGORIES, CITIES } from '@/lib/constants'
 
 export default function ProviderProfile() {
   const router = useRouter()
@@ -15,6 +15,7 @@ export default function ProviderProfile() {
   const [cats, setCats] = useState<string[]>([])
   const [mainCategory, setMainCategory] = useState<string | null>(null)
   const [phone, setPhone] = useState('')
+  const [city, setCity] = useState('')
   const [hidePhone, setHidePhone] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -34,6 +35,7 @@ export default function ProviderProfile() {
       setCats(pData?.service_categories || [])
       setMainCategory(pData?.main_category || null)
       setPhone(p?.phone || '')
+      setCity(p?.city || '')
       setHidePhone(!!p?.hide_phone)
     }
     load()
@@ -58,7 +60,7 @@ export default function ProviderProfile() {
     }
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ full_name: name, phone: phone?.trim() || null })
+      .update({ full_name: name, phone: phone?.trim() || null, city: city?.trim() || null })
       .eq('id', profile.id)
     if (profileError) {
       if (profileError.code === '23505') {
@@ -122,6 +124,11 @@ export default function ProviderProfile() {
 
   return (
     <div>
+      {profile && !profile.city && (
+        <div className="mx-4 mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium">
+          Şehrinizi güncelleyin. İlanlarınız doğru bölgede listelenecek.
+        </div>
+      )}
       <div className="bg-gradient-to-br from-blue-700 to-blue-900 px-5 pt-14 pb-8 text-white">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl">🔧</div>
@@ -191,6 +198,19 @@ export default function ProviderProfile() {
             </div>
           </div>
           <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Şehir</label>
+            <select
+              className="input"
+              value={city}
+              onChange={e => setCity(e.target.value)}
+            >
+              <option value="">Şehir seçin</option>
+              {CITIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Hakkında</label>
             <textarea className="input resize-none" rows={3} placeholder="Kendinizi tanıtın..."
               value={bio} onChange={e => setBio(e.target.value)} />
@@ -200,14 +220,58 @@ export default function ProviderProfile() {
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="font-bold text-gray-800">Uzmanlık Alanları</p>
-            <Link 
+            <Link
               href="/provider/onboarding"
               className="text-xs font-semibold text-blue-600 hover:text-blue-700"
             >
               ✏️ Düzenle
             </Link>
           </div>
-          
+
+          {/* Ana Kategori */}
+          {mainCategoryInfo && (
+            <div className="flex items-center gap-2 mb-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+              <mainCategoryInfo.icon className="w-5 h-5 text-blue-600" />
+              <span className="font-semibold text-blue-900 text-sm">{mainCategoryInfo.name}</span>
+            </div>
+          )}
+
+          {/* Alt Hizmetler - Dinamik Chips */}
+          {cats.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {cats.map((service, idx) => (
+                <span
+                  key={idx}
+                  className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium border border-blue-100"
+                >
+                  {service}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 bg-gray-50 rounded-xl">
+              <p className="text-sm text-gray-500 mb-2">Henüz uzmanlık alanı seçilmedi</p>
+              <Link
+                href="/provider/onboarding"
+                className="text-sm font-semibold text-blue-600"
+              >
+                Hizmet kategorilerini seç →
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-bold text-gray-800">Uzmanlık Alanları</p>
+            <Link
+              href="/provider/onboarding"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+            >
+              ✏️ Düzenle
+            </Link>
+          </div>
+
           {/* Ana Kategori */}
           {mainCategoryInfo && (
             <div className="flex items-center gap-2 mb-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
