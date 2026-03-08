@@ -1,0 +1,251 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase'
+import { toast } from 'sonner'
+import { HelpCircle, RefreshCw } from 'lucide-react'
+
+type Ticket = {
+  id: string
+  customer_id: string | null
+  provider_id: string | null
+  category: string
+  title: string
+  message: string
+  status: string
+  related_job_id: string | null
+  created_at: string
+  updated_at: string
+  customer?: { full_name: string | null }[] | { full_name: string | null }
+  provider?: { full_name: string | null }[] | { full_name: string | null }
+}
+
+function statusLabel(s: string): string {
+  switch (s) {
+    case 'pending': return 'Beklemede'
+    case 'in_progress': return 'İnceleniyor'
+    case 'resolved': return 'Çözüldü'
+    default: return s
+  }
+}
+
+function statusClass(s: string): string {
+  switch (s) {
+    case 'resolved': return 'bg-green-100 text-green-700'
+    case 'in_progress': return 'bg-blue-100 text-blue-700'
+    default: return 'bg-amber-100 text-amber-700'
+  }
+}
+
+function categoryLabel(c: string): string {
+  const map: Record<string, string> = {
+    service: 'Hizmet',
+    payment: 'Ödeme/Fatura',
+    account: 'Hesap',
+    feedback: 'Şikayet/Öneri',
+  }
+  return map[c] || c
+}
+
+export default function AdminSupportPage() {
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState<'all' | 'customer' | 'provider'>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [detailId, setDetailId] = useState<string | null>(null)
+
+  const load = async () => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('support_tickets')
+      .select(`
+        id,
+        customer_id,
+        provider_id,
+        category,
+        title,
+        message,
+        status,
+        related_job_id,
+        created_at,
+        updated_at,
+        customer:profiles!support_tickets_customer_id_fkey(full_name),
+        provider:profiles!support_tickets_provider_id_fkey(full_name)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      toast.error('Talepler yüklenemedi: ' + error.message)
+      setTickets([])
+    } else {
+      setTickets((data as Ticket[]) || [])
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    setUpdatingId(id)
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('support_tickets')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    setUpdatingId(null)
+    if (error) {
+      toast.error('Durum güncellenemedi: ' + error.message)
+      return
+    }
+    toast.success('Durum güncellendi.')
+    load()
+  }
+
+  const getName = (t: Ticket): string => {
+    const c = t.customer
+    const p = t.provider
+    const cName = Array.isArray(c) ? c[0]?.full_name : c?.full_name
+    const pName = Array.isArray(p) ? p[0]?.full_name : p?.full_name
+    if (t.customer_id && cName) return cName
+    if (t.provider_id && pName) return pName
+    return '—'
+  }
+
+  const sourceLabel = (t: Ticket): string => t.customer_id ? 'Müşteri' : 'Usta'
+
+  const filtered = tickets.filter((t) => {
+    if (filter === 'customer' && !t.customer_id) return false
+    if (filter === 'provider' && !t.provider_id) return false
+    if (statusFilter !== 'all' && t.status !== statusFilter) return false
+    return true
+  })
+
+  const selectedTicket = tickets.find((t) => t.id === detailId)
+
+  return (
+    <div className="p-6 lg:p-10 max-w-6xl mx-auto space-y-6">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 flex items-center gap-2">
+            <HelpCircle className="w-8 h-8 text-blue-600" />
+            Destek Talepleri
+          </h1>
+          <p className="text-slate-500 mt-1">Müşteri ve usta taleplerini görüntüleyin, durum güncelleyin.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => load()}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          Yenile
+        </button>
+      </header>
+
+      <div className="flex flex-wrap gap-3">
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as 'all' | 'customer' | 'provider')}
+          className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-medium text-slate-700"
+        >
+          <option value="all">Tümü</option>
+          <option value="customer">Müşteri</option>
+          <option value="provider">Usta</option>
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-medium text-slate-700"
+        >
+          <option value="all">Tüm durumlar</option>
+          <option value="pending">Beklemede</option>
+          <option value="in_progress">İnceleniyor</option>
+          <option value="resolved">Çözüldü</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center text-slate-500">Yükleniyor...</div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center text-slate-500">Gösterilecek talep yok.</div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-100">
+                <tr>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Tarih</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Kaynak</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600">İsim</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Kategori / Başlık</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Durum</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600">İşlem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((t) => (
+                  <tr key={t.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                      {new Date(t.created_at).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={t.customer_id ? 'text-blue-600 font-medium' : 'text-amber-600 font-medium'}>
+                        {sourceLabel(t)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-800">{getName(t)}</td>
+                    <td className="px-4 py-3">
+                      <span className="text-slate-500">{categoryLabel(t.category)}</span>
+                      <br />
+                      <span className="font-medium text-slate-900">{t.title}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-bold ${statusClass(t.status)}`}>
+                        {statusLabel(t.status)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setDetailId(detailId === t.id ? null : t.id)}
+                          className="text-blue-600 font-medium hover:underline text-xs"
+                        >
+                          {detailId === t.id ? 'Gizle' : 'Detay'}
+                        </button>
+                        <select
+                          value={t.status}
+                          onChange={(e) => handleStatusChange(t.id, e.target.value)}
+                          disabled={updatingId === t.id}
+                          className="border border-slate-200 rounded-lg px-2 py-1 text-xs font-medium bg-white disabled:opacity-50"
+                        >
+                          <option value="pending">Beklemede</option>
+                          <option value="in_progress">İnceleniyor</option>
+                          <option value="resolved">Çözüldü</option>
+                        </select>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {selectedTicket && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <h3 className="font-bold text-slate-900 mb-2">Talep detayı</h3>
+          <p className="text-slate-600 whitespace-pre-wrap">{selectedTicket.message}</p>
+          {selectedTicket.related_job_id && (
+            <p className="text-slate-500 text-sm mt-2">İlgili iş ID: {selectedTicket.related_job_id}</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

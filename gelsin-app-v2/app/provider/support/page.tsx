@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { HelpCircle, Send, MessageSquare } from 'lucide-react'
 
 const CATEGORIES = [
-  { value: 'service', label: 'Aldığım Bir Hizmetle İlgili' },
+  { value: 'service', label: 'Verdiğim Bir Hizmetle İlgili' },
   { value: 'payment', label: 'Ödeme ve Fatura' },
   { value: 'account', label: 'Hesap İşlemleri' },
   { value: 'feedback', label: 'Şikayet/Öneri' },
@@ -54,7 +54,7 @@ function statusBadgeClass(status: string): string {
   }
 }
 
-export default function CustomerSupportPage() {
+export default function ProviderSupportPage() {
   const [userName, setUserName] = useState('')
   const [jobs, setJobs] = useState<JobOption[]>([{ id: '', label: 'Seçiniz...' }])
   const [category, setCategory] = useState('')
@@ -69,7 +69,7 @@ export default function CustomerSupportPage() {
     const { data, error } = await supabase
       .from('support_tickets')
       .select('id, category, title, message, status, created_at')
-      .eq('customer_id', userId)
+      .eq('provider_id', userId)
       .order('created_at', { ascending: false })
     setTicketsLoading(false)
     if (error) {
@@ -92,24 +92,24 @@ export default function CustomerSupportPage() {
 
       const { data: jobsRows } = await supabase
         .from('jobs')
-        .select('id, title, provider_id, created_at')
-        .eq('customer_id', user.id)
+        .select('id, title, customer_id, created_at')
+        .eq('provider_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20)
       if (!jobsRows?.length) return
-      const providerIds = Array.from(new Set(jobsRows.map((j: { provider_id?: string }) => j.provider_id).filter(Boolean)))
+      const customerIds = Array.from(new Set(jobsRows.map((j: { customer_id?: string }) => j.customer_id).filter(Boolean)))
       const nameBy: Record<string, string> = {}
-      if (providerIds.length > 0) {
-        const { data: profiles } = await supabase.from('profiles_public').select('id, full_name').in('id', providerIds)
-        for (const x of profiles || []) nameBy[x.id] = x.full_name || 'Uzman'
+      if (customerIds.length > 0) {
+        const { data: profiles } = await supabase.from('profiles_public').select('id, full_name').in('id', customerIds)
+        for (const x of profiles || []) nameBy[x.id] = x.full_name || 'Müşteri'
       }
       const options: JobOption[] = [
         { id: '', label: 'Seçiniz...' },
-        ...jobsRows.map((j: { id: string; title: string; provider_id?: string; created_at: string }) => {
+        ...jobsRows.map((j: { id: string; title: string; customer_id?: string; created_at: string }) => {
           const d = new Date(j.created_at)
           const dateStr = d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-          const providerName = j.provider_id ? nameBy[j.provider_id] || 'Uzman' : '—'
-          return { id: j.id, label: `${j.title} (${providerName} - ${dateStr})` }
+          const customerName = j.customer_id ? nameBy[j.customer_id] || 'Müşteri' : '—'
+          return { id: j.id, label: `${j.title} (${customerName} - ${dateStr})` }
         }),
       ]
       setJobs(options)
@@ -117,7 +117,7 @@ export default function CustomerSupportPage() {
     load()
   }, [])
 
-  const displayName = userName.trim() ? userName.trim().split(/\s+/)[0] : 'Helen'
+  const displayName = userName.trim() ? userName.trim().split(/\s+/)[0] : 'Uzman'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -135,8 +135,8 @@ export default function CustomerSupportPage() {
     const catLabel = CATEGORIES.find((c) => c.value === category)?.label || category || 'Genel'
     setSubmitting(true)
     const { error } = await supabase.from('support_tickets').insert({
-      customer_id: user.id,
-      provider_id: null,
+      provider_id: user.id,
+      customer_id: null,
       category: category || 'feedback',
       title: catLabel,
       related_job_id: relatedJobId || null,
@@ -158,7 +158,7 @@ export default function CustomerSupportPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 pt-32 pb-20 flex flex-col gap-10">
+    <div className="max-w-7xl mx-auto px-6 pt-8 lg:pt-12 pb-24 lg:pb-12 flex flex-col gap-10">
       <header>
         <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
           <HelpCircle className="w-10 h-10 text-blue-600" />
@@ -168,7 +168,6 @@ export default function CustomerSupportPage() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Sol: Yeni Talep Formu (2 birim) */}
         <div className="lg:col-span-2">
           <div className="bg-white shadow-sm rounded-[2rem] p-8 border border-slate-100">
             <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
@@ -197,7 +196,7 @@ export default function CustomerSupportPage() {
 
               <div>
                 <label htmlFor="relatedJob" className="block text-sm font-semibold text-slate-700 mb-2">
-                  İlgili Hizmeti Seç
+                  İlgili İşi Seç
                 </label>
                 <select
                   id="relatedJob"
@@ -240,7 +239,6 @@ export default function CustomerSupportPage() {
           </div>
         </div>
 
-        {/* Sağ: Açık Taleplerim (1 birim) – Supabase verisi */}
         <div className="lg:col-span-1">
           <div className="bg-white shadow-sm rounded-[2rem] p-6 border border-slate-100">
             <h2 className="text-lg font-bold text-slate-900 mb-4">Açık Taleplerim</h2>

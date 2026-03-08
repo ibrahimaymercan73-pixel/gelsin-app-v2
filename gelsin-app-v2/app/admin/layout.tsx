@@ -10,6 +10,7 @@ const navItems = [
   { href: '/admin/live', icon: '🗺️', label: 'Canlı' },
   { href: '/admin/finance', icon: '💰', label: 'Finans' },
   { href: '/admin/messages', icon: '💬', label: 'Mesajlar' },
+  { href: '/admin/support', icon: '🆘', label: 'Destek' },
   { href: '/admin/users', icon: '👥', label: 'Kullanıcılar' },
 ]
 

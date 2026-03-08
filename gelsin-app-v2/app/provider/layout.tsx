@@ -15,6 +15,7 @@ const navItems = [
   { href: '/provider/services', icon: '📌', label: 'İlanlarım', showBadge: false, tourId: null },
   { href: '/provider/notifications', icon: '🔔', label: 'Mesajlar', showBadge: true, tourId: null },
   { href: '/provider/wallet', icon: '💰', label: 'Cüzdan', showBadge: false, tourId: 'tour-wallet' as string | null },
+  { href: '/provider/support', icon: '🆘', label: 'Destek', showBadge: false, tourId: null },
   { href: '/provider/profile', icon: '👤', label: 'Profil', showBadge: false, tourId: null },
 ]
 
