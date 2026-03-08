@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { Suspense } from 'react'
 
@@ -243,6 +244,11 @@ function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && loginWithEmail()}
               />
+              <div className="mt-2 text-right">
+                <Link href="/forgot-password" className="text-sm font-semibold text-blue-600 hover:underline">
+                  Şifremi Unuttum
+                </Link>
+              </div>
             </div>
             {error && (
               <p className="text-red-600 text-sm font-medium bg-red-50 p-4 rounded-xl border border-red-100">

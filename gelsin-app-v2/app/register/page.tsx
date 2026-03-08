@@ -152,34 +152,6 @@ export default function RegisterPage() {
             </button>
           </div>
 
-          {/* Zorunlu onay kutuları – Kayıt Ol / Google butonlarının üstü */}
-          <div className="flex flex-col gap-4">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-              />
-              <span className="text-slate-700 text-sm">
-                <a href="/sozlesme" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold hover:underline">Kullanıcı Sözleşmesi</a>
-                &apos;ni okudum ve kabul ediyorum.
-              </span>
-            </label>
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={kvkkAccepted}
-                onChange={(e) => setKvkkAccepted(e.target.checked)}
-                className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-              />
-              <span className="text-slate-700 text-sm">
-                <a href="/kvkk" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold hover:underline">KVKK Aydınlatma Metni</a>
-                &apos;ni okudum ve onaylıyorum.
-              </span>
-            </label>
-          </div>
-
           {/* Google ile kayıt */}
           <button
             type="button"
@@ -267,6 +239,35 @@ export default function RegisterPage() {
                 {error}
               </p>
             )}
+
+            {/* KVKK ve Sözleşme – form içinde, Kayıt Ol butonunun hemen üstü */}
+            <div className="w-full mt-4 mb-1 space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer w-full">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="shrink-0 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <span className="text-slate-600 text-sm text-left">
+                  <a href="/sozlesme" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-700">Kullanıcı Sözleşmesi</a>
+                  &apos;ni okudum ve kabul ediyorum.
+                </span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer w-full">
+                <input
+                  type="checkbox"
+                  checked={kvkkAccepted}
+                  onChange={(e) => setKvkkAccepted(e.target.checked)}
+                  className="shrink-0 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <span className="text-slate-600 text-sm text-left">
+                  <a href="/kvkk" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-700">KVKK Metni</a>
+                  &apos;ni okudum ve onaylıyorum.
+                </span>
+              </label>
+            </div>
+
             <button
               type="button"
               onClick={register}
