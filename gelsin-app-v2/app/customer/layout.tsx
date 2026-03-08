@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Bell, MessageCircle, User, LifeBuoy } from 'lucide-react'
+import { Bell, MessageCircle, User } from 'lucide-react'
 import { ChatOverlayProvider } from '@/components/ChatOverlay'
 import { useNotifications, NotificationBadge } from '@/components/NotificationProvider'
 import { OnboardingTour } from '@/components/OnboardingTour'
@@ -121,14 +121,6 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
                 title="Mesajlar"
               >
                 <MessageCircle className="w-5 h-5" />
-              </Link>
-              <Link
-                href="/customer/support"
-                className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-blue-600 transition shadow-sm"
-                aria-label="Destek"
-                title="Destek Merkezi"
-              >
-                <LifeBuoy className="w-5 h-5" />
               </Link>
               <Link
                 href="/customer/profile"

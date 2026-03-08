@@ -1,8 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import { CITIES } from '@/lib/constants'
+import { LifeBuoy } from 'lucide-react'
 
 export default function CustomerProfile() {
   const router = useRouter()
@@ -142,6 +144,20 @@ export default function CustomerProfile() {
                 </div>
               </div>
             </div>
+
+            {/* Destek Merkezi */}
+            <Link
+              href="/customer/support"
+              className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all"
+            >
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600">
+                <LifeBuoy className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <p className="font-bold text-slate-800 text-sm">Destek Merkezi</p>
+                <p className="text-xs text-slate-500">Talep oluştur, yardım al</p>
+              </div>
+            </Link>
           </div>
 
           {/* SAĞ: Form + Ayarlar */}
