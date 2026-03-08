@@ -45,7 +45,6 @@ export default function ProviderProfile() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
-  const [uploading, setUploading] = useState('')
 
   useEffect(() => {
     if (ctxProfile) {
@@ -112,26 +111,6 @@ export default function ProviderProfile() {
       .from('profiles')
       .update({ hide_phone: next })
       .eq('id', ctxProfile.id)
-  }
-
-  const uploadDoc = async (type: 'id_document_url' | 'criminal_record_url', file: File) => {
-    setUploading(type)
-    const supabase = createClient()
-    try {
-      const form = new FormData()
-      form.append('file', file)
-      form.append('bucket', 'documents')
-      form.append('subpath', type)
-      const res = await fetch('/api/upload', { method: 'POST', body: form })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Yükleme başarısız')
-      await supabase.from('provider_profiles').update({ [type]: data.publicUrl }).eq('id', ctxProfile.id)
-      alert('Belge yüklendi!')
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Belge yüklenemedi')
-    } finally {
-      setUploading('')
-    }
   }
 
   const statusColors: Record<string, string> = {
@@ -283,34 +262,6 @@ export default function ProviderProfile() {
               </Link>
             </div>
           )}
-        </div>
-
-        <div className="card p-5">
-          <p className="font-bold text-gray-800 mb-1">Kimlik Belgeleri</p>
-          <p className="text-xs text-gray-400 mb-4">Hesabınızın onaylanması için gereklidir</p>
-          <div className="space-y-3">
-            {[
-              { key: 'id_document_url', label: 'e-Devlet Kimlik Belgesi', icon: '🪪' },
-              { key: 'criminal_record_url', label: 'Adli Sicil Kaydı', icon: '📄' },
-            ].map(doc => (
-              <div key={doc.key} className="flex items-center justify-between bg-gray-50 p-3.5 rounded-xl">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{doc.icon}</span>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{doc.label}</p>
-                    <p className="text-xs text-gray-400">{(pp as Record<string, unknown>)?.[doc.key] ? '✅ Yüklendi' : 'Henüz yüklenmedi'}</p>
-                  </div>
-                </div>
-                <label className={`text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer transition-all ${
-                  uploading === doc.key ? 'bg-gray-200 text-gray-400' : 'bg-blue-600 text-white'
-                }`}>
-                  {uploading === doc.key ? '...' : 'Yükle'}
-                  <input type="file" className="hidden" accept="image/*,.pdf"
-                    onChange={e => e.target.files?.[0] && uploadDoc(doc.key as 'id_document_url' | 'criminal_record_url', e.target.files[0])} />
-                </label>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="card p-5">

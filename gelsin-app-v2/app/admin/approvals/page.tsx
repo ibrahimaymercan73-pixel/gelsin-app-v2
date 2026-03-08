@@ -63,7 +63,7 @@ export default function AdminApprovalsPage() {
         <h1 className="text-3xl font-extrabold text-surface-900" style={{fontFamily:'Syne,sans-serif'}}>
           İK Onay Masası
         </h1>
-        <p className="text-surface-500 mt-1">Uzman belgelerini inceleyin ve onaylayın</p>
+        <p className="text-surface-500 mt-1">Uzman başvurularını inceleyin ve onaylayın</p>
       </div>
 
       {/* Filter Tabs */}
@@ -130,61 +130,6 @@ export default function AdminApprovalsPage() {
               </div>
             )}
 
-            {/* Belgeler */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {p.id_document_url ? (
-                <a
-                  href={p.id_document_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors"
-                >
-                  <span className="text-2xl">🪪</span>
-                  <div>
-                    <p className="text-sm font-semibold text-blue-800">Kimlik Belgesi</p>
-                    <p className="text-xs text-blue-600">Görüntüle / İndir</p>
-                  </div>
-                </a>
-              ) : (
-                <div className="flex items-center gap-2 p-3 bg-surface-50 border border-surface-200 rounded-xl opacity-60">
-                  <span className="text-2xl">🪪</span>
-                  <div>
-                    <p className="text-sm font-medium text-surface-600">Kimlik Belgesi</p>
-                    <p className="text-xs text-surface-400">{p.documents_verified_at ? 'Doğrulandı, silindi (KVKK)' : 'Yüklenmedi'}</p>
-                  </div>
-                </div>
-              )}
-
-              {p.criminal_record_url ? (
-                <a
-                  href={p.criminal_record_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-xl hover:bg-green-100 transition-colors"
-                >
-                  <span className="text-2xl">📋</span>
-                  <div>
-                    <p className="text-sm font-semibold text-green-800">Adli Sicil Kaydı</p>
-                    <p className="text-xs text-green-600">Görüntüle / İndir</p>
-                  </div>
-                </a>
-              ) : (
-                <div className="flex items-center gap-2 p-3 bg-surface-50 border border-surface-200 rounded-xl opacity-60">
-                  <span className="text-2xl">📋</span>
-                  <div>
-                    <p className="text-sm font-medium text-surface-600">Adli Sicil Kaydı</p>
-                    <p className="text-xs text-surface-400">{p.documents_verified_at ? 'Doğrulandı, silindi (KVKK)' : 'Yüklenmedi'}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {p.documents_verified_at && (
-              <p className="text-xs text-emerald-600 mb-3">
-                ✅ Belgeler {new Date(p.documents_verified_at).toLocaleDateString('tr-TR')} tarihinde doğrulandı ve KVKK kapsamında silindi
-              </p>
-            )}
-
             {/* Actions */}
             {p.status === 'pending' && (
               <div className="flex gap-3">
@@ -193,7 +138,7 @@ export default function AdminApprovalsPage() {
                   disabled={processing === p.id}
                   className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-4 py-3 rounded-xl transition-all shadow-lg shadow-emerald-500/20"
                 >
-                  {processing === p.id ? 'İşleniyor...' : '✅ Onayla & Belgeleri Sil'}
+                  {processing === p.id ? 'İşleniyor...' : '✅ Onayla'}
                 </button>
                 <button
                   onClick={() => suspend(p.id)}

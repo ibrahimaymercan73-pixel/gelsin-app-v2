@@ -66,7 +66,7 @@ export default function AdminDashboard() {
             <div className="bg-orange-500 rounded-2xl p-5 flex items-center justify-between text-white shadow-lg shadow-orange-200 hover:bg-orange-600 transition-all">
               <div>
                 <p className="font-black text-base">{stats.pending} uzman onay bekliyor</p>
-                <p className="text-orange-100 text-sm mt-0.5">Belgeleri incele ve onayla</p>
+                <p className="text-orange-100 text-sm mt-0.5">Başvuruları incele ve onayla</p>
               </div>
               <span className="text-3xl">⏳</span>
             </div>
