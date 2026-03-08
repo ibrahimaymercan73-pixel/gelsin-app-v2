@@ -12,7 +12,7 @@ export default async function CustomerLayout({ children }: { children: React.Rea
 
   const { data: profileRow } = await supabase
     .from('profiles')
-    .select('role, full_name, avatar_url')
+    .select('id, role, full_name, avatar_url, phone, city, hide_phone')
     .eq('id', session.user.id)
     .single()
 
@@ -29,11 +29,19 @@ export default async function CustomerLayout({ children }: { children: React.Rea
   }
 
   const initialProfile = profileRow
-    ? { full_name: profileRow.full_name || '', avatar_url: profileRow.avatar_url }
+    ? {
+        id: profileRow.id,
+        full_name: profileRow.full_name || '',
+        avatar_url: profileRow.avatar_url ?? undefined,
+        phone: profileRow.phone || '',
+        city: profileRow.city || '',
+        hide_phone: !!profileRow.hide_phone,
+      }
     : null
+  const initialEmail = session.user.email ?? null
 
   return (
-    <CustomerLayoutClient initialProfile={initialProfile}>
+    <CustomerLayoutClient initialProfile={initialProfile} initialEmail={initialEmail}>
       {children}
     </CustomerLayoutClient>
   )

@@ -24,9 +24,19 @@ function getInitials(name: string) {
     .slice(0, 2)
 }
 
-export type CustomerProfile = { full_name: string; avatar_url?: string } | null
+export type CustomerProfile = {
+  id: string
+  full_name: string
+  avatar_url?: string
+  phone: string
+  city: string
+  hide_phone: boolean
+} | null
 
-const CustomerAuthContext = createContext<{ profile: CustomerProfile }>({ profile: null })
+const CustomerAuthContext = createContext<{ profile: CustomerProfile; email: string | null }>({
+  profile: null,
+  email: null,
+})
 
 export function useCustomerAuth() {
   return useContext(CustomerAuthContext)
@@ -35,15 +45,17 @@ export function useCustomerAuth() {
 export function CustomerLayoutClient({
   children,
   initialProfile,
+  initialEmail,
 }: {
   children: React.ReactNode
   initialProfile: CustomerProfile
+  initialEmail: string | null
 }) {
   const pathname = usePathname()
   const { unreadNotificationCount } = useNotifications()
 
   return (
-    <CustomerAuthContext.Provider value={{ profile: initialProfile }}>
+    <CustomerAuthContext.Provider value={{ profile: initialProfile, email: initialEmail }}>
       <ChatOverlayProvider>
         <OnboardingTour role="customer" />
         <div className="h-dvh max-h-dvh flex flex-col bg-[#F8FAFC] font-sans overflow-hidden">

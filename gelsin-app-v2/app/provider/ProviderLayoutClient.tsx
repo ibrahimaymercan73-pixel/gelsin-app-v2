@@ -16,7 +16,22 @@ const navItems = [
   { href: '/provider/profile', icon: '👤', label: 'Profil', showBadge: false, tourId: null },
 ]
 
-const ProviderAuthContext = createContext<{ providerName: string }>({ providerName: '' })
+export type ProviderProfile = {
+  id: string
+  full_name: string
+  phone: string
+  city: string
+  hide_phone: boolean
+} | null
+
+export type ProviderProfileExtra = Record<string, unknown> | null
+
+const ProviderAuthContext = createContext<{
+  providerName: string
+  profile: ProviderProfile
+  providerProfile: ProviderProfileExtra
+  email: string | null
+}>({ providerName: '', profile: null, providerProfile: null, email: null })
 
 export function useProviderAuth() {
   return useContext(ProviderAuthContext)
@@ -25,9 +40,15 @@ export function useProviderAuth() {
 export function ProviderLayoutClient({
   children,
   initialProviderName,
+  initialProfile,
+  initialProviderProfile,
+  initialEmail,
 }: {
   children: React.ReactNode
   initialProviderName: string
+  initialProfile: ProviderProfile
+  initialProviderProfile: ProviderProfileExtra
+  initialEmail: string | null
 }) {
   const pathname = usePathname()
   const { unreadMessageCount, unreadNotificationCount } = useNotifications()
@@ -37,7 +58,14 @@ export function ProviderLayoutClient({
   const hideBottomNav = pathname.startsWith('/provider/chat')
 
   return (
-    <ProviderAuthContext.Provider value={{ providerName: initialProviderName }}>
+    <ProviderAuthContext.Provider
+      value={{
+        providerName: initialProviderName,
+        profile: initialProfile,
+        providerProfile: initialProviderProfile,
+        email: initialEmail,
+      }}
+    >
       <ChatOverlayProvider>
         <OnboardingTour role="provider" />
         <div className="min-h-dvh bg-[#F4F7FA] flex font-sans">

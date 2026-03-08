@@ -1,40 +1,77 @@
 'use client'
-import { useEffect, useState } from 'react'
+
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
+import { useCustomerAuth } from '../CustomerLayoutClient'
 import { CITIES } from '@/lib/constants'
 import { LifeBuoy } from 'lucide-react'
 
+function CustomerProfileSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#F4F7FA]">
+      <header className="px-6 lg:px-10 py-6 border-b border-slate-200/50">
+        <div className="h-3 w-20 bg-slate-200 rounded animate-pulse" />
+        <div className="h-7 w-24 mt-2 bg-slate-200 rounded animate-pulse" />
+      </header>
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 space-y-4">
+            <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
+              <div className="w-24 h-24 bg-slate-200 rounded-[1.5rem] mx-auto mb-4 animate-pulse" />
+              <div className="h-6 w-32 bg-slate-200 rounded animate-pulse mx-auto" />
+              <div className="h-4 w-48 bg-slate-100 rounded animate-pulse mt-2 mx-auto" />
+              <div className="h-4 w-24 bg-slate-100 rounded animate-pulse mt-2 mx-auto" />
+            </div>
+            <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm space-y-3">
+              <div className="h-4 w-28 bg-slate-200 rounded animate-pulse" />
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-10 bg-slate-100 rounded animate-pulse" />
+              ))}
+            </div>
+          </div>
+          <div className="lg:col-span-2 space-y-4">
+            <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
+              <div className="h-6 w-36 bg-slate-200 rounded animate-pulse mb-6" />
+              <div className="space-y-5">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-14 bg-slate-100 rounded-2xl animate-pulse" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CustomerProfile() {
   const router = useRouter()
-  const [profile, setProfile] = useState<any>(null)
-  const [email, setEmail] = useState<string | null>(null)
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [city, setCity] = useState('')
-  const [hidePhone, setHidePhone] = useState(false)
+  const { profile: ctxProfile, email } = useCustomerAuth()
+  const [name, setName] = useState(ctxProfile?.full_name ?? '')
+  const [phone, setPhone] = useState(ctxProfile?.phone ?? '')
+  const [city, setCity] = useState(ctxProfile?.city ?? '')
+  const [hidePhone, setHidePhone] = useState(ctxProfile?.hide_phone ?? false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
-    const load = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user?.email) setEmail(user.email)
-      const { data } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
-      setProfile(data)
-      setName(data?.full_name || '')
-      setPhone(data?.phone || '')
-      setCity(data?.city || '')
-      setHidePhone(!!data?.hide_phone)
+    if (ctxProfile) {
+      setName(ctxProfile.full_name ?? '')
+      setPhone(ctxProfile.phone ?? '')
+      setCity(ctxProfile.city ?? '')
+      setHidePhone(ctxProfile.hide_phone ?? false)
     }
-    load()
-  }, [])
+  }, [ctxProfile])
+
+  if (!ctxProfile) {
+    return <CustomerProfileSkeleton />
+  }
 
   const save = async () => {
-    if (!profile) return
     setSaveError('')
     setSaving(true)
     const supabase = createClient()
@@ -43,7 +80,7 @@ export default function CustomerProfile() {
         .from('profiles')
         .select('id')
         .eq('phone', phone.trim())
-        .neq('id', profile.id)
+        .neq('id', ctxProfile.id)
         .maybeSingle()
       if (existing) {
         setSaveError('Bu telefon numarası başka bir hesap tarafından kullanılıyor.')
@@ -54,7 +91,7 @@ export default function CustomerProfile() {
     const { error } = await supabase
       .from('profiles')
       .update({ full_name: name, phone: phone?.trim() || null, city: city?.trim() || null })
-      .eq('id', profile.id)
+      .eq('id', ctxProfile.id)
     if (error) {
       if (error.code === '23505') {
         setSaveError('Bu telefon numarası başka bir hesap tarafından kullanılıyor.')
@@ -70,14 +107,13 @@ export default function CustomerProfile() {
   }
 
   const toggleHidePhone = async () => {
-    if (!profile) return
     const next = !hidePhone
     setHidePhone(next)
     const supabase = createClient()
     await supabase
       .from('profiles')
       .update({ hide_phone: next })
-      .eq('id', profile.id)
+      .eq('id', ctxProfile.id)
   }
 
   const logout = async () => {
@@ -90,7 +126,6 @@ export default function CustomerProfile() {
   return (
     <div className="min-h-screen bg-[#F4F7FA]">
 
-      {/* HEADER */}
       <header className="px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Hesabım</p>
@@ -99,30 +134,27 @@ export default function CustomerProfile() {
       </header>
 
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-8">
-        {profile && !profile.city && (
+        {!ctxProfile.city && (
           <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium">
             Şehrinizi güncelleyin. Böylece size uygun ilanlar ve uzmanlar listelenecek.
           </div>
         )}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* SOL: Profil Kartı */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Avatar Kart */}
             <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm text-center">
               <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-700 rounded-[1.5rem] flex items-center justify-center text-4xl font-black text-white mx-auto mb-4 shadow-lg shadow-blue-200">
                 {initial}
               </div>
               <p className="font-black text-slate-800 text-xl">{name || 'Müşteri'}</p>
               {email && <p className="text-slate-500 text-sm mt-1 font-medium">{email}</p>}
-              <p className="text-slate-400 text-sm mt-0.5 font-medium">{profile?.phone || ''}</p>
+              <p className="text-slate-400 text-sm mt-0.5 font-medium">{phone || ''}</p>
               <div className="mt-4 inline-flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-full">
                 <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                 <span className="text-xs font-bold text-blue-600">Müşteri Hesabı</span>
               </div>
             </div>
 
-            {/* İstatistik Kart */}
             <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
               <p className="font-bold text-slate-700 text-sm mb-4 uppercase tracking-wider">Hesap Bilgileri</p>
               <div className="space-y-3">
@@ -136,7 +168,7 @@ export default function CustomerProfile() {
                 </div>
                 <div className="flex items-center justify-between py-2 border-b border-slate-50">
                   <span className="text-sm text-slate-500">Telefon</span>
-                  <span className="text-sm font-bold text-slate-800">{profile?.phone || '—'}</span>
+                  <span className="text-sm font-bold text-slate-800">{phone || '—'}</span>
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <span className="text-sm text-slate-500">Durum</span>
@@ -145,7 +177,6 @@ export default function CustomerProfile() {
               </div>
             </div>
 
-            {/* Destek Merkezi */}
             <Link
               href="/customer/support"
               className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all"
@@ -160,10 +191,7 @@ export default function CustomerProfile() {
             </Link>
           </div>
 
-          {/* SAĞ: Form + Ayarlar */}
           <div className="lg:col-span-2 space-y-4">
-
-            {/* Profil Düzenleme */}
             <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-9 h-9 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center">✏️</div>
@@ -248,7 +276,6 @@ export default function CustomerProfile() {
               </div>
             </div>
 
-            {/* Güvenlik Kart */}
             <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-9 h-9 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center">🔒</div>
@@ -272,7 +299,6 @@ export default function CustomerProfile() {
               </div>
             </div>
 
-            {/* Çıkış */}
             <div className="bg-white rounded-[2rem] p-6 border border-red-100 shadow-sm">
               <button
                 onClick={logout}

@@ -1,46 +1,70 @@
 'use client'
-import { useEffect, useState } from 'react'
+
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
+import { useProviderAuth } from '../ProviderLayoutClient'
 import { SERVICE_CATEGORIES, CITIES } from '@/lib/constants'
+
+function ProviderProfileSkeleton() {
+  return (
+    <div>
+      <div className="bg-gradient-to-br from-blue-700 to-blue-900 px-5 pt-14 pb-8">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 bg-white/20 rounded-2xl animate-pulse" />
+          <div className="space-y-2">
+            <div className="h-5 w-32 bg-white/30 rounded animate-pulse" />
+            <div className="h-5 w-24 bg-white/20 rounded animate-pulse" />
+          </div>
+        </div>
+      </div>
+      <div className="px-4 py-5 space-y-4">
+        <div className="card p-5 space-y-4">
+          <div className="h-4 w-28 bg-slate-200 rounded animate-pulse" />
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function ProviderProfile() {
   const router = useRouter()
-  const [profile, setProfile] = useState<any>(null)
-  const [pp, setPp] = useState<any>(null)
-  const [email, setEmail] = useState<string | null>(null)
-  const [name, setName] = useState('')
-  const [bio, setBio] = useState('')
-  const [cats, setCats] = useState<string[]>([])
-  const [mainCategory, setMainCategory] = useState<string | null>(null)
-  const [phone, setPhone] = useState('')
-  const [city, setCity] = useState('')
-  const [hidePhone, setHidePhone] = useState(false)
+  const { profile: ctxProfile, providerProfile: pp, email } = useProviderAuth()
+  const [name, setName] = useState(ctxProfile?.full_name ?? '')
+  const [bio, setBio] = useState((pp as { bio?: string } | null)?.bio ?? '')
+  const [cats, setCats] = useState<string[]>((pp as { service_categories?: string[] } | null)?.service_categories ?? [])
+  const [mainCategory, setMainCategory] = useState<string | null>((pp as { main_category?: string | null } | null)?.main_category ?? null)
+  const [phone, setPhone] = useState(ctxProfile?.phone ?? '')
+  const [city, setCity] = useState(ctxProfile?.city ?? '')
+  const [hidePhone, setHidePhone] = useState(ctxProfile?.hide_phone ?? false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [uploading, setUploading] = useState('')
 
   useEffect(() => {
-    const load = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user?.email) setEmail(user.email)
-      const { data: p } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
-      const { data: pData } = await supabase.from('provider_profiles').select('*').eq('id', user!.id).single()
-      setProfile(p); setPp(pData)
-      setName(p?.full_name || '')
-      setBio(pData?.bio || '')
-      setCats(pData?.service_categories || [])
-      setMainCategory(pData?.main_category || null)
-      setPhone(p?.phone || '')
-      setCity(p?.city || '')
-      setHidePhone(!!p?.hide_phone)
+    if (ctxProfile) {
+      setName(ctxProfile.full_name ?? '')
+      setPhone(ctxProfile.phone ?? '')
+      setCity(ctxProfile.city ?? '')
+      setHidePhone(ctxProfile.hide_phone ?? false)
     }
-    load()
-  }, [])
+    if (pp) {
+      const p = pp as { bio?: string; service_categories?: string[]; main_category?: string | null }
+      setBio(p.bio ?? '')
+      setCats(p.service_categories ?? [])
+      setMainCategory(p.main_category ?? null)
+    }
+  }, [ctxProfile, pp])
+
+  if (!ctxProfile) {
+    return <ProviderProfileSkeleton />
+  }
 
   const save = async () => {
     setSaveError('')
@@ -51,7 +75,7 @@ export default function ProviderProfile() {
         .from('profiles')
         .select('id')
         .eq('phone', phone.trim())
-        .neq('id', profile.id)
+        .neq('id', ctxProfile.id)
         .maybeSingle()
       if (existing) {
         setSaveError('Bu telefon numarası başka bir hesap tarafından kullanılıyor.')
@@ -62,7 +86,7 @@ export default function ProviderProfile() {
     const { error: profileError } = await supabase
       .from('profiles')
       .update({ full_name: name, phone: phone?.trim() || null, city: city?.trim() || null })
-      .eq('id', profile.id)
+      .eq('id', ctxProfile.id)
     if (profileError) {
       if (profileError.code === '23505') {
         setSaveError('Bu telefon numarası başka bir hesap tarafından kullanılıyor.')
@@ -72,24 +96,22 @@ export default function ProviderProfile() {
       setSaving(false)
       return
     }
-    await supabase.from('provider_profiles').update({ bio }).eq('id', profile.id)
+    await supabase.from('provider_profiles').update({ bio }).eq('id', ctxProfile.id)
     setSaved(true)
     setSaving(false)
     setTimeout(() => setSaved(false), 2000)
   }
 
-  // Ana kategori bilgisini bul
   const mainCategoryInfo = SERVICE_CATEGORIES.find(c => c.id === mainCategory)
 
   const toggleHidePhone = async () => {
-    if (!profile) return
     const next = !hidePhone
     setHidePhone(next)
     const supabase = createClient()
     await supabase
       .from('profiles')
       .update({ hide_phone: next })
-      .eq('id', profile.id)
+      .eq('id', ctxProfile.id)
   }
 
   const uploadDoc = async (type: 'id_document_url' | 'criminal_record_url', file: File) => {
@@ -103,10 +125,10 @@ export default function ProviderProfile() {
       const res = await fetch('/api/upload', { method: 'POST', body: form })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Yükleme başarısız')
-      await supabase.from('provider_profiles').update({ [type]: data.publicUrl }).eq('id', profile.id)
+      await supabase.from('provider_profiles').update({ [type]: data.publicUrl }).eq('id', ctxProfile.id)
       alert('Belge yüklendi!')
-    } catch (e: any) {
-      alert(e?.message || 'Belge yüklenemedi')
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Belge yüklenemedi')
     } finally {
       setUploading('')
     }
@@ -122,10 +144,13 @@ export default function ProviderProfile() {
     approved: '✅ Onaylı',
     suspended: '🚫 Askıya Alındı',
   }
+  const ppStatus = (pp as { status?: string } | null)?.status
+  const ppRating = (pp as { rating?: number } | null)?.rating
+  const ppTotalReviews = (pp as { total_reviews?: number } | null)?.total_reviews
 
   return (
     <div>
-      {profile && !profile.city && (
+      {!ctxProfile.city && (
         <div className="mx-4 mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium">
           Şehrinizi güncelleyin. İlanlarınız doğru bölgede listelenecek.
         </div>
@@ -135,17 +160,17 @@ export default function ProviderProfile() {
           <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl">🔧</div>
           <div>
             <p className="font-black text-lg">{name || 'Uzman'}</p>
-            <span className={pp?.status ? statusColors[pp.status] : 'badge-gray'}>
-              {pp?.status ? statusLabels[pp.status] : '—'}
+            <span className={ppStatus ? statusColors[ppStatus] : 'badge-gray'}>
+              {ppStatus ? statusLabels[ppStatus] : '—'}
             </span>
-            {typeof pp?.rating === 'number' && (
+            {typeof ppRating === 'number' && (
               <div className="mt-1 flex items-center gap-2 text-xs text-blue-100">
                 <span className="text-yellow-300">★</span>
                 <span className="font-semibold">
-                  {pp.rating.toFixed(1)} / 5
+                  {ppRating.toFixed(1)} / 5
                 </span>
                 <span className="text-blue-200">
-                  ({pp.total_reviews ?? 0} değerlendirme)
+                  ({(ppTotalReviews ?? 0)} değerlendirme)
                 </span>
               </div>
             )}
@@ -229,7 +254,6 @@ export default function ProviderProfile() {
             </Link>
           </div>
 
-          {/* Ana Kategori */}
           {mainCategoryInfo && (
             <div className="flex items-center gap-2 mb-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
               <mainCategoryInfo.icon className="w-5 h-5 text-blue-600" />
@@ -237,7 +261,6 @@ export default function ProviderProfile() {
             </div>
           )}
 
-          {/* Alt Hizmetler - Dinamik Chips */}
           {cats.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {cats.map((service, idx) => (
@@ -275,7 +298,7 @@ export default function ProviderProfile() {
                   <span className="text-xl">{doc.icon}</span>
                   <div>
                     <p className="text-sm font-semibold text-gray-800">{doc.label}</p>
-                    <p className="text-xs text-gray-400">{pp?.[doc.key] ? '✅ Yüklendi' : 'Henüz yüklenmedi'}</p>
+                    <p className="text-xs text-gray-400">{(pp as Record<string, unknown>)?.[doc.key] ? '✅ Yüklendi' : 'Henüz yüklenmedi'}</p>
                   </div>
                 </div>
                 <label className={`text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer transition-all ${
@@ -283,7 +306,7 @@ export default function ProviderProfile() {
                 }`}>
                   {uploading === doc.key ? '...' : 'Yükle'}
                   <input type="file" className="hidden" accept="image/*,.pdf"
-                    onChange={e => e.target.files?.[0] && uploadDoc(doc.key as any, e.target.files[0])} />
+                    onChange={e => e.target.files?.[0] && uploadDoc(doc.key as 'id_document_url' | 'criminal_record_url', e.target.files[0])} />
                 </label>
               </div>
             ))}

@@ -10,11 +10,10 @@ export default async function ProviderLayout({ children }: { children: React.Rea
     redirect('/onboarding')
   }
 
-  const { data: profileRow } = await supabase
-    .from('profiles')
-    .select('role, full_name')
-    .eq('id', session.user.id)
-    .single()
+  const [{ data: profileRow }, { data: providerRow }] = await Promise.all([
+    supabase.from('profiles').select('id, role, full_name, phone, city, hide_phone').eq('id', session.user.id).single(),
+    supabase.from('provider_profiles').select('*').eq('id', session.user.id).single(),
+  ])
 
   const role = (profileRow?.role as 'customer' | 'provider' | 'admin' | null) ?? null
 
@@ -28,10 +27,25 @@ export default async function ProviderLayout({ children }: { children: React.Rea
     redirect('/admin')
   }
 
-  const initialProviderName = profileRow?.full_name?.trim() ?? ''
+  const initialProfile = profileRow
+    ? {
+        id: profileRow.id,
+        full_name: profileRow.full_name || '',
+        phone: profileRow.phone || '',
+        city: profileRow.city || '',
+        hide_phone: !!profileRow.hide_phone,
+      }
+    : null
+  const initialProviderProfile = providerRow ?? null
+  const initialEmail = session.user.email ?? null
 
   return (
-    <ProviderLayoutClient initialProviderName={initialProviderName}>
+    <ProviderLayoutClient
+      initialProviderName={profileRow?.full_name?.trim() ?? ''}
+      initialProfile={initialProfile}
+      initialProviderProfile={initialProviderProfile}
+      initialEmail={initialEmail}
+    >
       {children}
     </ProviderLayoutClient>
   )
