@@ -89,6 +89,27 @@ export async function middleware(req: NextRequest) {
   const hasCity = !!(profile?.city && String(profile.city).trim())
   const isChooseRole = pathname === '/choose-role'
 
+  // Rol zaten atanmışsa /choose-role erişimini engelle, panele yönlendir
+  if (role && isChooseRole) {
+    if (role === 'customer' && hasCity) {
+      const redirectRes = NextResponse.redirect(new URL('/customer', req.url))
+      res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+      return redirectRes
+    }
+    if (role === 'provider' && hasCity) {
+      const { data: providerProfile } = await supabase
+        .from('provider_profiles')
+        .select('is_onboarded')
+        .eq('id', user.id)
+        .single()
+      if (providerProfile?.is_onboarded) {
+        const redirectRes = NextResponse.redirect(new URL('/provider', req.url))
+        res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+        return redirectRes
+      }
+    }
+  }
+
   // Rol yoksa: choose-role, şifre sıfırlama ve forgot-password sayfalarına izin ver
   if (!role) {
     const allowedNoRole = ['/choose-role', '/update-password', '/forgot-password']

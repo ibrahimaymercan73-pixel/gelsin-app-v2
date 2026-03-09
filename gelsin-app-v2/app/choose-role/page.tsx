@@ -130,6 +130,12 @@ export default function ChooseRolePage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
+        const { data: existing } = await supabase.from('profiles').select('role, face_verified').eq('id', user.id).single()
+        if (existing?.role && existing?.face_verified) {
+          if (typeof window !== 'undefined') window.location.href = '/provider'
+          else router.replace('/provider')
+          return
+        }
         await supabase.from('profiles').update({ face_verified: true }).eq('id', user.id)
         await supabase.from('provider_profiles').update({ status: 'approved' }).eq('id', user.id)
       }
@@ -158,6 +164,16 @@ export default function ChooseRolePage() {
     }
 
     if (step === 2 && canProceedStep2()) {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      if (existingProfile?.role) {
+        if (existingProfile.role === 'customer') router.replace('/customer')
+        else if (existingProfile.role === 'provider') router.replace('/provider')
+        return
+      }
       const trimmedPhone = normalizePhone(phone.trim())
       await supabase.from('profiles').update({
         full_name: fullName.trim(),
@@ -175,6 +191,18 @@ export default function ChooseRolePage() {
     }
 
     if (step === 3 && selectedCategory && selectedServices.length > 0) {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      if (existingProfile?.role === 'provider') {
+        const { data: pp } = await supabase.from('provider_profiles').select('is_onboarded').eq('id', user.id).single()
+        if (pp?.is_onboarded) {
+          router.replace('/provider')
+          return
+        }
+      }
       setSaving(true)
       await supabase.from('provider_profiles').upsert(
         { id: user.id, main_category: selectedCategory.id, service_categories: selectedServices, is_onboarded: true },
