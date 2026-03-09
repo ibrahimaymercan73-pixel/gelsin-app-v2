@@ -86,8 +86,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Geçersiz teklif tutarı.' }, { status: 400 })
     }
 
-    const platform_fee = round2(amount * 0.02)
-    const provider_amount = round2(amount - platform_fee)
+    const paytr_fee = Math.round(amount * 0.0399 * 100) / 100
+    const platform_fee = Math.round(amount * 0.02 * 100) / 100
+    const provider_amount = Math.round((amount - paytr_fee - platform_fee) * 100) / 100
 
     // customer email + profil bilgileri
     const [customerAuth, { data: customerProfile }] = await Promise.all([
@@ -218,6 +219,7 @@ export async function POST(req: NextRequest) {
         customer_id: user.id,
         provider_id: offer.provider_id,
         amount,
+        paytr_fee,
         platform_fee,
         provider_amount,
         status: 'pending',
@@ -230,6 +232,7 @@ export async function POST(req: NextRequest) {
         .from('payments')
         .update({
           amount,
+          paytr_fee,
           platform_fee,
           provider_amount,
           status: 'pending',

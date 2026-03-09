@@ -8,6 +8,7 @@ CREATE TABLE public.payments (
   customer_id UUID REFERENCES profiles(id) NOT NULL,
   provider_id UUID REFERENCES profiles(id) NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
+  paytr_fee DECIMAL(10,2) DEFAULT 0,
   platform_fee DECIMAL(10,2) NOT NULL,
   provider_amount DECIMAL(10,2) NOT NULL,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending','paid','in_escrow','released','refunded','failed')),
@@ -23,4 +24,7 @@ ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "customer_own" ON public.payments FOR SELECT USING (customer_id = auth.uid());
 CREATE POLICY "provider_own" ON public.payments FOR SELECT USING (provider_id = auth.uid());
 CREATE POLICY "service_role_all" ON public.payments USING (auth.role() = 'service_role');
+
+-- Mevcut ortamlarda kolon yoksa eklemek için:
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS paytr_fee DECIMAL(10,2) DEFAULT 0;
 
