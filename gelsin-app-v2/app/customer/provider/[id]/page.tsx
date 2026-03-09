@@ -21,6 +21,7 @@ type ProviderProfile = {
   total_reviews: number
   completed_jobs: number
   service_categories: string[]
+  last_seen?: string | null
 }
 
 type ReviewRow = {
@@ -58,7 +59,7 @@ export default function CustomerProviderProfilePage() {
 
       const [profileRes, ppRes, reviewsRes, servicesRes] = await Promise.all([
         supabase.from('profiles_public').select('id, full_name, avatar_url, face_verified, city').eq('id', id).single(),
-        supabase.from('provider_profiles').select('id, bio, rating, total_reviews, completed_jobs, service_categories').eq('id', id).single(),
+        supabase.from('provider_profiles').select('id, bio, rating, total_reviews, completed_jobs, service_categories, last_seen').eq('id', id).single(),
         supabase.from('reviews').select('id, rating, comment, created_at, customer_id').eq('provider_id', id).order('created_at', { ascending: false }).limit(50),
         supabase.from('provider_services').select('id, title, description, price, category_slug, image_url, city').eq('provider_id', id).eq('status', 'active').order('created_at', { ascending: false }),
       ])
