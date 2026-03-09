@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return new Response('OK', { status: 200 })
     }
 
-    // Hash doğrulama – PayTR iFrame API standart webhook formatı:
+    // Hash doğrulama – PayTR'nin resmi Node.js örneği:
     // hash_str = merchant_oid + SALT + status
     // HMAC key = merchant_key
     const hashStr = merchant_oid + merchant_salt + status
@@ -48,23 +48,14 @@ export async function POST(request: NextRequest) {
     // Gelen hash URL decode edilmiş olabilir
     const receivedHash = decodeURIComponent(hashParam)
 
-    // GEÇİCİ: hash kontrolünü logla ama geçir
-    console.log('[webhook] hash check - expected:', expectedHash)
-    console.log('[webhook] hash check - received:', receivedHash)
-    console.log(
-      '[webhook] MERCHANT_KEY length:',
-      process.env.PAYTR_MERCHANT_KEY?.length
-    )
-    console.log(
-      '[webhook] MERCHANT_SALT length:',
-      process.env.PAYTR_MERCHANT_SALT?.length
-    )
+    // Ek loglar – env prefix'leri
+    console.log('KEY prefix:', process.env.PAYTR_MERCHANT_KEY?.substring(0, 4))
+    console.log('SALT prefix:', process.env.PAYTR_MERCHANT_SALT?.substring(0, 4))
 
-    // hash kontrolünü şimdilik kaldır, direkt işlemi yap
-    // if (receivedHash !== expectedHash) {
-    //   console.log('[webhook] hash mismatch', { expected: expectedHash, received: receivedHash })
-    //   return new Response('PAYTR notification failed', { status: 400 })
-    // }
+    if (receivedHash !== expectedHash) {
+      console.log('[webhook] hash mismatch', { expected: expectedHash, received: receivedHash })
+      return new Response('PAYTR notification failed', { status: 400 })
+    }
 
     const supabase = createClient(url, serviceKey)
 
