@@ -1,10 +1,22 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import { useChatOverlay } from '@/components/ChatOverlay'
 import { isOnline, formatLastSeenRelative } from '@/lib/presence'
+
+const CATEGORY_LABELS: Record<string, string> = {
+  painting: 'Boya',
+  plumbing: 'Tesisat',
+  carpentry: 'Marangoz',
+  electric: 'Elektrik',
+  cleaning: 'Temizlik',
+  assembly: 'Montaj',
+  repair: 'Tamir',
+}
 
 export default function JobDetailPage() {
   const { id } = useParams()
@@ -63,7 +75,7 @@ export default function JobDetailPage() {
     if (providerIds.length > 0) {
       const { data: profiles } = await supabase
         .from('profiles_public')
-        .select('id, full_name, avatar_url')
+        .select('id, full_name, avatar_url, face_verified')
         .in('id', providerIds)
 
       profilesById = Object.fromEntries(
@@ -72,7 +84,7 @@ export default function JobDetailPage() {
 
       const { data: providerProfiles } = await supabase
         .from('provider_profiles')
-        .select('id, rating, service_categories, last_seen, avg_response_time_mins')
+        .select('id, rating, total_reviews, completed_jobs, service_categories, last_seen, avg_response_time_mins, bio')
         .in('id', providerIds)
 
       providerProfilesById = Object.fromEntries(
@@ -744,94 +756,107 @@ export default function JobDetailPage() {
                   offer.status === 'accepted' ? 'border-2 border-emerald-400' :
                   offer.status === 'rejected' ? 'opacity-50' : ''
                 }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-lg">
-                        {(offer.profiles?.full_name || offer.profiles?.phone || 'Uzman')
-                          .charAt(0)
-                          .toUpperCase() || '👷'}
-                      </div>
-                      <div>
-                        <p className="font-bold text-sm text-gray-900">
-                          {offer.profiles?.full_name || offer.profiles?.phone || 'İsimsiz Uzman'}
-                        </p>
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1 text-[11px] text-gray-500 flex-wrap">
-                            <span className="text-yellow-400 text-xs">★</span>
-                            <span className="text-xs">
-                              {offer.provider_profiles?.rating ?? 'Puan yok'}
-                            </span>
-                            <span className="mx-1">•</span>
-                            {(() => {
-                              const { phone, canShow } = getOfferPhoneDisplay(offer)
-                              if (!phone) return <span className="text-xs text-slate-400">Telefon yok</span>
-                              if (!canShow) return <span className="text-xs text-slate-400">🔒 Numara Gizli</span>
-                              return (
-                                <a
-                                  href={`tel:${phone}`}
-                                  className="inline-flex items-center gap-0.5 text-green-600 bg-green-50 hover:bg-green-100 border border-green-200 rounded-md px-1.5 py-0.5 text-xs font-medium"
-                                >
-                                  📞 Beni Ara
-                                </a>
-                              )
-                            })()}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-[11px] text-slate-500">
-                            {typeof offer.provider_profiles?.avg_response_time_mins === 'number' && (
-                              <span className="inline-flex items-center gap-0.5">
-                                <span className="text-amber-500">⚡</span>
-                                Genellikle {offer.provider_profiles.avg_response_time_mins} dk içinde yanıt verir
-                              </span>
-                            )}
-                            {offer.provider_profiles?.last_seen ? (
-                              isOnline(offer.provider_profiles.last_seen) ? (
-                                <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                  Çevrimiçi
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-0.5">
-                                  <span className="text-slate-400">🕒</span>
-                                  {formatLastSeenRelative(offer.provider_profiles.last_seen)}
-                                </span>
-                              )
-                            ) : null}
-                          </div>
-                          {Array.isArray(offer.provider_profiles?.service_categories) &&
-                            offer.provider_profiles.service_categories.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-0.5">
-                              {offer.provider_profiles.service_categories.map(
-                                (c: string) => {
-                                  const labels: Record<string, string> = {
-                                    painting: 'Boya',
-                                    plumbing: 'Tesisat',
-                                    carpentry: 'Marangoz',
-                                    electric: 'Elektrik',
-                                    cleaning: 'Temizlik',
-                                    assembly: 'Montaj',
-                                  }
-                                  return (
-                                    <span
-                                      key={c}
-                                      className="px-1.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-[9px] font-semibold text-blue-700"
-                                    >
-                                      {labels[c] || c}
-                                    </span>
-                                  )
-                                }
-                              )}
-                              </div>
-                            )}
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {offer.profiles?.avatar_url ? (
+                        <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
+                          <Image
+                            src={offer.profiles.avatar_url}
+                            alt=""
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center text-lg font-bold text-gray-600 flex-shrink-0">
+                          {(offer.profiles?.full_name || offer.profiles?.phone || 'U').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="font-bold text-sm text-gray-900 truncate">
+                            {offer.profiles?.full_name || offer.profiles?.phone || 'İsimsiz Uzman'}
+                          </p>
+                          {offer.profiles?.face_verified && (
+                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] flex-shrink-0" title="Kimlik doğrulandı">✓</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 flex-wrap mt-0.5">
+                          <span className="text-yellow-500">★</span>
+                          <span>{offer.provider_profiles?.rating ?? '—'}</span>
+                          <span className="text-gray-400">·</span>
+                          <span>{offer.provider_profiles?.total_reviews ?? 0} değerlendirme</span>
+                          {(offer.provider_profiles?.completed_jobs != null && offer.provider_profiles.completed_jobs > 0) && (
+                            <>
+                              <span className="text-gray-400">·</span>
+                              <span>{offer.provider_profiles.completed_jobs} tamamlanan iş</span>
+                            </>
+                          )}
+                        </div>
+                        {Array.isArray(offer.provider_profiles?.service_categories) &&
+                          offer.provider_profiles.service_categories.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {offer.provider_profiles.service_categories.slice(0, 4).map((c: string) => (
+                              <span
+                                key={c}
+                                className="px-1.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-[9px] font-semibold text-blue-700"
+                              >
+                                {CATEGORY_LABELS[c] || c}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <p className="text-2xl font-black text-blue-700">₺{offer.price}</p>
                       {offer.estimated_duration && (
                         <p className="text-xs text-gray-400">⏱ {offer.estimated_duration}</p>
                       )}
                     </div>
                   </div>
+                  {offer.provider_profiles?.bio && (
+                    <p className="text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl mb-2 line-clamp-2">
+                      {offer.provider_profiles.bio}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <Link
+                      href={`/customer/provider/${offer.provider_id}`}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                    >
+                      Profili Gör →
+                    </Link>
+                    {(() => {
+                      const { phone, canShow } = getOfferPhoneDisplay(offer)
+                      if (!phone || !canShow) return null
+                      return (
+                        <a
+                          href={`tel:${phone}`}
+                          className="inline-flex items-center gap-0.5 text-green-600 bg-green-50 hover:bg-green-100 border border-green-200 rounded-md px-1.5 py-0.5 text-xs font-medium"
+                        >
+                          📞 Beni Ara
+                        </a>
+                      )
+                    })()}
+                  </div>
+                  {typeof offer.provider_profiles?.avg_response_time_mins === 'number' && (
+                    <p className="text-[11px] text-slate-500 mb-2">
+                      ⚡ Genellikle {offer.provider_profiles.avg_response_time_mins} dk içinde yanıt verir
+                    </p>
+                  )}
+                  {offer.provider_profiles?.last_seen && (
+                    <p className="text-[11px] text-slate-500 mb-2">
+                      {isOnline(offer.provider_profiles.last_seen) ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Çevrimiçi
+                        </span>
+                      ) : (
+                        <span>🕒 {formatLastSeenRelative(offer.provider_profiles.last_seen)}</span>
+                      )}
+                    </p>
+                  )}
                   {offer.message && (
                     <p className="text-xs text-gray-500 bg-gray-50 p-2.5 rounded-xl mb-3">{offer.message}</p>
                   )}
