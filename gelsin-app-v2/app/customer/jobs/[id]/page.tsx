@@ -544,7 +544,9 @@ export default function JobDetailPage() {
               <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">🏁</div>
               <div>
                 <p className="font-bold text-gray-900">İş Tamamlandı mı?</p>
-                <p className="text-xs text-gray-500">Onaylayın, bitiş QR'ı üretin, uzmanla taratın</p>
+                <p className="text-xs text-gray-500">
+                  Onaylayın, ustanın ödemesi başlatılsın (IBAN transferi).
+                </p>
               </div>
             </div>
             {showEndQR && hasEndToken ? (
@@ -572,7 +574,7 @@ export default function JobDetailPage() {
                   {job?.end_qr_token?.slice(-6).toUpperCase()}
                 </div>
                 <p className="text-xs text-gray-400 text-center">
-                  Uzman okutunca ödeme cüzdanına aktarılır
+                  Uzman okutunca ödeme cüzdanına aktarılır ve IBAN\'ınıza transfer süreci başlar.
                 </p>
               </div>
             ) : (

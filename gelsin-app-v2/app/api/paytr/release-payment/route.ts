@@ -66,7 +66,9 @@ export async function POST(req: NextRequest) {
 
     const { data: payment } = await supabase
       .from('payments')
-      .select('id, job_id, offer_id, provider_id, amount, provider_amount, status, paytr_merchant_oid')
+      .select(
+        'id, job_id, offer_id, provider_id, amount, provider_amount, status, paytr_merchant_oid'
+      )
       .eq('job_id', jobId)
       .eq('status', 'in_escrow')
       .maybeSingle()
@@ -80,28 +82,29 @@ export async function POST(req: NextRequest) {
 
     const { data: providerProfile } = await supabase
       .from('provider_profiles')
-      .select('iban, account_holder_name, completed_jobs')
+      .select('iban, completed_jobs')
       .eq('id', payment.provider_id)
       .single()
 
-    if (!providerProfile?.iban || !providerProfile?.account_holder_name) {
+    if (!providerProfile?.iban) {
       return NextResponse.json(
         { error: 'Uzmanın banka bilgileri eksik. Lütfen destek ile iletişime geçin.' },
         { status: 400 }
       )
     }
+    // Uzmanın adı – IBAN transferi için
+    const { data: providerProfileBase } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', payment.provider_id)
+      .single()
 
-    const total_amount = Math.round(Number(payment.amount) * 100)
-    const submerchant_amount = Math.round(Number(payment.provider_amount) * 100)
-    const trans_id = `gelsin_transfer_${payment.id}`
+    const providerName =
+      (providerProfileBase?.full_name && providerProfileBase.full_name.trim()) || 'Gelsin Uzmanı'
 
+    const amountKurush = Math.round(Number(payment.provider_amount) * 100)
     const hashStr =
-      merchant_id +
-      payment.paytr_merchant_oid +
-      trans_id +
-      submerchant_amount.toString() +
-      total_amount.toString() +
-      merchant_salt
+      merchant_id + payment.paytr_merchant_oid + amountKurush.toString() + merchant_salt
 
     const paytr_token = crypto
       .createHmac('sha256', merchant_key)
@@ -111,14 +114,12 @@ export async function POST(req: NextRequest) {
     const params = new URLSearchParams()
     params.set('merchant_id', merchant_id)
     params.set('merchant_oid', payment.paytr_merchant_oid)
-    params.set('trans_id', trans_id)
-    params.set('submerchant_amount', submerchant_amount.toString())
-    params.set('total_amount', total_amount.toString())
-    params.set('transfer_name', providerProfile.account_holder_name)
-    params.set('transfer_iban', providerProfile.iban)
+    params.set('amount', amountKurush.toString())
+    params.set('iban', providerProfile.iban)
+    params.set('name', providerName)
     params.set('paytr_token', paytr_token)
 
-    const res = await fetch('https://www.paytr.com/odeme/platform/transfer', {
+    const res = await fetch('https://www.paytr.com/odeme/pazaryeri/transfer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
