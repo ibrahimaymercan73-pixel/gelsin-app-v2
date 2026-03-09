@@ -32,18 +32,26 @@ export async function POST(request: NextRequest) {
       return new Response('OK', { status: 200 })
     }
 
-    // Hash doğrulama – PayTR dokümantasyonundaki doğru formül:
-    // hashStr = merchant_oid + SALT + status
-    // expectedHash = base64( HMAC_SHA256(hashStr, MERCHANT_KEY) )
-    const hashStr = merchant_oid + String(merchant_salt) + status
-    const expected = crypto
-      .createHmac('sha256', String(merchant_key))
-      .update(hashStr)
-      .digest('base64')
+    // Hash doğrulama – PayTR dokümantasyonundaki formül:
+    // hashStr = merchant_oid + SALT + status + MERCHANT_KEY
+    // expectedHash = base64( SHA256(hashStr) )  -- HMAC değil
+    const hashStr =
+      merchant_oid +
+      String(process.env.PAYTR_MERCHANT_SALT) +
+      status +
+      String(process.env.PAYTR_MERCHANT_KEY)
+    const expected = crypto.createHash('sha256').update(hashStr).digest('base64')
+    const decodedHash = decodeURIComponent(hash)
 
-    console.log('[paytr/webhook] computed hash', { merchant_oid, status, expected, hash })
+    console.log('[paytr/webhook] computed hash', {
+      merchant_oid,
+      status,
+      expected,
+      hash,
+      decodedHash,
+    })
 
-    if (hash !== expected) {
+    if (decodedHash !== expected) {
       console.error('[paytr/webhook] invalid hash', { merchant_oid })
       return new Response('OK', { status: 200 })
     }
