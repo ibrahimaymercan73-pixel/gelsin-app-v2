@@ -32,13 +32,14 @@ export async function POST(request: NextRequest) {
       return new Response('OK', { status: 200 })
     }
 
-    // Hash doğrulama – PayTR dokümantasyonundaki formüle göre
-    const hmac = crypto.createHmac(
-      'sha256',
-      String(merchant_key) + String(merchant_salt)
-    )
-    hmac.update(merchant_oid + String(merchant_salt) + status)
-    const expected = Buffer.from(hmac.digest()).toString('base64')
+    // Hash doğrulama – PayTR dokümantasyonundaki doğru formül:
+    // hashStr = merchant_oid + SALT + status
+    // expectedHash = base64( HMAC_SHA256(hashStr, MERCHANT_KEY) )
+    const hashStr = merchant_oid + String(merchant_salt) + status
+    const expected = crypto
+      .createHmac('sha256', String(merchant_key))
+      .update(hashStr)
+      .digest('base64')
 
     console.log('[paytr/webhook] computed hash', { merchant_oid, status, expected, hash })
 
