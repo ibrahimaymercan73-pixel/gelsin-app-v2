@@ -25,35 +25,35 @@ export async function POST(request: NextRequest) {
 
     const merchant_oid = params.get('merchant_oid') || ''
     const status = params.get('status') || ''
-    const hash = params.get('hash') || ''
+    const hashParam = params.get('hash') || ''
 
-    if (!merchant_oid || !status || !hash) {
+    if (!merchant_oid || !status || !hashParam) {
       console.error('[paytr/webhook] missing fields', { merchant_oid, status, hash })
       return new Response('OK', { status: 200 })
     }
 
-    // Hash doğrulama – PayTR dokümantasyonundaki formül:
-    // hashStr = merchant_oid + SALT + status + MERCHANT_KEY
-    // expectedHash = base64( SHA256(hashStr) )  -- HMAC değil
-    const hashStr =
-      merchant_oid +
-      String(process.env.PAYTR_MERCHANT_SALT) +
-      status +
-      String(process.env.PAYTR_MERCHANT_KEY)
-    const expected = crypto.createHash('sha256').update(hashStr).digest('base64')
-    const decodedHash = decodeURIComponent(hash)
+    // Hash doğrulama – PayTR iFrame API standart webhook formatı:
+    // hash_str = merchant_oid + SALT + status
+    // HMAC key = merchant_key
+    const hashStr = merchant_oid + merchant_salt + status
+    const expectedHash = crypto
+      .createHmac('sha256', merchant_key)
+      .update(hashStr)
+      .digest('base64')
+
+    // Gelen hash URL decode edilmiş olabilir
+    const receivedHash = decodeURIComponent(hashParam)
 
     console.log('[paytr/webhook] computed hash', {
       merchant_oid,
       status,
-      expected,
-      hash,
-      decodedHash,
+      expectedHash,
+      receivedHash,
     })
 
-    if (decodedHash !== expected) {
-      console.error('[paytr/webhook] invalid hash', { merchant_oid })
-      return new Response('OK', { status: 200 })
+    if (receivedHash !== expectedHash) {
+      console.log('[webhook] hash mismatch', { expected: expectedHash, received: receivedHash })
+      return new Response('PAYTR notification failed', { status: 400 })
     }
 
     const supabase = createClient(url, serviceKey)
