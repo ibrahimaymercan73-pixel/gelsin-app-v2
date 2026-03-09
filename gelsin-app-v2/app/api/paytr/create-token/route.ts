@@ -89,12 +89,21 @@ export async function POST(req: NextRequest) {
     const platform_fee = round2(amount * 0.02)
     const provider_amount = round2(amount - platform_fee)
 
-    // customer email
-    const customerAuth = await supabase.auth.admin.getUserById(user.id)
+    // customer email + profil bilgileri
+    const [customerAuth, { data: customerProfile }] = await Promise.all([
+      supabase.auth.admin.getUserById(user.id),
+      supabase.from('profiles').select('full_name, phone').eq('id', user.id).maybeSingle(),
+    ])
     const customerEmail = customerAuth.data.user?.email
     if (!customerEmail) {
       return NextResponse.json({ error: 'Müşteri e-posta adresi bulunamadı.' }, { status: 400 })
     }
+    const userName =
+      (customerProfile?.full_name && customerProfile.full_name.trim().slice(0, 60)) ||
+      customerEmail
+    const userPhone =
+      (customerProfile?.phone && customerProfile.phone.trim()) || '05000000000'
+    const userAddress = 'Türkiye'
 
     const idempotencyKey = `${user.id}_${offerId}`
 
@@ -160,6 +169,9 @@ export async function POST(req: NextRequest) {
     params.set('user_ip', user_ip)
     params.set('merchant_oid', merchant_oid)
     params.set('email', customerEmail)
+    params.set('user_name', userName)
+    params.set('user_address', userAddress)
+    params.set('user_phone', userPhone)
     params.set('payment_amount', payment_amount.toString())
     params.set('currency', currency)
     params.set('user_basket', user_basket)
