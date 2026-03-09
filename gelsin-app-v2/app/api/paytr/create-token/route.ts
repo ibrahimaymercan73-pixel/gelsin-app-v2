@@ -186,22 +186,27 @@ export async function POST(req: NextRequest) {
     params.set('merchant_ok_url', 'https://gelsin.dev/customer/payment/success')
     params.set('merchant_fail_url', 'https://gelsin.dev/customer/payment/fail')
 
+    const formBody = params.toString()
     const tokenRes = await fetch('https://www.paytr.com/odeme/api/get-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
+      body: formBody,
     })
 
-    const tokenJson: any = await tokenRes.json().catch(async () => {
-      const txt = await tokenRes.text()
-      return { status: 'failed', reason: txt }
-    })
+    const tokenJson: any = await tokenRes
+      .json()
+      .catch(async () => {
+        const txt = await tokenRes.text()
+        return { status: 'failed', reason: txt }
+      })
 
-    if (!tokenRes.ok || tokenJson.status !== 'success' || !tokenJson.token) {
-      console.error('[paytr/create-token] ERROR', tokenJson)
+    console.log('[create-token] PayTR response:', JSON.stringify(tokenJson))
+
+    if (tokenJson.status !== 'success' || !tokenJson.token) {
+      console.log('[create-token] HATA:', tokenJson.reason)
       return NextResponse.json(
         { error: tokenJson.reason || 'Ödeme servisi şu anda kullanılamıyor.' },
-        { status: 502 }
+        { status: 400 }
       )
     }
 
