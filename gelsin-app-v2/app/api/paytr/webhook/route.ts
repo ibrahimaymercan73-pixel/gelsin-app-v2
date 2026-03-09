@@ -47,12 +47,27 @@ export async function POST(request: NextRequest) {
       merchant_oid + total_amount + merchant_salt + status,
     ]
 
+    let matchedIndex = -1
+    let expectedHash = ''
+
     combos.forEach((str, i) => {
       const h = crypto.createHmac('sha256', merchant_key).update(str).digest('base64')
-      console.log(`combo${i}:`, h === hashParam ? '✅ MATCH' : '❌', h)
+      const match = h === hashParam
+      console.log(`combo${i}:`, match ? '✅ MATCH' : '❌', h)
+      if (match && matchedIndex === -1) {
+        matchedIndex = i
+        expectedHash = h
+      }
     })
 
-    console.log('received:', hashParam)
+    console.log('[webhook] hash received:', hashParam)
+    console.log('[webhook] matched combo index:', matchedIndex)
+
+    // Bypass kaldırıldı: eşleşen bir combo yoksa işlemi durdur
+    if (matchedIndex === -1) {
+      console.log('[webhook] no matching hash combo, rejecting webhook')
+      return new Response('PAYTR notification failed', { status: 400 })
+    }
 
     const supabase = createClient(url, serviceKey)
 
