@@ -131,8 +131,12 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const merchant_oid =
-      existingPayment?.paytr_merchant_oid ?? `gelsin_${offerId}_${Date.now().toString(36)}`
+    // Teklif akışı için merchant_oid – sadece alfanumerik:
+    // gelsin + offerId (UUID, tireler temizlenmiş) + timestamp
+    const cleanOfferId = String(offerId).replace(/[^a-zA-Z0-9]/g, '')
+    const newMerchantOid = `gelsin${cleanOfferId}${Date.now()}`
+
+    const merchant_oid = existingPayment?.paytr_merchant_oid ?? newMerchantOid
 
     const payment_amount = Math.round(amount * 100)
     const currency = 'TL'
