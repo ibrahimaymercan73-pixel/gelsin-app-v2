@@ -98,7 +98,7 @@ export function ProviderProfileView({ profile, providerProfile, reviews, service
     <div className="min-h-screen bg-gray-100 pb-24 w-full">
       {/* Header — gradient + avatar + name + city + tick + online badge */}
       <div className="relative w-full">
-        <div className="h-40 w-full bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900" />
+        <div className="h-28 w-full bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900" />
         <button
           type="button"
           onClick={onBack}
@@ -115,27 +115,28 @@ export function ProviderProfileView({ profile, providerProfile, reviews, service
             </span>
           )}
         </div>
+
+        {/* Avatar: banner altına sabitlenir, yukarı kaçmaz */}
+        <div className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 z-20">
+          {profile?.avatar_url ? (
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl bg-white">
+              <Image
+                src={profile.avatar_url}
+                alt=""
+                width={96}
+                height={96}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-slate-200 flex items-center justify-center text-3xl font-bold text-slate-600">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="w-full px-4 -mt-12 flex items-center justify-center">
-        {profile?.avatar_url ? (
-          <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl bg-white">
-            <Image
-              src={profile.avatar_url}
-              alt=""
-              width={96}
-              height={96}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ) : (
-          <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-slate-200 flex items-center justify-center text-3xl font-bold text-slate-600">
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-        )}
-      </div>
-
-      <div className="w-full px-4 pt-4 space-y-5">
+      <div className="w-full px-4 pt-16 space-y-5">
         {/* Ad soyad + şehir + mavi tik */}
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 flex-wrap">
