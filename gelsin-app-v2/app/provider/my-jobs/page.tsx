@@ -33,7 +33,7 @@ export default function ProviderMyJobsPage() {
     const { data: jobsByProvider } = await supabase
       .from('jobs')
       .select(
-        'id, title, status, agreed_price, address, lat, lng, customer_id, service_categories(name, icon)'
+        'id, title, status, agreed_price, address, lat, lng, customer_id, qr_scanned_at, payment_released, qr_used_at, service_categories(name, icon)'
       )
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false })
@@ -58,7 +58,7 @@ export default function ProviderMyJobsPage() {
       const { data: jobsByOffers } = await supabase
         .from('jobs')
         .select(
-          'id, title, status, agreed_price, address, lat, lng, customer_id, service_categories(name, icon)'
+          'id, title, status, agreed_price, address, lat, lng, customer_id, qr_scanned_at, payment_released, qr_used_at, service_categories(name, icon)'
         )
         .in('id', jobIds)
 
@@ -176,6 +176,10 @@ export default function ProviderMyJobsPage() {
     const supabase = createClient()
     const job = jobs.find(j => j.id === jobId)
     if (action === 'start') {
+      if (job?.qr_scanned_at) {
+        setResult({ ok: false, msg: 'Bu QR kodu zaten kullanıldı.' })
+        return
+      }
       await supabase.from('jobs').update({ status: 'started', qr_scanned_at: new Date().toISOString() }).eq('id', jobId)
       await supabase.from('notifications').insert({
         user_id: job.customer_id, title: '🔨 Uzman İşe Başladı!',
@@ -183,6 +187,10 @@ export default function ProviderMyJobsPage() {
       })
       setResult({ ok: true, msg: '✅ İş başlatıldı! Göreve devam edin.' })
     } else {
+      if (job?.payment_released || job?.qr_used_at) {
+        setResult({ ok: false, msg: 'Bu QR kodu zaten kullanıldı, ödeme yapıldı.' })
+        return
+      }
       await supabase.rpc('release_payment', { p_job_id: jobId })
       await supabase.from('notifications').insert({
         user_id: job.provider_id, title: '💰 Ödemen Cüzdana Aktarıldı!',
@@ -372,6 +380,11 @@ export default function ProviderMyJobsPage() {
           const showDirections =
             job.status !== 'completed' && job.status !== 'cancelled'
 
+          const price = Number(job.agreed_price) || 0
+          const paytrFee = Math.round(price * 0.0399 * 100) / 100
+          const platformFee = Math.round(price * 0.02 * 100) / 100
+          const netAmount = Math.round((price - paytrFee - platformFee) * 100) / 100
+
           return (
             <div key={job.id} className="card p-2.5 animate-slide-up">
             <div className="flex items-start gap-2 mb-2.5">
@@ -439,6 +452,17 @@ export default function ProviderMyJobsPage() {
                   className="btn-secondary py-2 text-xs text-center block w-full">
                   🗺️ Yol Tarifi Al
                 </a>
+              )}
+              {job.status === 'completed' && price > 0 && (
+                <div className="mt-2 bg-gray-100 rounded-xl px-3 py-2 text-[11px] text-gray-700 space-y-0.5">
+                  <p className="font-semibold text-gray-800">Ödeme Özeti</p>
+                  <p>İş bedeli: ₺{price.toFixed(2)}</p>
+                  <p>Platform komisyonu (%2): -₺{platformFee.toFixed(2)}</p>
+                  <p>Ödeme işlem ücreti (%3.99): -₺{paytrFee.toFixed(2)}</p>
+                  <p className="font-semibold text-gray-900">
+                    Hesabınıza geçecek: ₺{netAmount.toFixed(2)}
+                  </p>
+                </div>
               )}
             </div>
             </div>

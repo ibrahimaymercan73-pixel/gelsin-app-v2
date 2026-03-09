@@ -565,6 +565,9 @@ function ProviderJobsPageContent() {
                       }))
                     }
                   />
+                  <p className="mt-2 text-[10px] text-slate-500">
+                    Not: Platform %{2} + işlem %{3.99} komisyon uygulanır.
+                  </p>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <button
                       type="button"

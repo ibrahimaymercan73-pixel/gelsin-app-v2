@@ -51,7 +51,7 @@ export default function ProviderWallet() {
       iban: pp?.iban ?? '',
     })
     const { data: tx } = await supabase.from('transactions')
-      .select('*, jobs(title)')
+      .select('*, jobs(title, agreed_price)')
       .eq('to_id', user.id)
       .eq('type', 'provider_payout')
       .order('created_at', { ascending: false })
@@ -233,19 +233,34 @@ export default function ProviderWallet() {
           <div className="space-y-2">
             {transactions.map(tx => {
               const netAmount = Number(tx.amount) || 0
-              const grossAmount = netAmount / 0.98
-              const commission = grossAmount - netAmount
+              const jobPrice = Number(tx.jobs?.agreed_price) || netAmount
+              const paytrFee = Math.round(jobPrice * 0.0399 * 100) / 100
+              const platformFee = Math.round(jobPrice * 0.02 * 100) / 100
+              const expectedNet = Math.round((jobPrice - paytrFee - platformFee) * 100) / 100
+              const displayNet = netAmount || expectedNet
+
               return (
                 <div key={tx.id} className="card p-4 flex items-start gap-3">
                   <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">💰</div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-gray-900 truncate">{tx.jobs?.title || 'İş'}</p>
-                    <p className="text-xs text-gray-400">{new Date(tx.created_at).toLocaleDateString('tr-TR')}</p>
-                    <p className="text-[11px] text-slate-500 mt-1.5">
-                      İş Bedeli: ₺{grossAmount.toFixed(2)} | Kesinti (%2): -₺{commission.toFixed(2)}
+                    <p className="text-xs text-gray-400">
+                      {new Date(tx.created_at).toLocaleDateString('tr-TR')}
                     </p>
+                    {jobPrice > 0 && (
+                      <div className="mt-1.5 bg-slate-50 rounded-xl px-2.5 py-2 text-[11px] text-slate-600 space-y-0.5">
+                        <p>İş bedeli: ₺{jobPrice.toFixed(2)}</p>
+                        <p>Platform komisyonu (%2): -₺{platformFee.toFixed(2)}</p>
+                        <p>Ödeme işlem ücreti (%3.99): -₺{paytrFee.toFixed(2)}</p>
+                        <p className="font-semibold text-slate-900">
+                          Hesabınıza geçecek: ₺{displayNet.toFixed(2)}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-emerald-600 font-black text-lg flex-shrink-0">+₺{netAmount.toFixed(2)}</p>
+                  <p className="text-emerald-600 font-black text-lg flex-shrink-0">
+                    +₺{displayNet.toFixed(2)}
+                  </p>
                 </div>
               )
             })}
