@@ -268,16 +268,6 @@ export function ProviderProfileView({ profile, providerProfile, reviews, service
         </div>
       </div>
 
-      {/* ALT SABİT BUTON — Teklife Dön */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 border-t border-gray-200 pb-[env(safe-area-inset-bottom,16px)]">
-        <button
-          type="button"
-          onClick={onBack}
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-base shadow-lg hover:from-blue-700 hover:to-blue-800 active:scale-[0.99] transition-all"
-        >
-          ← Teklife Dön
-        </button>
-      </div>
     </div>
   )
 }
