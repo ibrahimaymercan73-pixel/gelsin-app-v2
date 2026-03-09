@@ -562,7 +562,8 @@ export default function ChooseRolePage() {
               animate="center"
               exit="exit"
               transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="w-full max-w-md mx-auto"
+              layout
+              className="w-full max-w-md mx-auto min-h-[520px]"
             >
               <canvas ref={canvasRef} className="hidden" />
               {showSuccessScreen ? (

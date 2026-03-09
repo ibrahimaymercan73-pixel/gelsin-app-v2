@@ -177,7 +177,7 @@ export default function ProviderNotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen md:h-dvh md:max-h-dvh md:flex md:flex-col bg-[#F4F7FA] md:overflow-hidden">
+    <div className="min-h-screen md:flex md:flex-col bg-[#F4F7FA]">
       <header className="flex-shrink-0 px-6 lg:px-10 py-6 flex items-center justify-between bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50">
         <div>
           <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
