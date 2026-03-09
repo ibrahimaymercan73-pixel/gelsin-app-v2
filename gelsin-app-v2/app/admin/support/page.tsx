@@ -88,6 +88,32 @@ export default function AdminSupportPage() {
     load()
   }, [])
 
+  const handleRefund = async (t: Ticket) => {
+    if (!t.related_job_id) return
+
+    const ok = window.confirm('Bu iş için iade başlatılacak. Emin misiniz?')
+    if (!ok) return
+
+    setUpdatingId(t.id)
+    try {
+      const res = await fetch('/api/paytr/refund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: t.related_job_id }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error || 'İade işlemi başarısız oldu.')
+      } else {
+        toast.success('İade talimatı gönderildi.')
+        await load()
+      }
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
   const handleStatusChange = async (id: string, newStatus: string) => {
     setUpdatingId(id)
     const supabase = createClient()
@@ -227,6 +253,16 @@ export default function AdminSupportPage() {
                           <option value="in_progress">İnceleniyor</option>
                           <option value="resolved">Çözüldü</option>
                         </select>
+                        {t.related_job_id && (
+                          <button
+                            type="button"
+                            onClick={() => handleRefund(t)}
+                            disabled={updatingId === t.id}
+                            className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+                          >
+                            İade Et
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
