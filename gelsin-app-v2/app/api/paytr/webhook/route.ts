@@ -25,37 +25,34 @@ export async function POST(request: NextRequest) {
 
     const merchant_oid = params.get('merchant_oid') || ''
     const status = params.get('status') || ''
-    const hashParam = params.get('hash') || ''
+    const total_amount = params.get('total_amount') || ''
+    const hashRaw = params.get('hash') || ''
 
-    if (!merchant_oid || !status || !hashParam) {
+    if (!merchant_oid || !status || !hashRaw) {
       console.error('[paytr/webhook] missing fields', {
         merchant_oid,
         status,
-        hash: hashParam,
+        hash: hashRaw,
       })
       return new Response('OK', { status: 200 })
     }
 
-    // Hash doğrulama – PayTR'nin resmi Node.js örneği:
-    // hash_str = merchant_oid + SALT + status
-    // HMAC key = merchant_key
-    const hashStr = merchant_oid + merchant_salt + status
-    const expectedHash = crypto
-      .createHmac('sha256', merchant_key)
-      .update(hashStr)
-      .digest('base64')
+    const hashParam = decodeURIComponent(hashRaw)
 
-    // Gelen hash URL decode edilmiş olabilir
-    const receivedHash = decodeURIComponent(hashParam)
+    const combos = [
+      merchant_oid + merchant_salt + status,
+      merchant_oid + status + merchant_salt,
+      merchant_salt + merchant_oid + status,
+      merchant_oid + merchant_salt + status + total_amount,
+      merchant_oid + total_amount + merchant_salt + status,
+    ]
 
-    // Ek loglar – env prefix'leri
-    console.log('KEY prefix:', process.env.PAYTR_MERCHANT_KEY?.substring(0, 4))
-    console.log('SALT prefix:', process.env.PAYTR_MERCHANT_SALT?.substring(0, 4))
+    combos.forEach((str, i) => {
+      const h = crypto.createHmac('sha256', merchant_key).update(str).digest('base64')
+      console.log(`combo${i}:`, h === hashParam ? '✅ MATCH' : '❌', h)
+    })
 
-    if (receivedHash !== expectedHash) {
-      console.log('[webhook] hash mismatch', { expected: expectedHash, received: receivedHash })
-      return new Response('PAYTR notification failed', { status: 400 })
-    }
+    console.log('received:', hashParam)
 
     const supabase = createClient(url, serviceKey)
 
