@@ -28,7 +28,11 @@ export async function POST(request: NextRequest) {
     const hashParam = params.get('hash') || ''
 
     if (!merchant_oid || !status || !hashParam) {
-      console.error('[paytr/webhook] missing fields', { merchant_oid, status, hash })
+      console.error('[paytr/webhook] missing fields', {
+        merchant_oid,
+        status,
+        hash: hashParam,
+      })
       return new Response('OK', { status: 200 })
     }
 
