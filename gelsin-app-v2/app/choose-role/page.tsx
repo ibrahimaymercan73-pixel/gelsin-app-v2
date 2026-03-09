@@ -361,9 +361,7 @@ export default function ChooseRolePage() {
               transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="w-full max-w-md mx-auto flex flex-col items-center"
             >
-              <div className="relative w-64 h-44 mb-4">
-                <Image src="/images/onboard-role.png" alt="Rol" fill className="object-contain" />
-              </div>
+              <Image src="/images/onboard-role.png" alt="Rol" width={256} height={176} className="object-contain mb-4" />
               <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-1">Ne Yapmak İstiyorsun?</h2>
               <p className="text-slate-500 text-center mb-6 max-w-sm text-sm">Rolünü seçerek devam et.</p>
               <div className="w-full grid grid-cols-2 gap-4">
@@ -406,9 +404,7 @@ export default function ChooseRolePage() {
               transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="w-full max-w-md mx-auto flex flex-col items-center"
             >
-              <div className="relative w-56 h-44 mb-4">
-                <Image src="/images/onboard-profile.png" alt="Profil" fill className="object-contain" />
-              </div>
+              <Image src="/images/onboard-profile.png" alt="Profil" width={256} height={176} className="object-contain mb-4" />
               <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-1">Kendini Tanıt</h2>
               <p className="text-slate-500 text-center mb-6 max-w-sm text-sm">Adını, telefonunu ve şehrini gir.</p>
               <div className="w-full space-y-4">
@@ -464,9 +460,7 @@ export default function ChooseRolePage() {
               transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="w-full max-w-2xl mx-auto"
             >
-              <div className="relative w-64 h-44 mx-auto mb-4">
-                <Image src="/images/onboard-role.png" alt="Hizmetler" fill className="object-contain" />
-              </div>
+              <Image src="/images/onboard-role.png" alt="Hizmet" width={256} height={176} className="object-contain mx-auto mb-4" />
               <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 text-center mb-1">Hangi İşleri Yapıyorsun?</h2>
               <p className="text-slate-500 text-center mb-6 text-sm">Kategori ve hizmetleri seç.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
