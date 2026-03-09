@@ -37,35 +37,16 @@ export async function POST(request: NextRequest) {
       return new Response('OK', { status: 200 })
     }
 
-    const hashParam = decodeURIComponent(hashRaw)
+    const hashStr = merchant_oid + merchant_salt + status + total_amount
+    const expectedHash = crypto
+      .createHmac('sha256', merchant_key)
+      .update(hashStr)
+      .digest('base64')
 
-    const combos = [
-      merchant_oid + merchant_salt + status,
-      merchant_oid + status + merchant_salt,
-      merchant_salt + merchant_oid + status,
-      merchant_oid + merchant_salt + status + total_amount,
-      merchant_oid + total_amount + merchant_salt + status,
-    ]
+    const receivedHash = decodeURIComponent(hashRaw)
 
-    let matchedIndex = -1
-    let expectedHash = ''
-
-    combos.forEach((str, i) => {
-      const h = crypto.createHmac('sha256', merchant_key).update(str).digest('base64')
-      const match = h === hashParam
-      console.log(`combo${i}:`, match ? '✅ MATCH' : '❌', h)
-      if (match && matchedIndex === -1) {
-        matchedIndex = i
-        expectedHash = h
-      }
-    })
-
-    console.log('[webhook] hash received:', hashParam)
-    console.log('[webhook] matched combo index:', matchedIndex)
-
-    // Bypass kaldırıldı: eşleşen bir combo yoksa işlemi durdur
-    if (matchedIndex === -1) {
-      console.log('[webhook] no matching hash combo, rejecting webhook')
+    if (receivedHash !== expectedHash) {
+      console.log('[webhook] invalid hash')
       return new Response('PAYTR notification failed', { status: 400 })
     }
 
