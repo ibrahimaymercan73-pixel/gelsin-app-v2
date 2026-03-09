@@ -106,6 +106,13 @@ body {
 .animate-fade-in { animation: fadeIn 0.3s ease both; }
 .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16,1,0.3,1) both; }
 
+@keyframes livenessSpin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-liveness-spin { animation: livenessSpin 1.6s linear infinite; }
+.animate-liveness-spin-slow { animation: livenessSpin 2.6s linear infinite; }
+
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
