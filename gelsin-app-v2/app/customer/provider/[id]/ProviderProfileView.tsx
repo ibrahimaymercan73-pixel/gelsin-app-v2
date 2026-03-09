@@ -14,14 +14,18 @@ const CATEGORY_LABELS: Record<string, string> = {
   repair: 'Tamir',
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  painting: 'bg-amber-100 text-amber-800 border-amber-200',
-  plumbing: 'bg-sky-100 text-sky-800 border-sky-200',
-  carpentry: 'bg-amber-100 text-amber-900 border-amber-300',
-  electric: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  cleaning: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  assembly: 'bg-slate-100 text-slate-700 border-slate-200',
-  repair: 'bg-blue-100 text-blue-800 border-blue-200',
+const BADGE_COLORS = [
+  'bg-blue-100 text-blue-700 border-blue-200',
+  'bg-green-100 text-green-700 border-green-200',
+  'bg-purple-100 text-purple-700 border-purple-200',
+  'bg-amber-100 text-amber-700 border-amber-200',
+  'bg-rose-100 text-rose-700 border-rose-200',
+  'bg-sky-100 text-sky-700 border-sky-200',
+  'bg-slate-100 text-slate-700 border-slate-200',
+]
+
+function getBadgeColor(index: number) {
+  return BADGE_COLORS[index % BADGE_COLORS.length]
 }
 
 const AVATAR_COLORS = [
@@ -94,7 +98,7 @@ export function ProviderProfileView({ profile, providerProfile, reviews, service
     <div className="min-h-screen bg-gray-100 pb-24 w-full">
       {/* Header — gradient + avatar + name + city + tick + online badge */}
       <div className="relative w-full">
-        <div className="h-32 w-full bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900" />
+        <div className="h-40 w-full bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900" />
         <button
           type="button"
           onClick={onBack}
@@ -111,26 +115,27 @@ export function ProviderProfileView({ profile, providerProfile, reviews, service
             </span>
           )}
         </div>
-        <div className="absolute left-1/2 -translate-x-1/2 -bottom-12">
-          {profile?.avatar_url ? (
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl bg-white">
-              <Image
-                src={profile.avatar_url}
-                alt=""
-                width={96}
-                height={96}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-slate-200 flex items-center justify-center text-3xl font-bold text-slate-600">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
       </div>
 
-      <div className="w-full px-4 pt-16 space-y-5">
+      <div className="w-full px-4 -mt-12 flex items-center justify-center">
+        {profile?.avatar_url ? (
+          <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl bg-white">
+            <Image
+              src={profile.avatar_url}
+              alt=""
+              width={96}
+              height={96}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-slate-200 flex items-center justify-center text-3xl font-bold text-slate-600">
+            {displayName.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
+
+      <div className="w-full px-4 pt-4 space-y-5">
         {/* Ad soyad + şehir + mavi tik */}
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -168,10 +173,10 @@ export function ProviderProfileView({ profile, providerProfile, reviews, service
           <div className="w-full">
             <h2 className="text-sm font-bold text-gray-800 mb-2">Uzman Olduğu Alanlar</h2>
             <div className="flex flex-wrap gap-2">
-              {categories.map((c) => (
+              {categories.map((c, idx) => (
                 <span
                   key={c}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${CATEGORY_COLORS[c] || 'bg-gray-100 text-gray-700 border-gray-200'}`}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${getBadgeColor(idx)}`}
                 >
                   {CATEGORY_LABELS[c] || c}
                 </span>
@@ -206,7 +211,9 @@ export function ProviderProfileView({ profile, providerProfile, reviews, service
                         <span className="text-amber-500 text-sm font-medium">★ {r.rating}</span>
                         <span className="text-xs text-gray-400">{new Date(r.created_at).toLocaleDateString('tr-TR')}</span>
                       </div>
-                      {r.comment && <p className="text-sm text-gray-600 mt-1.5">{r.comment}</p>}
+                      <p className="text-sm text-gray-600 mt-1.5">
+                        {r.comment && r.comment.trim().length > 0 ? r.comment : 'Yorum yapılmadı'}
+                      </p>
                     </div>
                   </div>
                 </li>
@@ -221,32 +228,38 @@ export function ProviderProfileView({ profile, providerProfile, reviews, service
           {services.length === 0 ? (
             <p className="text-sm text-gray-500 py-4">Aktif ilan yok.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {services.map((s) => (
+            <div className="grid grid-cols-2 gap-3">
+              {services.map((s, idx) => (
                 <Link
                   key={s.id}
                   href={`/customer/services/${s.id}`}
-                  className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-200 transition-all active:scale-[0.98]"
+                  className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all active:scale-[0.98] p-4"
                 >
-                  <div className="aspect-[4/3] bg-gray-100 relative">
+                  <div className="flex gap-3">
                     {s.image_url ? (
-                      <Image
-                        src={s.image_url}
-                        alt=""
-                        width={400}
-                        height={300}
-                        className="w-full h-full object-cover"
-                      />
+                      <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                        <Image
+                          src={s.image_url}
+                          alt=""
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl text-gray-300">🔧</div>
+                      <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-300 text-2xl">
+                        🔧
+                      </div>
                     )}
-                    <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-semibold ${CATEGORY_COLORS[s.category_slug] || 'bg-gray-200 text-gray-700'}`}>
-                      {CATEGORY_LABELS[s.category_slug] || s.category_slug}
-                    </span>
-                  </div>
-                  <div className="p-3">
-                    <p className="font-medium text-gray-900 text-sm line-clamp-2">{s.title}</p>
-                    <p className="text-blue-600 font-bold text-sm mt-0.5">₺{Number(s.price).toFixed(0)}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-gray-900 text-sm line-clamp-2">{s.title}</p>
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${getBadgeColor(idx)} shrink-0`}>
+                          {CATEGORY_LABELS[s.category_slug] || s.category_slug}
+                        </span>
+                      </div>
+                      <p className="text-blue-600 font-bold text-sm mt-1">₺{Number(s.price).toFixed(0)}</p>
+                    </div>
                   </div>
                 </Link>
               ))}
