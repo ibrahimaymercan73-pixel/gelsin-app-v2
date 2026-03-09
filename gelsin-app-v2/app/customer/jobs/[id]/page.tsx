@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import { useChatOverlay } from '@/components/ChatOverlay'
 import { isOnline, formatLastSeenRelative } from '@/lib/presence'
+import { toast } from 'sonner'
 
 const CATEGORY_LABELS: Record<string, string> = {
   painting: 'Boya',
@@ -37,6 +38,7 @@ export default function JobDetailPage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
+  const [paymentModal, setPaymentModal] = useState<{ token: string; merchantOid: string } | null>(null)
 
   const load = async () => {
     const supabase = createClient()
@@ -159,28 +161,35 @@ export default function JobDetailPage() {
 
   const { openChat } = useChatOverlay()
 
-  const acceptOffer = async (offerId: string, providerId: string, price: number) => {
-    setAccepting(offerId)
-    const supabase = createClient()
-    await supabase.from('offers').update({ status: 'accepted' }).eq('id', offerId)
-    await supabase.from('offers').update({ status: 'rejected' }).eq('job_id', id).neq('id', offerId)
-    await supabase.from('jobs').update({
-      provider_id: providerId, agreed_price: price, status: 'accepted', escrow_held: true
-    }).eq('id', id)
-    await supabase.from('notifications').insert({
-      user_id: providerId, title: '🎉 Teklifiniz Kabul Edildi!',
-      body: 'Adrese gidin ve başlangıç QR kodunu okutun.',
-      type: 'offer_accepted', related_job_id: id
-    })
-    // Ustaya mail bildirimi (fire-and-forget)
-    const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    fetch(`${origin}/api/send-email/offer-accepted`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ job_id: id, provider_id: providerId }),
-    }).catch(() => {})
-    await load()
-    setAccepting('')
+  const startPaymentForOffer = async (offer: any) => {
+    if (!job?.id) return
+    setAccepting(offer.id)
+    try {
+      const res = await fetch('/api/paytr/create-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: job.id, offer_id: offer.id }),
+      })
+      const data: any = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        if (data?.code === 'already_paid') {
+          toast.error('Bu teklif için ödeme zaten alınmış görünüyor.')
+        } else {
+          toast.error(data?.error || 'Ödeme başlatılamadı. Lütfen tekrar deneyin.')
+        }
+        return
+      }
+      if (!data?.token) {
+        toast.error('Ödeme servisi beklenmeyen yanıt döndürdü.')
+        return
+      }
+      setPaymentModal({ token: data.token as string, merchantOid: data.merchant_oid as string })
+    } catch (e) {
+      console.error('[paytr-start]', e)
+      toast.error('Ödeme başlatılırken bir hata oluştu. Lütfen tekrar deneyin.')
+    } finally {
+      setAccepting('')
+    }
   }
 
   const requestBargain = async (offer: any) => {
@@ -864,7 +873,7 @@ export default function JobDetailPage() {
                     <div className="flex flex-col gap-2">
                       <button
                         className="btn-primary py-3 text-sm"
-                        onClick={() => acceptOffer(offer.id, offer.provider_id, offer.price)}
+                        onClick={() => startPaymentForOffer(offer)}
                         disabled={!!accepting}
                       >
                         {accepting === offer.id ? 'İşleniyor...' : '✅ Bu Teklifi Kabul Et'}
@@ -901,6 +910,31 @@ export default function JobDetailPage() {
 
       {/* Spacer: alt menü + FAB altında kalmaması için yeterli fiziksel boşluk */}
       <div className="h-44 md:h-16 w-full shrink-0 pointer-events-none" aria-hidden />
+
+      {paymentModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+              <p className="font-semibold text-slate-900 text-sm">Güvenli Ödeme – PayTR</p>
+              <button
+                type="button"
+                onClick={() => setPaymentModal(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100"
+                aria-label="Kapat"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src={`https://www.paytr.com/odeme/guvenli/${paymentModal.token}`}
+                className="w-full h-[600px] border-0"
+                allow="payment"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dispute Modal */}
       {showDispute && (
