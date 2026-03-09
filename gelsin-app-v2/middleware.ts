@@ -78,16 +78,33 @@ export async function middleware(req: NextRequest) {
     return res
   }
 
-  // Giriş yapılmışsa profil rolünü ve şehrini oku
+  // Giriş yapılmışsa profil rolünü, şehrini ve (provider/verify için) face_verified oku
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, city')
+    .select('role, city, face_verified')
     .eq('id', user.id)
     .single()
 
   const role = (profile?.role as UserRole | null) ?? null
   const hasCity = !!(profile?.city && String(profile.city).trim())
+  const faceVerified = !!profile?.face_verified
   const isChooseRole = pathname === '/choose-role'
+  const isProviderVerify = pathname === '/provider/verify'
+
+  // /provider/verify: sadece role=provider ve face_verified=false girebilir; doğrulamışsa /provider'a yönlendir
+  if (isProviderVerify) {
+    if (role !== 'provider') {
+      const redirectUrl = role === 'admin' ? new URL('/admin', req.url) : new URL('/customer', req.url)
+      const redirectRes = NextResponse.redirect(redirectUrl)
+      res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+      return redirectRes
+    }
+    if (faceVerified) {
+      const redirectRes = NextResponse.redirect(new URL('/provider', req.url))
+      res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+      return redirectRes
+    }
+  }
 
   // Rol zaten atanmışsa /choose-role erişimini engelle, panele yönlendir
   if (role && isChooseRole) {
