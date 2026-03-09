@@ -18,6 +18,9 @@ type BankForm = z.infer<typeof IBAN_SCHEMA>
 export default function ProviderWallet() {
   const [balance, setBalance] = useState(0)
   const [transactions, setTransactions] = useState<any[]>([])
+  const [pendingBalance, setPendingBalance] = useState(0)
+  const [inTransitBalance, setInTransitBalance] = useState(0)
+  const [releaseInfoByJobId, setReleaseInfoByJobId] = useState<Record<string, string | null>>({})
   const [iban, setIban] = useState<string | null>(null)
   const [bankName, setBankName] = useState<string | null>(null)
   const [accountHolderName, setAccountHolderName] = useState<string | null>(null)
@@ -50,12 +53,53 @@ export default function ProviderWallet() {
       bank_name: pp?.bank_name ?? '',
       iban: pp?.iban ?? '',
     })
-    const { data: tx } = await supabase.from('transactions')
+    const { data: tx } = await supabase
+      .from('transactions')
       .select('*, jobs(title, agreed_price)')
       .eq('to_id', user.id)
       .eq('type', 'provider_payout')
       .order('created_at', { ascending: false })
     setTransactions(tx || [])
+
+    // Beklemede (in_escrow) ve yolda (released, 7 günden az) bakiyeleri hesapla
+    const { data: payments } = await supabase
+      .from('payments')
+      .select('provider_amount, status, released_at, job_id')
+      .eq('provider_id', user.id)
+      .in('status', ['in_escrow', 'released'])
+
+    const paymentRows = (payments || []) as any[]
+    const pending = paymentRows
+      .filter((p) => p.status === 'in_escrow')
+      .reduce((sum, p) => sum + Number(p.provider_amount || 0), 0)
+
+    const nowMs = Date.now()
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
+
+    const releasedPayments = paymentRows.filter(
+      (p) => p.status === 'released' && p.released_at
+    )
+
+    const inTransitPayments = releasedPayments.filter((p) => {
+      const rel = new Date(p.released_at as string).getTime()
+      return !Number.isNaN(rel) && nowMs - rel < sevenDaysMs
+    })
+
+    const inTransit = inTransitPayments.reduce(
+      (sum, p) => sum + Number(p.provider_amount || 0),
+      0
+    )
+
+    setPendingBalance(pending)
+    setInTransitBalance(inTransit)
+
+    const relMap: Record<string, string | null> = {}
+    for (const p of releasedPayments) {
+      if (p.job_id) {
+        relMap[p.job_id as string] = p.released_at as string
+      }
+    }
+    setReleaseInfoByJobId(relMap)
   }
 
   useEffect(() => {
@@ -211,15 +255,21 @@ export default function ProviderWallet() {
         </div>
 
         {/* Özet barlar */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div className="card p-4">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Çekilebilir Bakiye</p>
-            <p className="text-xl font-black text-slate-900 mt-1">₺{balance.toFixed(2)}</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">🕐 Beklemede</p>
+            <p className="text-xl font-black text-slate-900 mt-1">₺{pendingBalance.toFixed(2)}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Escrow havuzunda bekleyen ödemeler</p>
           </div>
           <div className="card p-4">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Bekleyen Bakiye</p>
-            <p className="text-xl font-black text-slate-400 mt-1">₺0.00</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Tamamlanan, güvenlik süresindeki tutar</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">💸 Yolda</p>
+            <p className="text-xl font-black text-slate-900 mt-1">₺{inTransitBalance.toFixed(2)}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Bankaya aktarım sürecindeki ödemeler (7 gün)</p>
+          </div>
+          <div className="card p-4">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">✅ Çekilebilir</p>
+            <p className="text-xl font-black text-slate-900 mt-1">₺{balance.toFixed(2)}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">Cüzdanınızdaki kullanılabilir bakiye</p>
           </div>
         </div>
 
@@ -239,6 +289,26 @@ export default function ProviderWallet() {
               const expectedNet = Math.round((jobPrice - paytrFee - platformFee) * 100) / 100
               const displayNet = netAmount || expectedNet
 
+              const releaseAtStr =
+                tx.job_id && releaseInfoByJobId[tx.job_id as string]
+              let payoutNote: string | null = null
+              if (releaseAtStr) {
+                const releasedAt = new Date(releaseAtStr)
+                const payoutDate = new Date(
+                  releasedAt.getTime() + 7 * 24 * 60 * 60 * 1000
+                )
+                if (!Number.isNaN(payoutDate.getTime())) {
+                  const now = new Date()
+                  if (now <= payoutDate) {
+                    payoutNote = '7 gün içinde IBAN\'ınıza aktarılacak'
+                  } else {
+                    payoutNote = `${payoutDate.toLocaleDateString(
+                      'tr-TR'
+                    )} tarihinde hesabınıza geçecek`
+                  }
+                }
+              }
+
               return (
                 <div key={tx.id} className="card p-4 flex items-start gap-3">
                   <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">💰</div>
@@ -255,6 +325,11 @@ export default function ProviderWallet() {
                         <p className="font-semibold text-slate-900">
                           Hesabınıza geçecek: ₺{displayNet.toFixed(2)}
                         </p>
+                        {payoutNote && (
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            {payoutNote}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
