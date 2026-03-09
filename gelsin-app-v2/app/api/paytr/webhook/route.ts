@@ -5,8 +5,9 @@ import crypto from 'crypto'
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.GELSIN_FROM_EMAIL ?? 'Gelsin <bildirim@gelsin.dev>'
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
+    console.log('[paytr/webhook] incoming request')
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     const merchant_key = process.env.PAYTR_MERCHANT_KEY
@@ -17,8 +18,10 @@ export async function POST(req: NextRequest) {
       return new Response('OK', { status: 200 }) // PayTR tarafında hataya sebep olmamak için
     }
 
-    const bodyText = await req.text()
-    const params = new URLSearchParams(bodyText)
+    // PayTR application/x-www-form-urlencoded gönderiyor
+    const body = await request.text()
+    console.log('[paytr/webhook] raw body:', body)
+    const params = new URLSearchParams(body)
 
     const merchant_oid = params.get('merchant_oid') || ''
     const status = params.get('status') || ''
@@ -29,8 +32,15 @@ export async function POST(req: NextRequest) {
       return new Response('OK', { status: 200 })
     }
 
-    const hashStr = merchant_oid + merchant_salt + status + merchant_key
-    const expected = crypto.createHash('sha256').update(hashStr).digest('base64')
+    // Hash doğrulama – PayTR dokümantasyonundaki formüle göre
+    const hmac = crypto.createHmac(
+      'sha256',
+      String(merchant_key) + String(merchant_salt)
+    )
+    hmac.update(merchant_oid + String(merchant_salt) + status)
+    const expected = Buffer.from(hmac.digest()).toString('base64')
+
+    console.log('[paytr/webhook] computed hash', { merchant_oid, status, expected, hash })
 
     if (hash !== expected) {
       console.error('[paytr/webhook] invalid hash', { merchant_oid })
@@ -51,6 +61,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (status === 'success') {
+      console.log('[paytr/webhook] status success – updating DB', {
+        paymentId: payment.id,
+        jobId: payment.job_id,
+        offerId: payment.offer_id,
+      })
       // Ödeme başarılı -> escrow'a al
       const updates = []
       updates.push(
@@ -85,6 +100,7 @@ export async function POST(req: NextRequest) {
       )
 
       await Promise.all(updates)
+      console.log('[paytr/webhook] payments/offers/jobs updated to in_escrow/accepted')
 
       // Bildirimler
       await supabase.from('notifications').insert([
@@ -148,12 +164,16 @@ export async function POST(req: NextRequest) {
         }
       }
     } else if (status === 'failed') {
+      console.log('[paytr/webhook] status failed – mark payment as failed', {
+        paymentId: payment.id,
+      })
       await supabase
         .from('payments')
         .update({ status: 'failed' })
         .eq('id', payment.id)
     }
 
+    console.log('[paytr/webhook] done for oid', merchant_oid)
     return new Response('OK', { status: 200 })
   } catch (e) {
     console.error('[paytr/webhook] exception', e)
