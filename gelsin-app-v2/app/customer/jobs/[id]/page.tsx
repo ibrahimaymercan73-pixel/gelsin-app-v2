@@ -267,10 +267,17 @@ export default function JobDetailPage() {
         }),
       })
 
+      let data: any = null
+      try {
+        data = await res.json()
+      } catch {
+        data = null
+      }
+      console.log('dispute response:', res.status, data)
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
         console.error('[submitDispute] error', data)
-        alert(data.error || 'Talep oluşturulurken bir hata oluştu.')
+        alert((data && data.error) || 'Talep oluşturulurken bir hata oluştu.')
         return
       }
 

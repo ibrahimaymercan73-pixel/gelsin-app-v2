@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
     const jobId = typeof body?.job_id === 'string' ? body.job_id : null
     const reason = typeof body?.reason === 'string' ? body.reason.trim() : ''
 
+    console.log('[support/create] called, body:', { jobId, reason })
+
     if (!jobId || !reason) {
       return NextResponse.json({ error: 'job_id ve reason zorunludur' }, { status: 400 })
     }
