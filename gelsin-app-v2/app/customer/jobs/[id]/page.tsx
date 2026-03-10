@@ -39,7 +39,6 @@ export default function JobDetailPage() {
   const [mounted, setMounted] = useState(false)
   const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
   const [paymentModal, setPaymentModal] = useState<{ token: string; merchantOid: string } | null>(null)
-  const [finishingJob, setFinishingJob] = useState(false)
 
   const load = async () => {
     const supabase = createClient()
@@ -161,30 +160,6 @@ export default function JobDetailPage() {
   }, [id])
 
   const { openChat } = useChatOverlay()
-
-  const finishJobAndReleasePayment = async () => {
-    if (!job?.id) return
-    setFinishingJob(true)
-    try {
-      const res = await fetch('/api/paytr/release-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_id: job.id }),
-      })
-      const data: any = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        toast.error(data?.error || 'Ödeme serbest bırakılamadı. Lütfen tekrar deneyin.')
-        return
-      }
-      toast.success('Ödeme serbest bırakıldı. İş tamamlandı.')
-      await load()
-    } catch (e) {
-      console.error('[finishJobAndReleasePayment]', e)
-      toast.error('Bir hata oluştu. Lütfen tekrar deneyin.')
-    } finally {
-      setFinishingJob(false)
-    }
-  }
 
   const startPaymentForOffer = async (offer: any) => {
     if (!job?.id) return
@@ -559,23 +534,6 @@ export default function JobDetailPage() {
                 📱 QR Kodunu Göster
               </button>
             )}
-          </div>
-        )}
-
-        {/* İşi Tamamladım — accepted veya started (in_progress) */}
-        {(job?.status === 'accepted' || job?.status === 'started' || job?.status === 'in_progress') && (
-          <div className="card p-4 border border-emerald-200 bg-emerald-50/50">
-            <p className="text-xs font-bold text-emerald-900">İşi Tamamladım</p>
-            <p className="text-[11px] text-emerald-800 mt-1">
-              Ustaya ödeme başlatılır ve iş tamamlandı olarak işaretlenir.
-            </p>
-            <button
-              className="btn-success mt-3 w-full py-2.5 text-sm disabled:opacity-60"
-              onClick={finishJobAndReleasePayment}
-              disabled={finishingJob}
-            >
-              {finishingJob ? 'İşleniyor...' : '✅ İşi Tamamladım'}
-            </button>
           </div>
         )}
 
