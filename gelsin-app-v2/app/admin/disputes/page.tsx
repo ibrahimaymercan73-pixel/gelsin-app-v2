@@ -56,6 +56,7 @@ function statusLabel(s: string) {
 export default function AdminDisputesPage() {
   const [rows, setRows] = useState<DisputeRow[]>([])
   const [jobsById, setJobsById] = useState<Record<string, any>>({})
+  const [paymentStatusByJobId, setPaymentStatusByJobId] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [processingId, setProcessingId] = useState<string | null>(null)
 
@@ -104,8 +105,23 @@ export default function AdminDisputesPage() {
       const map: Record<string, any> = {}
       for (const j of jobs || []) map[j.id] = j
       setJobsById(map)
+
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('job_id, status')
+        .in('job_id', jobIds)
+        .in('status', ['released', 'refunded'])
+
+      const payMap: Record<string, string> = {}
+      for (const p of payments || []) {
+        if (p.job_id && p.status) {
+          payMap[p.job_id as string] = p.status as string
+        }
+      }
+      setPaymentStatusByJobId(payMap)
     } else {
       setJobsById({})
+      setPaymentStatusByJobId({})
     }
 
     setLoading(false)
@@ -225,10 +241,17 @@ export default function AdminDisputesPage() {
               <tbody>
                 {rows.map((r) => {
                   const job = r.related_job_id ? jobsById[r.related_job_id] : null
+                  const paymentStatus = r.related_job_id
+                    ? paymentStatusByJobId[r.related_job_id]
+                    : undefined
                   const amount = Number(job?.agreed_price || 0)
                   const disabled =
                     (r.status !== 'pending' && r.status !== 'in_progress') ||
                     processingId === r.id
+                  const isResolvedStatus =
+                    r.status === 'resolved_refund' || r.status === 'resolved_provider'
+                  const isPaymentCompleted =
+                    paymentStatus === 'released' || paymentStatus === 'refunded'
                   return (
                     <tr key={r.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                       <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
@@ -252,24 +275,30 @@ export default function AdminDisputesPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => refund(r)}
-                            disabled={disabled}
-                            className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold disabled:opacity-50"
-                          >
-                            {processingId === r.id ? 'İşleniyor...' : 'İade Et'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => payout(r)}
-                            disabled={disabled}
-                            className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold disabled:opacity-50"
-                          >
-                            {processingId === r.id ? 'İşleniyor...' : 'Ustaya Öde'}
-                          </button>
-                        </div>
+                        {isResolvedStatus && isPaymentCompleted ? (
+                          <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800">
+                            ✅ Çözüldü
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => refund(r)}
+                              disabled={disabled}
+                              className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold disabled:opacity-50"
+                            >
+                              {processingId === r.id ? 'İşleniyor...' : 'İade Et'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => payout(r)}
+                              disabled={disabled}
+                              className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold disabled:opacity-50"
+                            >
+                              {processingId === r.id ? 'İşleniyor...' : 'Ustaya Öde'}
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )
