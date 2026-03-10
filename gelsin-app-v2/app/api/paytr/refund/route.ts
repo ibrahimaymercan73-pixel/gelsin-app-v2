@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}))
     const paymentId = typeof body?.payment_id === 'string' ? body.payment_id : null
     const jobId = typeof body?.job_id === 'string' ? body.job_id : null
+    const supportTicketId =
+      typeof body?.support_ticket_id === 'string' ? body.support_ticket_id : null
 
     if (!paymentId && !jobId) {
       return NextResponse.json({ error: 'payment_id veya job_id zorunludur' }, { status: 400 })
@@ -128,22 +130,39 @@ export async function POST(req: NextRequest) {
       .update({ status: 'cancelled', escrow_held: false, payment_released: false })
       .eq('id', payment.job_id)
 
+    if (supportTicketId) {
+      await supabase
+        .from('support_tickets')
+        .update({ status: 'resolved_refund', updated_at: new Date().toISOString() })
+        .eq('id', supportTicketId)
+    }
+
+    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin')
+    const adminIds = (admins || []).map((a: any) => a.id as string)
+
     // Bildirimler
     await supabase.from('notifications').insert([
       {
         user_id: payment.customer_id,
-        title: '💸 İadeniz İşleme Alındı',
-        body: 'İadeniz işleme alındı, 3-5 iş günü içinde hesabınıza geçecek.',
-        type: 'payment_refund_started',
+        title: '💸 İadeniz Onaylandı',
+        body: 'İadeniz onaylandı, 3-5 iş günü içinde hesabınıza geçecek.',
+        type: 'payment_refund_approved',
         related_job_id: payment.job_id,
       },
       {
         user_id: payment.provider_id,
-        title: '❌ İş İptal Edildi',
-        body: 'Bu iş admin tarafından iptal edildi, ödeme müşteriye iade ediliyor.',
-        type: 'job_cancelled',
+        title: '⚖️ Anlaşmazlık Sonucu',
+        body: 'Anlaşmazlık müşteri lehine sonuçlandı.',
+        type: 'dispute_resolved_refund',
         related_job_id: payment.job_id,
       },
+      ...adminIds.map((id) => ({
+        user_id: id,
+        title: '✅ İade İşlemi Tamamlandı',
+        body: `Anlaşmazlık iade ile çözüldü. payment_id=${payment.id}`,
+        type: 'admin_refund_completed',
+        related_job_id: payment.job_id,
+      })),
     ])
 
     return NextResponse.json({ ok: true })

@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}))
     const jobId = typeof body?.job_id === 'string' ? body.job_id : null
+    const supportTicketId =
+      typeof body?.support_ticket_id === 'string' ? body.support_ticket_id : null
     if (!jobId) {
       return NextResponse.json({ error: 'job_id zorunludur' }, { status: 400 })
     }
@@ -50,6 +52,13 @@ export async function POST(req: NextRequest) {
 
     const supabase = createClient(url, serviceKey)
 
+    const { data: actorProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    const isAdmin = actorProfile?.role === 'admin'
+
     const { data: job } = await supabase
       .from('jobs')
       .select('id, customer_id')
@@ -60,7 +69,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'İş bulunamadı' }, { status: 404 })
     }
 
-    if (job.customer_id !== user.id) {
+    if (!isAdmin && job.customer_id !== user.id) {
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok.' }, { status: 403 })
     }
 
@@ -162,13 +171,29 @@ export async function POST(req: NextRequest) {
       .update({ completed_jobs: newCompleted })
       .eq('id', payment.provider_id)
 
-    await supabase.from('notifications').insert({
-      user_id: payment.provider_id,
-      title: '💸 Ödemeniz Aktarıldı',
-      body: 'Müşteri işi onayladı ve ödeme hesabınıza aktarılıyor.',
-      type: 'payment_released',
-      related_job_id: payment.job_id,
-    })
+    if (supportTicketId) {
+      await supabase
+        .from('support_tickets')
+        .update({ status: 'resolved_provider', updated_at: new Date().toISOString() })
+        .eq('id', supportTicketId)
+    }
+
+    await supabase.from('notifications').insert([
+      {
+        user_id: payment.provider_id,
+        title: '⚖️ Anlaşmazlık Sonucu',
+        body: 'Anlaşmazlık uzman lehine sonuçlandı, ödemeniz yolda.',
+        type: 'dispute_resolved_provider',
+        related_job_id: payment.job_id,
+      },
+      {
+        user_id: job.customer_id,
+        title: '⚖️ Anlaşmazlık Sonucu',
+        body: 'Anlaşmazlık uzman lehine sonuçlandı.',
+        type: 'dispute_resolved_provider',
+        related_job_id: payment.job_id,
+      },
+    ])
 
     return NextResponse.json({ ok: true })
   } catch (e) {
