@@ -248,63 +248,40 @@ export default function JobDetailPage() {
       alert('Lütfen kısaca sebebi yazın.')
       return
     }
+
+    if (!id) {
+      alert('İş bulunamadı.')
+      return
+    }
+
     setDisputeSubmitting(true)
-    const supabase = createClient()
-
-    await supabase.from('jobs').update({ status: 'disputed' }).eq('id', id)
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    const notifications: any[] = []
-
-    if (job?.provider_id) {
-      notifications.push({
-        user_id: job.provider_id,
-        title: '⚠️ İşte Uyuşmazlık Açıldı',
-        body: `"${job.title}" işi için müşteri uyuşmazlık talebi oluşturdu: ${disputeReason}`,
-        type: 'job_disputed',
-        related_job_id: id,
+    try {
+      const res = await fetch('/api/support/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          job_id: id,
+          reason: disputeReason.trim(),
+        }),
       })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        console.error('[submitDispute] error', data)
+        alert(data.error || 'Talep oluşturulurken bir hata oluştu.')
+        return
+      }
+
+      setShowDispute(false)
+      setDisputeReason('')
+      await load()
+      // Müşteriye toast gösterimi UI tarafında zaten global ise burada sadece console'a yazalım
+      console.log('Talebiniz alındı')
+    } finally {
+      setDisputeSubmitting(false)
     }
-
-    const { data: admins } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('role', 'admin')
-
-    for (const admin of admins || []) {
-      notifications.push({
-        user_id: admin.id,
-        title: '⚠️ Yeni Uyuşmazlık Talebi',
-        body: `"${job?.title}" işi için müşteri uyuşmazlık talebi oluşturdu: ${disputeReason}`,
-        type: 'job_disputed_admin',
-        related_job_id: id,
-      })
-    }
-
-    if (notifications.length > 0) {
-      await supabase.from('notifications').insert(notifications)
-    }
-
-    // Müşteri tarafı uyuşmazlığı da support_tickets tablosuna kaydet
-    if (user && job) {
-      await supabase.from('support_tickets').insert({
-        customer_id: user.id,
-        provider_id: job.provider_id ?? null,
-        category: 'service',
-        title: 'Uyuşmazlık Talebi',
-        message: disputeReason.trim(),
-        related_job_id: job.id,
-        status: 'pending',
-      })
-    }
-
-    setShowDispute(false)
-    setDisputeReason('')
-    setDisputeSubmitting(false)
-    await load()
   }
 
   if (loading)
