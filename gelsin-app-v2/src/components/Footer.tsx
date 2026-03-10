@@ -19,15 +19,19 @@ export function Footer() {
             <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
               İhtiyacın olan uzman saniyeler içinde kapında. Zamanın sana, işin uzmanına kalsın.
             </p>
-            <nav className="flex flex-col gap-2">
-              <Link href="/hakkimizda" className="text-sm hover:text-white transition-colors">
-                Hakkımızda
-              </Link>
-              <Link href="/iletisim" className="text-sm hover:text-white transition-colors">
-                İletişim
-              </Link>
-              <Link href="/sss" className="text-sm hover:text-white transition-colors">
-                Sıkça Sorulan Sorular
+            <nav className="flex flex-col gap-2 text-sm text-slate-300">
+              <p className="font-semibold text-slate-100">İletişim</p>
+              <p className="text-slate-400">Belediye Caddesi 35/C Pursaklar / ANKARA</p>
+              <p className="text-slate-400">Tel: <a href="tel:03128701536" className="hover:text-white">0312 870 15 36</a></p>
+              <p className="text-slate-400">
+                E-posta:{' '}
+                <a href="mailto:destek@gelsin.dev" className="hover:text-white">
+                  destek@gelsin.dev
+                </a>
+              </p>
+              <p className="text-slate-400">Çalışma Saatleri: Her gün 09:00 - 22:00</p>
+              <Link href="/contact" className="mt-2 inline-flex text-sm hover:text-white transition-colors">
+                İletişim Sayfası
               </Link>
             </nav>
           </div>
@@ -62,17 +66,14 @@ export function Footer() {
               Yasal
             </h3>
             <nav className="flex flex-col gap-2">
-              <Link href="/kullanim-sartlari" className="text-sm hover:text-white transition-colors">
-                Kullanıcı Sözleşmesi
+              <Link href="/legal/mesafeli-satis" className="text-sm hover:text-white transition-colors">
+                Mesafeli Satış Sözleşmesi
               </Link>
-              <Link href="/gizlilik" className="text-sm hover:text-white transition-colors">
-                Gizlilik Politikası
+              <Link href="/legal/iptal-iade" className="text-sm hover:text-white transition-colors">
+                İptal &amp; İade Koşulları
               </Link>
-              <Link href="/kvkk" className="text-sm hover:text-white transition-colors">
-                KVKK Aydınlatma Metni
-              </Link>
-              <Link href="/cerez-politikasi" className="text-sm hover:text-white transition-colors">
-                Çerez Politikası
+              <Link href="/legal/gizlilik-kvkk" className="text-sm hover:text-white transition-colors">
+                Gizlilik &amp; KVKK
               </Link>
             </nav>
           </div>
@@ -101,19 +102,26 @@ export function Footer() {
           <p className="text-slate-500 text-xs sm:text-sm order-2 sm:order-1">
             © 2026 GELSİN App. Tüm hakları saklıdır.
           </p>
-          <div className="flex items-center gap-4 order-1 sm:order-2">
-            {SOCIAL.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="text-slate-500 hover:text-slate-300 transition-colors"
-                aria-label={item.name}
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d={item.icon} />
-                </svg>
-              </a>
-            ))}
+          <div className="flex items-center gap-6 order-1 sm:order-2">
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                Ödeme Altyapısı
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded bg-white text-[10px] font-semibold text-slate-800 shadow-sm">
+                  Pay<span className="text-blue-600">TR</span>
+                </span>
+                <span className="px-2.5 py-1 rounded bg-white text-[10px] font-semibold text-slate-800 shadow-sm">
+                  VISA
+                </span>
+                <span className="px-2.5 py-1 rounded bg-white text-[10px] font-semibold text-slate-800 shadow-sm">
+                  MasterCard
+                </span>
+                <span className="px-2.5 py-1 rounded bg-white text-[10px] font-semibold text-slate-800 shadow-sm">
+                  Troy
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
