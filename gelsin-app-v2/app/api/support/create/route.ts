@@ -87,6 +87,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // İşin durumunu disputed yap
+    await supabase
+      .from('jobs')
+      .update({ status: 'disputed' })
+      .eq('id', job.id)
+
+    // Ödemeyi dondur
+    await supabase
+      .from('payments')
+      .update({ status: 'disputed' })
+      .eq('job_id', job.id)
+      .eq('status', 'in_escrow')
+
     const { data: admins } = await supabase
       .from('profiles')
       .select('id')
