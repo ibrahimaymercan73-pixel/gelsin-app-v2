@@ -253,7 +253,10 @@ export default function JobDetailPage() {
 
     await supabase.from('jobs').update({ status: 'disputed' }).eq('id', id)
 
-    // Adminleri ve uzmanı bilgilendir
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
     const notifications: any[] = []
 
     if (job?.provider_id) {
@@ -283,6 +286,19 @@ export default function JobDetailPage() {
 
     if (notifications.length > 0) {
       await supabase.from('notifications').insert(notifications)
+    }
+
+    // Müşteri tarafı uyuşmazlığı da support_tickets tablosuna kaydet
+    if (user && job) {
+      await supabase.from('support_tickets').insert({
+        customer_id: user.id,
+        provider_id: job.provider_id ?? null,
+        category: 'service',
+        title: 'Uyuşmazlık Talebi',
+        message: disputeReason.trim(),
+        related_job_id: job.id,
+        status: 'pending',
+      })
     }
 
     setShowDispute(false)
