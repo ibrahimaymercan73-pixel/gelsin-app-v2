@@ -58,7 +58,7 @@ export function CustomerLayoutClient({
     <CustomerAuthContext.Provider value={{ profile: initialProfile, email: initialEmail }}>
       <ChatOverlayProvider>
         <OnboardingTour role="customer" />
-        <div className="min-h-screen flex flex-col bg-[#F8FAFC] font-sans overflow-x-hidden">
+        <div className="h-screen flex flex-col bg-[#F8FAFC] font-sans overflow-x-hidden">
           <nav className="flex-shrink-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-6">
               <div className="flex items-center gap-6 md:gap-8 min-w-0 flex-1">
@@ -121,7 +121,7 @@ export function CustomerLayoutClient({
             </div>
           </nav>
 
-          <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden">
+          <main className="flex-1 min-w-0 overflow-x-hidden">
             {children}
           </main>
         </div>
