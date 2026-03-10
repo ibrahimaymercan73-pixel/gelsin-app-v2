@@ -44,8 +44,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const supabase = createClient()
       const { data: rows } = await supabase
         .from('support_tickets')
-        .select('id')
-        .eq('status', 'open')
+        .select('id, status')
+        .in('status', ['pending', 'in_progress'])
       if (!cancelled) setOpenDisputesCount((rows || []).length)
     }
     loadCount()

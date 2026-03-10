@@ -24,7 +24,8 @@ function getName(x: any): string {
 
 function statusBadge(s: string) {
   switch (s) {
-    case 'open':
+    case 'pending':
+    case 'in_progress':
       return 'bg-amber-100 text-amber-800'
     case 'resolved_refund':
       return 'bg-rose-100 text-rose-800'
@@ -37,8 +38,12 @@ function statusBadge(s: string) {
 
 function statusLabel(s: string) {
   switch (s) {
-    case 'open':
+    case 'pending':
       return 'Açık'
+    case 'in_progress':
+      return 'İnceleniyor'
+    case 'resolved':
+      return 'Çözüldü'
     case 'resolved_refund':
       return 'İade ile çözüldü'
     case 'resolved_provider':
@@ -73,7 +78,7 @@ export default function AdminDisputesPage() {
         provider:profiles!support_tickets_provider_id_fkey(full_name)
       `
       )
-      .in('status', ['open', 'resolved_refund', 'resolved_provider'])
+      .in('status', ['pending', 'in_progress', 'resolved', 'resolved_refund', 'resolved_provider'])
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -110,7 +115,10 @@ export default function AdminDisputesPage() {
     load()
   }, [])
 
-  const openCount = useMemo(() => rows.filter((r) => r.status === 'open').length, [rows])
+  const openCount = useMemo(
+    () => rows.filter((r) => r.status === 'pending' || r.status === 'in_progress').length,
+    [rows]
+  )
 
   const refund = async (r: DisputeRow) => {
     if (!r.related_job_id) return
@@ -218,7 +226,9 @@ export default function AdminDisputesPage() {
                 {rows.map((r) => {
                   const job = r.related_job_id ? jobsById[r.related_job_id] : null
                   const amount = Number(job?.agreed_price || 0)
-                  const disabled = r.status !== 'open' || processingId === r.id
+                  const disabled =
+                    (r.status !== 'pending' && r.status !== 'in_progress') ||
+                    processingId === r.id
                   return (
                     <tr key={r.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                       <td className="px-4 py-3 text-slate-600 whitespace-nowrap">

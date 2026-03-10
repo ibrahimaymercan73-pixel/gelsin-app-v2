@@ -3,22 +3,36 @@ import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-const MAX_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
+const MAX_SIZE_BYTES = 10 * 1024 * 1024 // 10MB
 const ALLOWED_MIMES = new Set([
   'image/jpeg',
   'image/png',
-  'application/pdf',
+  'image/webp',
+  'video/mp4',
 ])
-const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'pdf'])
+const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'mp4'])
 
 // Magic bytes (ilk birkaç byte) – sahte MIME’ı engellemek için
 const MIME_SIGNATURES: Record<string, number[][]> = {
   'image/jpeg': [[0xff, 0xd8, 0xff]],
   'image/png': [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
-  'application/pdf': [[0x25, 0x50, 0x44, 0x46]], // %PDF
+  'image/webp': [[0x52, 0x49, 0x46, 0x46]],
+  'video/mp4': [[0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70], [0x00, 0x00, 0x00, 0x1c, 0x66, 0x74, 0x79, 0x70], [0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70]],
 }
 
 function checkMagicBytes(buffer: Buffer, mime: string): boolean {
+  if (mime === 'image/webp') {
+    if (buffer.length < 12) return false
+    if (buffer[0] !== 0x52 || buffer[1] !== 0x49 || buffer[2] !== 0x46 || buffer[3] !== 0x46) return false
+    if (buffer[8] !== 0x57 || buffer[9] !== 0x45 || buffer[10] !== 0x42 || buffer[11] !== 0x50) return false
+    return true
+  }
+  if (mime === 'video/mp4') {
+    if (buffer.length < 12) return false
+    const ftyp = buffer[4] === 0x66 && buffer[5] === 0x74 && buffer[6] === 0x79 && buffer[7] === 0x70
+    if (ftyp) return true
+    return false
+  }
   const signatures = MIME_SIGNATURES[mime]
   if (!signatures) return true
   for (const sig of signatures) {
@@ -73,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     if (file.size > MAX_SIZE_BYTES) {
       return NextResponse.json(
-        { error: 'Dosya boyutu 5MB sınırını aşamaz' },
+        { error: 'Dosya boyutu 10MB sınırını aşamaz' },
         { status: 400 }
       )
     }
@@ -81,7 +95,7 @@ export async function POST(req: NextRequest) {
     const mime = (file.type || '').toLowerCase()
     if (!ALLOWED_MIMES.has(mime)) {
       return NextResponse.json(
-        { error: 'Sadece JPEG, PNG veya PDF yüklenebilir' },
+        { error: 'Sadece JPEG, PNG, WebP veya MP4 yüklenebilir' },
         { status: 400 }
       )
     }
@@ -89,7 +103,7 @@ export async function POST(req: NextRequest) {
     const ext = (file.name.split('.').pop() || '').toLowerCase()
     if (!ALLOWED_EXTENSIONS.has(ext)) {
       return NextResponse.json(
-        { error: 'Dosya uzantısı .jpg, .jpeg, .png veya .pdf olmalıdır' },
+        { error: 'Dosya uzantısı .jpg, .jpeg, .png, .webp veya .mp4 olmalıdır' },
         { status: 400 }
       )
     }

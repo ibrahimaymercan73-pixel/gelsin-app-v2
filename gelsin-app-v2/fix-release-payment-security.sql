@@ -1,6 +1,8 @@
 -- ============================================================
--- release_payment RPC güvenlik düzeltmesi
+-- release_payment RPC güvenlik düzeltmesi (yetki + tek kullanım)
 -- Sadece işin ustası (provider) veya admin bu RPC'yi çağırabilir.
+-- Ödeme zaten serbest bırakıldıysa tekrar çalışmaz; qr_used_at set edilir.
+-- Önce supabase-migration-qr-used-at.sql çalıştırın (qr_used_at kolonu).
 -- Supabase Dashboard > SQL Editor'da çalıştırın.
 -- ============================================================
 
@@ -19,6 +21,10 @@ BEGIN
 
   SELECT * INTO v_job FROM jobs WHERE id = p_job_id;
 
+  IF v_job.payment_released THEN
+    RAISE EXCEPTION 'Ödeme zaten serbest bırakıldı';
+  END IF;
+
   v_commission := v_job.agreed_price * 0.02;
   v_provider_amount := v_job.agreed_price - v_commission;
 
@@ -27,6 +33,7 @@ BEGIN
     platform_fee = v_commission,
     provider_amount = v_provider_amount,
     payment_released = true,
+    qr_used_at = NOW(),
     updated_at = NOW()
   WHERE id = p_job_id;
 

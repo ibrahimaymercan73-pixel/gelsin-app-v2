@@ -16,7 +16,9 @@ CREATE TABLE public.payments (
   paytr_token TEXT,
   idempotency_key TEXT UNIQUE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now(),
-  released_at TIMESTAMPTZ
+  released_at TIMESTAMPTZ,
+  paytr_trans_id TEXT,
+  transfer_status TEXT DEFAULT 'pending' CHECK (transfer_status IN ('pending','completed','failed'))
 );
 
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
@@ -27,4 +29,9 @@ CREATE POLICY "service_role_all" ON public.payments USING (auth.role() = 'servic
 
 -- Mevcut ortamlarda kolon yoksa eklemek için:
 ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS paytr_fee DECIMAL(10,2) DEFAULT 0;
+
+ALTER TABLE public.payments ADD COLUMN IF NOT EXISTS paytr_trans_id TEXT;
+ALTER TABLE public.payments
+  ADD COLUMN IF NOT EXISTS transfer_status TEXT DEFAULT 'pending'
+  CHECK (transfer_status IN ('pending','completed','failed'));
 
