@@ -156,7 +156,7 @@ export default function AdminDisputesPage() {
         .maybeSingle()
 
       if (!payment?.id) {
-        toast.error('Bu iş için iade edilebilir (in_escrow) ödeme bulunamadı.')
+        toast.error('Bu iş için iade edilebilir (in_escrow veya disputed) ödeme bulunamadı.')
         return
       }
 
