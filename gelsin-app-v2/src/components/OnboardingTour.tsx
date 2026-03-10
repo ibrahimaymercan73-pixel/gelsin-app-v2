@@ -70,6 +70,10 @@ const STYLES = {
     backgroundColor: '#fff',
     overlayColor: 'rgba(15, 23, 42, 0.7)',
   },
+  overlay: {
+    position: 'fixed' as const,
+    overflow: 'visible' as const,
+  },
   tooltip: {
     borderRadius: '12px',
     padding: '16px',
@@ -134,6 +138,8 @@ export function OnboardingTour({ role }: { role: 'customer' | 'provider' | null 
       locale={LOCALE}
       styles={STYLES}
       scrollToFirstStep
+      disableScrolling={false}
+      disableScrollParentFix
       spotlightClicks={false}
       disableOverlayClose={false}
     />
