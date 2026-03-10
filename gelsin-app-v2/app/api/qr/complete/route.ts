@@ -97,91 +97,64 @@ export async function POST(req: NextRequest) {
       .update({ status: 'completed', qr_used_at: new Date().toISOString() })
       .eq('id', jobId)
 
-    // 2) /api/paytr/release-payment tetikle (server-side aynı iş): in_escrow payment bul, hesaptan-gonder ile transfer
-    const { data: payment } = await supabase
+    // Bitiş QR okundu, ödemeyi serbest bırak
+    const payment = await supabase
       .from('payments')
-      .select('id, job_id, provider_id, provider_amount, status')
+      .select('*')
       .eq('job_id', jobId)
       .eq('status', 'in_escrow')
-      .maybeSingle()
-
-    if (!payment) {
-      return NextResponse.json({ error: 'Bu iş için escrow bekleyen ödeme bulunamadı.' }, { status: 400 })
-    }
-
-    const { data: providerProfile } = await supabase
-      .from('provider_profiles')
-      .select('iban, completed_jobs')
-      .eq('id', payment.provider_id)
       .single()
 
-    if (!providerProfile?.iban) {
-      return NextResponse.json({ error: 'Uzmanın IBAN bilgisi eksik.' }, { status: 400 })
+    if (payment.data) {
+      const provider = await supabase
+        .from('provider_profiles')
+        .select('iban, completed_jobs, profiles(full_name)')
+        .eq('id', payment.data.provider_id)
+        .single()
+
+      const trans_id = `gelsintr${String(payment.data.id).replace(/-/g, '')}${Date.now()}`
+      const trans_info = [
+        {
+          amount: Math.round(Number(payment.data.provider_amount) * 100),
+          receiver:
+            ((provider.data as any)?.profiles?.full_name as string | undefined | null) ||
+            'Gelsin Uzmanı',
+          iban: (provider.data as any)?.iban as string,
+        },
+      ]
+
+      const paytr_token = crypto
+        .createHmac('sha256', process.env.PAYTR_MERCHANT_KEY!)
+        .update(process.env.PAYTR_MERCHANT_ID! + trans_id + process.env.PAYTR_MERCHANT_SALT!)
+        .digest('base64')
+
+      await fetch('https://www.paytr.com/odeme/hesaptan-gonder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          merchant_id: process.env.PAYTR_MERCHANT_ID!,
+          trans_id,
+          trans_info: JSON.stringify(trans_info),
+          paytr_token,
+        }),
+      })
+
+      await supabase
+        .from('payments')
+        .update({ status: 'released', released_at: new Date().toISOString() })
+        .eq('id', payment.data.id)
+
+      await supabase
+        .from('jobs')
+        .update({ payment_released: true })
+        .eq('id', jobId)
+
+      const newCompleted = (Number((provider.data as any)?.completed_jobs) || 0) + 1
+      await supabase
+        .from('provider_profiles')
+        .update({ completed_jobs: newCompleted })
+        .eq('id', payment.data.provider_id)
     }
-
-    const { data: providerBase } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', payment.provider_id)
-      .single()
-
-    const receiver = (providerBase?.full_name && providerBase.full_name.trim()) || 'Gelsin Uzmanı'
-
-    const amountKurush = Math.round(Number(payment.provider_amount) * 100)
-    const trans_id = `gelsin_${jobId.replace(/[^a-zA-Z0-9]/g, '')}_${Date.now()}`
-    const trans_info = JSON.stringify([
-      { amount: amountKurush, receiver, iban: providerProfile.iban },
-    ])
-
-    const hashStr = merchant_id + trans_id + merchant_salt
-    const paytr_token = crypto.createHmac('sha256', merchant_key).update(hashStr).digest('base64')
-
-    const params = new URLSearchParams()
-    params.set('merchant_id', merchant_id)
-    params.set('trans_id', trans_id)
-    params.set('trans_info', trans_info)
-    params.set('paytr_token', paytr_token)
-
-    const res = await fetch('https://www.paytr.com/odeme/hesaptan-gonder', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-    })
-
-    const data: any = await res.json().catch(async () => {
-      const txt = await res.text()
-      return { status: 'failed', reason: txt }
-    })
-
-    if (!res.ok || data.status !== 'success') {
-      console.error('[qr/complete] hesaptan-gonder error', data)
-      return NextResponse.json({ error: data.reason || 'Transfer başlatılamadı.' }, { status: 502 })
-    }
-
-    // başarılıysa payments status → released, jobs status → completed zaten, provider completed_jobs +1
-    await supabase
-      .from('payments')
-      .update({ status: 'released', released_at: new Date().toISOString() })
-      .eq('id', payment.id)
-
-    await supabase
-      .from('jobs')
-      .update({ payment_released: true })
-      .eq('id', jobId)
-
-    const newCompleted = (providerProfile.completed_jobs || 0) + 1
-    await supabase
-      .from('provider_profiles')
-      .update({ completed_jobs: newCompleted })
-      .eq('id', payment.provider_id)
-
-    await supabase.from('notifications').insert({
-      user_id: payment.provider_id,
-      title: '💸 Ödeme Transferi Başlatıldı',
-      body: `"${job.title}" işi için ödeme IBAN'a aktarım sürecine alındı.`,
-      type: 'payment_released',
-      related_job_id: jobId,
-    })
 
     return NextResponse.json({ ok: true })
   } catch (e) {
