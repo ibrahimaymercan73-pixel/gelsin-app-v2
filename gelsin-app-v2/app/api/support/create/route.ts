@@ -69,17 +69,23 @@ export async function POST(req: NextRequest) {
       .eq('job_id', jobId)
       .maybeSingle()
 
-    await supabase.from('support_tickets').insert({
+    const { data, error } = await supabase.from('support_tickets').insert({
       customer_id: user.id,
       provider_id: job.provider_id ?? null,
-      category: 'service',
+      category: 'dispute',
       title: 'Uyuşmazlık Talebi',
       message: reason,
       related_job_id: job.id,
-      // payment_id kolonu yoksa bu alan yok sayılacak
       payment_id: payment?.id ?? null,
       status: 'pending',
     } as any)
+
+    console.log('[support/create] insert result:', { data, error })
+
+    if (error) {
+      console.error('[support/create] insert error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 
     const { data: admins } = await supabase
       .from('profiles')
