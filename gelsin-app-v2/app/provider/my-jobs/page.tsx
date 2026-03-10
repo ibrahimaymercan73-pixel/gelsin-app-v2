@@ -218,6 +218,22 @@ export default function ProviderMyJobsPage() {
 
     await supabase.from('jobs').update({ status: 'disputed' }).eq('id', disputeModal.jobId)
 
+    // Anlaşmazlığı support_tickets tablosuna da kaydet (admin anlaşmazlık ekranı için)
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (user && job) {
+      await supabase.from('support_tickets').insert({
+        customer_id: job.customer_id ?? null,
+        provider_id: user.id,
+        category: 'service',
+        title: 'Uyuşmazlık Talebi',
+        message: disputeReason.trim(),
+        related_job_id: job.id,
+        status: 'pending',
+      })
+    }
+
     const notifications: any[] = []
 
     if (job?.customer_id) {
