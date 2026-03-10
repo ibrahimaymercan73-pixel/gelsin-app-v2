@@ -70,7 +70,7 @@ export default function ChooseRolePage() {
       const hasServices = Array.isArray(pp?.service_categories) && (pp.service_categories as string[]).length > 0
 
       if (currentRole === 'admin') {
-        router.replace('/admin')
+        router.push('/admin')
         return
       }
       if (currentRole === 'customer' && hasCity) {
@@ -173,6 +173,7 @@ export default function ChooseRolePage() {
       if (existingProfile?.role) {
         if (existingProfile.role === 'customer') router.replace('/customer')
         else if (existingProfile.role === 'provider') router.replace('/provider')
+        else if (existingProfile.role === 'admin') router.replace('/admin')
         return
       }
       const trimmedPhone = normalizePhone(phone.trim())

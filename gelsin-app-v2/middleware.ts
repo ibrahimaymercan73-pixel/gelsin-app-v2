@@ -91,6 +91,13 @@ export async function middleware(req: NextRequest) {
   const isChooseRole = pathname === '/choose-role'
   const isProviderVerify = pathname === '/provider/verify'
 
+  // Admin kullanıcılar choose-role/onboarding akışına düşmesin
+  if (role === 'admin' && !isAdminArea) {
+    const redirectRes = NextResponse.redirect(new URL('/admin', req.url))
+    res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+    return redirectRes
+  }
+
   // /provider/verify: sadece role=provider ve face_verified=false girebilir; doğrulamışsa /provider'a yönlendir
   if (isProviderVerify) {
     if (role !== 'provider') {
@@ -108,6 +115,11 @@ export async function middleware(req: NextRequest) {
 
   // Rol zaten atanmışsa /choose-role erişimini engelle, panele yönlendir
   if (role && isChooseRole) {
+    if (role === 'admin') {
+      const redirectRes = NextResponse.redirect(new URL('/admin', req.url))
+      res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
+      return redirectRes
+    }
     if (role === 'customer' && hasCity) {
       const redirectRes = NextResponse.redirect(new URL('/customer', req.url))
       res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
@@ -139,7 +151,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Onboarding kontrolü: city yoksa choose-role'a yönlendir
-  if (role && !hasCity && !isChooseRole) {
+  if (role && role !== 'admin' && !hasCity && !isChooseRole) {
     const redirectRes = NextResponse.redirect(new URL('/choose-role', req.url))
     res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))
     return redirectRes
