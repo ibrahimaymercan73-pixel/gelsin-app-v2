@@ -31,8 +31,10 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json().catch(() => ({}))
     const jobId = typeof body?.job_id === 'string' ? body.job_id : null
-    if (!jobId) {
-      return NextResponse.json({ error: 'job_id zorunludur' }, { status: 400 })
+    const action = typeof body?.action === 'string' ? body.action : null
+
+    if (!jobId || (action !== 'start' && action !== 'end')) {
+      return NextResponse.json({ error: 'job_id ve action (start|end) zorunludur' }, { status: 400 })
     }
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -52,32 +54,59 @@ export async function POST(req: NextRequest) {
 
     const { data: job } = await supabase
       .from('jobs')
-      .select('id, customer_id')
+      .select('id, status, customer_id, provider_id, title, payment_released, qr_scanned_at, qr_used_at')
       .eq('id', jobId)
       .single()
 
     if (!job) {
-      return NextResponse.json({ error: 'İş bulunamadı' }, { status: 404 })
+      return NextResponse.json({ error: 'İş bulunamadı.' }, { status: 404 })
     }
 
-    if (job.customer_id !== user.id) {
+    if (job.provider_id !== user.id) {
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok.' }, { status: 403 })
     }
 
+    if (action === 'start') {
+      if (job.qr_scanned_at) {
+        return NextResponse.json({ error: 'Bu başlangıç QR zaten kullanılmış.' }, { status: 409 })
+      }
+      await supabase
+        .from('jobs')
+        .update({ status: 'started', qr_scanned_at: new Date().toISOString() })
+        .eq('id', jobId)
+
+      await supabase.from('notifications').insert({
+        user_id: job.customer_id,
+        title: '🔨 Uzman İşe Başladı!',
+        body: `"${job.title}" işi başladı.`,
+        type: 'job_started',
+        related_job_id: jobId,
+      })
+
+      return NextResponse.json({ ok: true })
+    }
+
+    // end
+    if (job.payment_released || job.qr_used_at || job.status === 'completed') {
+      return NextResponse.json({ error: 'Bu bitiş QR zaten kullanılmış.' }, { status: 409 })
+    }
+
+    // 1) job status → completed
+    await supabase
+      .from('jobs')
+      .update({ status: 'completed', qr_used_at: new Date().toISOString() })
+      .eq('id', jobId)
+
+    // 2) /api/paytr/release-payment tetikle (server-side aynı iş): in_escrow payment bul, hesaptan-gonder ile transfer
     const { data: payment } = await supabase
       .from('payments')
-      .select(
-        'id, job_id, offer_id, provider_id, amount, provider_amount, status, paytr_merchant_oid'
-      )
+      .select('id, job_id, provider_id, provider_amount, status')
       .eq('job_id', jobId)
       .eq('status', 'in_escrow')
       .maybeSingle()
 
     if (!payment) {
-      return NextResponse.json(
-        { error: 'Bu iş için escrow bekleyen bir ödeme bulunamadı.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Bu iş için escrow bekleyen ödeme bulunamadı.' }, { status: 400 })
     }
 
     const { data: providerProfile } = await supabase
@@ -87,37 +116,25 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (!providerProfile?.iban) {
-      return NextResponse.json(
-        { error: 'Uzmanın banka bilgileri eksik. Lütfen destek ile iletişime geçin.' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Uzmanın IBAN bilgisi eksik.' }, { status: 400 })
     }
-    // Uzmanın adı – PayTR hesaptan-gonder için
-    const { data: providerProfileBase } = await supabase
+
+    const { data: providerBase } = await supabase
       .from('profiles')
       .select('full_name')
       .eq('id', payment.provider_id)
       .single()
 
-    const providerName =
-      (providerProfileBase?.full_name && providerProfileBase.full_name.trim()) || 'Gelsin Uzmanı'
+    const receiver = (providerBase?.full_name && providerBase.full_name.trim()) || 'Gelsin Uzmanı'
 
     const amountKurush = Math.round(Number(payment.provider_amount) * 100)
-    const trans_id = `gelsin_tx_${payment.id}_${Date.now()}`
+    const trans_id = `gelsin_${jobId.replace(/[^a-zA-Z0-9]/g, '')}_${Date.now()}`
     const trans_info = JSON.stringify([
-      {
-        amount: amountKurush,
-        receiver: providerName,
-        iban: providerProfile.iban,
-      },
+      { amount: amountKurush, receiver, iban: providerProfile.iban },
     ])
 
     const hashStr = merchant_id + trans_id + merchant_salt
-
-    const paytr_token = crypto
-      .createHmac('sha256', merchant_key)
-      .update(hashStr)
-      .digest('base64')
+    const paytr_token = crypto.createHmac('sha256', merchant_key).update(hashStr).digest('base64')
 
     const params = new URLSearchParams()
     params.set('merchant_id', merchant_id)
@@ -137,14 +154,11 @@ export async function POST(req: NextRequest) {
     })
 
     if (!res.ok || data.status !== 'success') {
-      console.error('[paytr/release-payment] transfer error', data)
-      return NextResponse.json(
-        { error: data.reason || 'Ödeme aktarılırken bir sorun oluştu.' },
-        { status: 502 }
-      )
+      console.error('[qr/complete] hesaptan-gonder error', data)
+      return NextResponse.json({ error: data.reason || 'Transfer başlatılamadı.' }, { status: 502 })
     }
 
-    // DB güncellemeleri
+    // başarılıysa payments status → released, jobs status → completed zaten, provider completed_jobs +1
     await supabase
       .from('payments')
       .update({ status: 'released', released_at: new Date().toISOString() })
@@ -152,10 +166,9 @@ export async function POST(req: NextRequest) {
 
     await supabase
       .from('jobs')
-      .update({ status: 'completed', payment_released: true })
-      .eq('id', payment.job_id)
+      .update({ payment_released: true })
+      .eq('id', jobId)
 
-    // Tamamlanan iş sayısını arttır
     const newCompleted = (providerProfile.completed_jobs || 0) + 1
     await supabase
       .from('provider_profiles')
@@ -164,15 +177,15 @@ export async function POST(req: NextRequest) {
 
     await supabase.from('notifications').insert({
       user_id: payment.provider_id,
-      title: '💸 Ödemeniz Aktarıldı',
-      body: 'Müşteri işi onayladı ve ödeme hesabınıza aktarılıyor.',
+      title: '💸 Ödeme Transferi Başlatıldı',
+      body: `"${job.title}" işi için ödeme IBAN'a aktarım sürecine alındı.`,
       type: 'payment_released',
-      related_job_id: payment.job_id,
+      related_job_id: jobId,
     })
 
     return NextResponse.json({ ok: true })
   } catch (e) {
-    console.error('[paytr/release-payment] exception', e)
+    console.error('[qr/complete] exception', e)
     const msg = e instanceof Error ? e.message : String(e)
     return NextResponse.json({ error: msg || 'Beklenmeyen bir hata oluştu.' }, { status: 500 })
   }

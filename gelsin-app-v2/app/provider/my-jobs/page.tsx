@@ -191,12 +191,17 @@ export default function ProviderMyJobsPage() {
         setResult({ ok: false, msg: 'Bu QR kodu zaten kullanıldı, ödeme yapıldı.' })
         return
       }
-      await supabase.rpc('release_payment', { p_job_id: jobId })
-      await supabase.from('notifications').insert({
-        user_id: job.provider_id, title: '💰 Ödemen Cüzdana Aktarıldı!',
-        body: `"${job.title}" işi için ödemen cüzdanına aktarıldı.`, type: 'provider_payment_released', related_job_id: jobId
+      const res = await fetch('/api/qr/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId, action: 'end' }),
       })
-      setResult({ ok: true, msg: '🎉 İş tamamlandı! Ödeme cüzdanınıza aktarıldı.' })
+      const data: any = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setResult({ ok: false, msg: data?.error || 'İş tamamlanamadı.' })
+        return
+      }
+      setResult({ ok: true, msg: '🎉 İş tamamlandı! Ödeme transferi başlatıldı.' })
     }
     await load()
   }
