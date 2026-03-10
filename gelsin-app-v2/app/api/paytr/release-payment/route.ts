@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       (providerProfileBase?.full_name && providerProfileBase.full_name.trim()) || 'Gelsin Uzmanı'
 
     const amountKurush = Math.round(Number(payment.provider_amount) * 100)
-    const trans_id = `gelsin_tx_${payment.id}_${Date.now()}`
+    const trans_id = `gelsintr${String(payment.id).replace(/-/g, '')}${Date.now()}`
     const trans_info = JSON.stringify([
       {
         amount: amountKurush,
