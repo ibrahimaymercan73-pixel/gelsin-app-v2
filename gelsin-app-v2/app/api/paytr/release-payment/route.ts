@@ -1,34 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabaseAuth = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-          set() {},
-          remove() {},
-        },
-      }
-    )
-
-    const {
-      data: { user },
-    } = await supabaseAuth.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
-    }
-
     const body = await req.json().catch(() => ({}))
     const jobId = typeof body?.job_id === 'string' ? body.job_id : null
     const supportTicketId =
@@ -50,16 +25,37 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const supabase = createClient(url, serviceKey)
+    const supabaseAdmin = createClient(url, serviceKey)
 
-    const { data: actorProfile } = await supabase
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!anonKey) {
+      return NextResponse.json(
+        { error: 'Sunucu yapılandırması eksik (anon key)' },
+        { status: 500 }
+      )
+    }
+
+    const supabaseAuth = createClient(url, anonKey)
+
+    const authHeader = req.headers.get('Authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser(token)
+
+    if (!user) {
+      return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
+    }
+
+    const { data: actorProfile } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
     const isAdmin = actorProfile?.role === 'admin'
 
-    const { data: job } = await supabase
+    const { data: job } = await supabaseAdmin
       .from('jobs')
       .select('id, customer_id')
       .eq('id', jobId)
@@ -73,7 +69,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok.' }, { status: 403 })
     }
 
-    const { data: payment } = await supabase
+    const { data: payment } = await supabaseAdmin
       .from('payments')
       .select(
         'id, job_id, offer_id, provider_id, amount, provider_amount, status, paytr_merchant_oid'
@@ -89,7 +85,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { data: providerProfile } = await supabase
+    const { data: providerProfile } = await supabaseAdmin
       .from('provider_profiles')
       .select('iban, completed_jobs')
       .eq('id', payment.provider_id)
@@ -102,7 +98,7 @@ export async function POST(req: NextRequest) {
       )
     }
     // Uzmanın adı – PayTR hesaptan-gonder için
-    const { data: providerProfileBase } = await supabase
+    const { data: providerProfileBase } = await supabaseAdmin
       .from('profiles')
       .select('full_name')
       .eq('id', payment.provider_id)
@@ -154,31 +150,31 @@ export async function POST(req: NextRequest) {
     }
 
     // DB güncellemeleri
-    await supabase
+    await supabaseAdmin
       .from('payments')
       .update({ status: 'released', released_at: new Date().toISOString() })
       .eq('id', payment.id)
 
-    await supabase
+    await supabaseAdmin
       .from('jobs')
       .update({ status: 'completed', payment_released: true })
       .eq('id', payment.job_id)
 
     // Tamamlanan iş sayısını arttır
     const newCompleted = (providerProfile.completed_jobs || 0) + 1
-    await supabase
+    await supabaseAdmin
       .from('provider_profiles')
       .update({ completed_jobs: newCompleted })
       .eq('id', payment.provider_id)
 
     if (supportTicketId) {
-      await supabase
+      await supabaseAdmin
         .from('support_tickets')
         .update({ status: 'resolved_provider', updated_at: new Date().toISOString() })
         .eq('id', supportTicketId)
     }
 
-    await supabase.from('notifications').insert([
+    await supabaseAdmin.from('notifications').insert([
       {
         user_id: payment.provider_id,
         title: '⚖️ Anlaşmazlık Sonucu',

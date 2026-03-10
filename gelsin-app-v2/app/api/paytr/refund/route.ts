@@ -1,34 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabaseAuth = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-          set() {},
-          remove() {},
-        },
-      }
-    )
-
-    const {
-      data: { user },
-    } = await supabaseAuth.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
-    }
-
     const body = await req.json().catch(() => ({}))
     const paymentId = typeof body?.payment_id === 'string' ? body.payment_id : null
     const jobId = typeof body?.job_id === 'string' ? body.job_id : null
@@ -52,10 +27,31 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const supabase = createClient(url, serviceKey)
+    const supabaseAdmin = createClient(url, serviceKey)
+
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!anonKey) {
+      return NextResponse.json(
+        { error: 'Sunucu yapılandırması eksik (anon key)' },
+        { status: 500 }
+      )
+    }
+
+    const supabaseAuth = createClient(url, anonKey)
+
+    const authHeader = req.headers.get('Authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser(token)
+
+    if (!user) {
+      return NextResponse.json({ error: 'Giriş yapmanız gerekiyor' }, { status: 401 })
+    }
 
     // Sadece admin rolü iade yapabilir
-    const { data: profile } = await supabase
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -65,7 +61,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok.' }, { status: 403 })
     }
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('payments')
       .select('id, job_id, customer_id, provider_id, amount, status, paytr_merchant_oid')
 
@@ -121,28 +117,28 @@ export async function POST(req: NextRequest) {
     }
 
     // DB güncellemeleri
-    await supabase
+    await supabaseAdmin
       .from('payments')
       .update({ status: 'refunded' })
       .eq('id', payment.id)
 
-    await supabase
+    await supabaseAdmin
       .from('jobs')
       .update({ status: 'cancelled', escrow_held: false, payment_released: false })
       .eq('id', payment.job_id)
 
     if (supportTicketId) {
-      await supabase
+      await supabaseAdmin
         .from('support_tickets')
         .update({ status: 'resolved_refund', updated_at: new Date().toISOString() })
         .eq('id', supportTicketId)
     }
 
-    const { data: admins } = await supabase.from('profiles').select('id').eq('role', 'admin')
+    const { data: admins } = await supabaseAdmin.from('profiles').select('id').eq('role', 'admin')
     const adminIds = (admins || []).map((a: any) => a.id as string)
 
     // Bildirimler
-    await supabase.from('notifications').insert([
+    await supabaseAdmin.from('notifications').insert([
       {
         user_id: payment.customer_id,
         title: '💸 İadeniz Onaylandı',

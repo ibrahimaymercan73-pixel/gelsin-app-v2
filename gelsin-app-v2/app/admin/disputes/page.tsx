@@ -144,6 +144,10 @@ export default function AdminDisputesPage() {
     setProcessingId(r.id)
     try {
       const supabase = createClient()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
       const { data: payment } = await supabase
         .from('payments')
         .select('id')
@@ -158,7 +162,10 @@ export default function AdminDisputesPage() {
 
       const res = await fetch('/api/paytr/refund', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
+        },
         body: JSON.stringify({ payment_id: payment.id, support_ticket_id: r.id }),
       })
       const data: any = await res.json().catch(() => ({}))
@@ -180,9 +187,17 @@ export default function AdminDisputesPage() {
 
     setProcessingId(r.id)
     try {
+      const supabase = createClient()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
       const res = await fetch('/api/paytr/release-payment', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
+        },
         body: JSON.stringify({ job_id: r.related_job_id, support_ticket_id: r.id }),
       })
       const data: any = await res.json().catch(() => ({}))
