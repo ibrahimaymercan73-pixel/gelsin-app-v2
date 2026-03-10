@@ -156,10 +156,6 @@ export default function ContactPage() {
 
         <aside className="bg-slate-900 text-slate-100 rounded-3xl p-6 flex flex-col gap-4">
           <h2 className="text-lg font-bold">İletişim Bilgileri</h2>
-          <p className="text-sm text-slate-300">
-            Aşağıdaki kanallardan bize her zaman ulaşabilirsiniz. PayTR denetimi için gerekli tüm
-            ticari bilgiler burada yer almaktadır.
-          </p>
           <div className="space-y-3 text-sm">
             <div>
               <p className="font-semibold">Adres</p>
@@ -188,10 +184,6 @@ export default function ContactPage() {
               <p className="font-semibold">Çalışma Saatleri</p>
               <p className="text-slate-300">Her gün 09:00 - 22:00</p>
             </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-slate-700 text-xs text-slate-400 space-y-1">
-            <p>Ödeme altyapısı PayTR tarafından sağlanmaktadır.</p>
-            <p>Visa, Mastercard ve Troy logoları ile gösterilen kartlar kabul edilmektedir.</p>
           </div>
         </aside>
       </div>
