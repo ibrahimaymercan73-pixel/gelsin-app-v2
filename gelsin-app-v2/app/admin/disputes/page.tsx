@@ -152,7 +152,7 @@ export default function AdminDisputesPage() {
         .from('payments')
         .select('id')
         .eq('job_id', r.related_job_id)
-        .eq('status', 'in_escrow')
+        .in('status', ['in_escrow', 'disputed'])
         .maybeSingle()
 
       if (!payment?.id) {
