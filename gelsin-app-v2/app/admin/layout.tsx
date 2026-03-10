@@ -57,7 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [])
 
   return (
-    <div className="min-h-dvh bg-[#F4F7FA] flex font-sans">
+    <div className="min-h-screen bg-[#F4F7FA] flex font-sans">
 
       {/* ── DESKTOP SIDEBAR ── */}
       <aside className="hidden lg:flex w-64 bg-slate-900 flex-col fixed h-full z-50">

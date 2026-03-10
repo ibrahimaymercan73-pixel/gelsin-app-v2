@@ -69,7 +69,7 @@ export function ProviderLayoutClient({
     >
       <ChatOverlayProvider>
         <OnboardingTour role="provider" />
-        <div className="min-h-dvh bg-[#F4F7FA] flex font-sans">
+        <div className="min-h-screen bg-[#F4F7FA] flex font-sans">
           <aside className="hidden lg:flex w-64 bg-slate-900 flex-col fixed h-full z-50">
             <div className="px-8 py-7 border-b border-white/5">
               <span className="text-xl font-black text-white italic tracking-tighter">
