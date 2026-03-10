@@ -68,7 +68,6 @@ export async function POST(req: NextRequest) {
     let query = supabase
       .from('payments')
       .select('id, job_id, customer_id, provider_id, amount, status, paytr_merchant_oid')
-      .eq('status', 'in_escrow')
 
     if (paymentId) {
       query = query.eq('id', paymentId)
@@ -76,11 +75,13 @@ export async function POST(req: NextRequest) {
       query = query.eq('job_id', jobId)
     }
 
-    const { data: payment } = await query.maybeSingle()
+    const { data: payment } = await query
+      .in('status', ['in_escrow', 'disputed'])
+      .maybeSingle()
 
     if (!payment) {
       return NextResponse.json(
-        { error: 'İadeye uygun (in_escrow) bir ödeme bulunamadı.' },
+        { error: 'İadeye uygun (in_escrow veya disputed) bir ödeme bulunamadı.' },
         { status: 404 }
       )
     }

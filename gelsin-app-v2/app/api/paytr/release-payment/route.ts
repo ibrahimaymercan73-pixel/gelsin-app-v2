@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
         'id, job_id, offer_id, provider_id, amount, provider_amount, status, paytr_merchant_oid'
       )
       .eq('job_id', jobId)
-      .eq('status', 'in_escrow')
+      .in('status', ['in_escrow', 'disputed'])
       .maybeSingle()
 
     if (!payment) {
