@@ -102,7 +102,7 @@ export function ProviderLayoutClient({
             </div>
           </aside>
 
-          <main className="flex-1 lg:ml-64 pb-24 md:pb-0">
+          <main className="flex-1 lg:ml-64 pb-24 md:pb-0 overflow-y-auto">
             {children}
           </main>
 

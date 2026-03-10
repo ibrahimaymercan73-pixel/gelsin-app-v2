@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr">
-      <body className="overflow-x-hidden w-full min-h-screen">
+      <body className="overflow-x-hidden overflow-y-auto w-full min-h-screen">
         <NotificationProvider>
           {children}
         </NotificationProvider>
