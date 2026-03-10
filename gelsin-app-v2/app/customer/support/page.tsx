@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { HelpCircle, Send, MessageSquare } from 'lucide-react'
@@ -64,6 +65,8 @@ export default function CustomerSupportPage() {
   const [tickets, setTickets] = useState<TicketRow[]>([])
   const [ticketsLoading, setTicketsLoading] = useState(true)
 
+  const searchParams = useSearchParams()
+
   const loadTickets = async (userId: string) => {
     const supabase = createClient()
     const { data, error } = await supabase
@@ -113,9 +116,14 @@ export default function CustomerSupportPage() {
         }),
       ]
       setJobs(options)
+
+      const jobFromQuery = searchParams.get('job_id')
+      if (jobFromQuery) {
+        setRelatedJobId(jobFromQuery)
+      }
     }
     load()
-  }, [])
+  }, [searchParams])
 
   const displayName = userName.trim() ? userName.trim().split(/\s+/)[0] : 'Helen'
 
@@ -125,36 +133,64 @@ export default function CustomerSupportPage() {
       toast.error('Lütfen mesajınızı yazın.')
       return
     }
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      toast.error('Oturum bulunamadı. Lütfen tekrar giriş yapın.')
-      return
-    }
-
-    const catLabel = CATEGORIES.find((c) => c.value === category)?.label || category || 'Genel'
     setSubmitting(true)
-    const { error } = await supabase.from('support_tickets').insert({
-      customer_id: user.id,
-      provider_id: null,
-      category: category || 'feedback',
-      title: catLabel,
-      related_job_id: relatedJobId || null,
-      message: message.trim(),
-      status: 'pending',
-    })
-    setSubmitting(false)
+    try {
+      if (relatedJobId) {
+        // Belirli bir iş için "Sorun Bildir" akışı: API endpoint'ini kullan
+        const res = await fetch('/api/support/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ job_id: relatedJobId, reason: message.trim() }),
+        })
 
-    if (error) {
-      toast.error('Talep oluşturulamadı: ' + error.message)
-      return
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          toast.error(data.error || 'Talep oluşturulamadı.')
+          return
+        }
+
+        toast.success('Talebiniz alındı. En kısa sürede dönüş yapacağız.')
+      } else {
+        // Genel destek talebi: doğrudan support_tickets tablosuna yaz
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          toast.error('Oturum bulunamadı. Lütfen tekrar giriş yapın.')
+          return
+        }
+
+        const catLabel = CATEGORIES.find((c) => c.value === category)?.label || category || 'Genel'
+        const { error } = await supabase.from('support_tickets').insert({
+          customer_id: user.id,
+          provider_id: null,
+          category: category || 'feedback',
+          title: catLabel,
+          related_job_id: null,
+          message: message.trim(),
+          status: 'pending',
+        })
+
+        if (error) {
+          toast.error('Talep oluşturulamadı: ' + error.message)
+          return
+        }
+
+        toast.success('Destek talebiniz alındı. En kısa sürede dönüş yapacağız.')
+      }
+
+      setCategory('')
+      setRelatedJobId('')
+      setMessage('')
+
+      // Kullanıcının taleplerini yeniden yükle
+      const supabaseForReload = createClient()
+      const { data: { user: reloadUser } } = await supabaseForReload.auth.getUser()
+      if (reloadUser) {
+        loadTickets(reloadUser.id)
+      }
+    } finally {
+      setSubmitting(false)
     }
-
-    toast.success('Destek talebiniz alındı. En kısa sürede dönüş yapacağız.')
-    setCategory('')
-    setRelatedJobId('')
-    setMessage('')
-    loadTickets(user.id)
   }
 
   return (
