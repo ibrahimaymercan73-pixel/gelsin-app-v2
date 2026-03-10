@@ -148,25 +148,13 @@ export default function AdminDisputesPage() {
         data: { session },
       } = await supabase.auth.getSession()
 
-      const { data: payment } = await supabase
-        .from('payments')
-        .select('id')
-        .eq('job_id', r.related_job_id)
-        .in('status', ['in_escrow', 'disputed'])
-        .maybeSingle()
-
-      if (!payment?.id) {
-        toast.error('Bu iş için iade edilebilir (in_escrow veya disputed) ödeme bulunamadı.')
-        return
-      }
-
       const res = await fetch('/api/paytr/refund', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
         },
-        body: JSON.stringify({ payment_id: payment.id, support_ticket_id: r.id }),
+        body: JSON.stringify({ job_id: r.related_job_id, support_ticket_id: r.id }),
       })
       const data: any = await res.json().catch(() => ({}))
       if (!res.ok) {
