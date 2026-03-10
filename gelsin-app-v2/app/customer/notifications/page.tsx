@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 type Notification = {
@@ -16,11 +18,14 @@ type Notification = {
 export default function CustomerNotificationsPage() {
   const [items, setItems] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     const load = async () => {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         setItems([])
         setLoading(false)
@@ -35,12 +40,6 @@ export default function CustomerNotificationsPage() {
 
       const list = (data || []) as Notification[]
       setItems(list.filter((n) => n.type !== 'chat_message'))
-
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('user_id', user.id)
-        .eq('is_read', false)
 
       setLoading(false)
     }
@@ -71,14 +70,25 @@ export default function CustomerNotificationsPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {items.map((n) => (
-              <div
-                key={n.id}
-                className={`w-full text-left bg-white rounded-2xl p-4 border shadow-sm ${
-                  n.is_read ? 'border-slate-100' : 'border-blue-200'
-                }`}
-              >
-                <div className="flex items-start gap-3">
+            {items.map((n) => {
+              const clickable = !!n.related_job_id
+
+              const handleClick = async () => {
+                if (!n.related_job_id) return
+                const supabase = createClient()
+                await supabase.from('notifications').update({ is_read: true }).eq('id', n.id)
+                router.push(`/customer/jobs/${n.related_job_id}`)
+              }
+
+              return (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={handleClick}
+                  className={`w-full text-left bg-white rounded-2xl p-4 border shadow-sm flex items-center gap-3 transition-colors ${
+                    n.is_read ? 'border-slate-100' : 'border-blue-200'
+                  } ${clickable ? 'cursor-pointer hover:bg-slate-50' : ''}`}
+                >
                   <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
                     <span className="text-lg">🔔</span>
                   </div>
@@ -91,9 +101,12 @@ export default function CustomerNotificationsPage() {
                       {new Date(n.created_at).toLocaleString('tr-TR')}
                     </p>
                   </div>
-                </div>
-              </div>
-            ))}
+                  {clickable && (
+                    <ChevronRight className="w-4 h-4 text-slate-300 flex-shrink-0" />
+                  )}
+                </button>
+              )
+            })}
           </div>
         )}
       </div>

@@ -272,16 +272,23 @@ export default function ProviderNotificationsPage() {
               {items.map((n) => {
                 const isChat = n.type === 'chat_message' && n.related_job_id
                 const isBargain = n.type === 'offer_negotiate' && n.related_job_id
-                const clickable = isChat || isBargain
+                const clickable = !!n.related_job_id || isChat || isBargain
                 const unread = n.is_read === false || n.is_read == null
 
-                const handleClick = () => {
+                const handleClick = async () => {
                   if (!n.related_job_id) return
+                  const supabase = createClient()
+                  await supabase.from('notifications').update({ is_read: true }).eq('id', n.id)
+
                   if (isBargain) {
                     router.push('/provider/jobs?bargain=' + n.related_job_id)
                     return
                   }
-                  if (isChat) openChat(n.related_job_id)
+                  if (isChat) {
+                    openChat(n.related_job_id)
+                    return
+                  }
+                  router.push('/provider/my-jobs?job=' + n.related_job_id)
                 }
 
                 return (
@@ -289,7 +296,7 @@ export default function ProviderNotificationsPage() {
                     key={n.id}
                     type="button"
                     onClick={handleClick}
-                    className={`w-full text-left rounded-2xl p-4 border shadow-sm flex items-start gap-3 ${
+                    className={`w-full text-left rounded-2xl p-4 border shadow-sm flex items-start gap-3 transition-colors ${
                       unread ? 'bg-blue-50/50 border-blue-200' : 'bg-white border-slate-100'
                     } ${clickable ? 'hover:bg-slate-50 cursor-pointer' : ''}`}
                   >
@@ -310,6 +317,9 @@ export default function ProviderNotificationsPage() {
                         {formatRelativeDate(n.created_at)}
                       </p>
                     </div>
+                    {clickable && (
+                      <span className="flex-shrink-0 text-slate-300 text-xs mt-1">{'>'}</span>
+                    )}
                   </button>
                 )
               })}
