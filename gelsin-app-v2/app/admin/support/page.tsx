@@ -16,6 +16,8 @@ type Ticket = {
   related_job_id: string | null
   created_at: string
   updated_at: string
+  admin_reply?: string | null
+  replied_at?: string | null
   customer?: { full_name: string | null }[] | { full_name: string | null }
   provider?: { full_name: string | null }[] | { full_name: string | null }
 }
@@ -54,6 +56,7 @@ export default function AdminSupportPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState<string>('')
 
   const load = async () => {
     const supabase = createClient()
@@ -70,6 +73,8 @@ export default function AdminSupportPage() {
         related_job_id,
         created_at,
         updated_at,
+        admin_reply,
+        replied_at,
         customer:profiles!support_tickets_customer_id_fkey(full_name),
         provider:profiles!support_tickets_provider_id_fkey(full_name)
       `)
@@ -79,7 +84,11 @@ export default function AdminSupportPage() {
       toast.error('Talepler yüklenemedi: ' + error.message)
       setTickets([])
     } else {
-      setTickets((data as Ticket[]) || [])
+      const list = (data as Ticket[]) || []
+      setTickets(list)
+      // Detaydaki yanıt alanını mevcut admin_reply ile doldur
+      const current = detailId ? list.find((t) => t.id === detailId) : null
+      setReplyText(current?.admin_reply || '')
     }
     setLoading(false)
   }
@@ -150,6 +159,44 @@ export default function AdminSupportPage() {
   })
 
   const selectedTicket = tickets.find((t) => t.id === detailId)
+
+  const handleReply = async () => {
+    if (!selectedTicket) return
+    if (!replyText.trim()) {
+      toast.error('Lütfen yanıt metnini yazın.')
+      return
+    }
+    setUpdatingId(selectedTicket.id)
+    const supabase = createClient()
+    const now = new Date().toISOString()
+
+    const { error } = await supabase
+      .from('support_tickets')
+      .update({ admin_reply: replyText.trim(), replied_at: now, status: 'in_progress', updated_at: now })
+      .eq('id', selectedTicket.id)
+
+    if (error) {
+      setUpdatingId(null)
+      toast.error('Yanıt kaydedilemedi: ' + error.message)
+      return
+    }
+
+    // Müşteriye/ustaya bildirim gönder
+    const targetUserId = selectedTicket.customer_id || selectedTicket.provider_id
+    if (targetUserId) {
+      await supabase.from('notifications').insert({
+        user_id: targetUserId,
+        title: 'Destek talebinize yanıt geldi',
+        body: replyText.trim(),
+        type: 'support_reply',
+        related_job_id: selectedTicket.related_job_id,
+      })
+    }
+
+    setUpdatingId(null)
+    toast.success('Yanıt gönderildi.')
+    load()
+  }
 
   return (
     <div className="p-6 lg:p-10 max-w-6xl mx-auto space-y-6">
@@ -280,6 +327,37 @@ export default function AdminSupportPage() {
           {selectedTicket.related_job_id && (
             <p className="text-slate-500 text-sm mt-2">İlgili iş ID: {selectedTicket.related_job_id}</p>
           )}
+          {selectedTicket.admin_reply && (
+            <div className="mt-4 px-4 py-3 rounded-xl bg-slate-50 border border-slate-100">
+              <p className="text-xs font-semibold text-slate-500 mb-1">Son admin yanıtı</p>
+              <p className="text-sm text-slate-800 whitespace-pre-wrap">{selectedTicket.admin_reply}</p>
+              {selectedTicket.replied_at && (
+                <p className="text-[11px] text-slate-400 mt-1">
+                  {new Date(selectedTicket.replied_at).toLocaleString('tr-TR')}
+                </p>
+              )}
+            </div>
+          )}
+          <div className="mt-4 space-y-2">
+            <label className="block text-xs font-semibold text-slate-600">
+              Yanıt Yaz
+            </label>
+            <textarea
+              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              placeholder="Müşteriye veya ustaya göndermek istediğiniz yanıtı buraya yazın..."
+            />
+            <button
+              type="button"
+              onClick={handleReply}
+              disabled={updatingId === selectedTicket.id}
+              className="inline-flex items-center px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50"
+            >
+              Yanıtı Gönder
+            </button>
+          </div>
         </div>
       )}
     </div>

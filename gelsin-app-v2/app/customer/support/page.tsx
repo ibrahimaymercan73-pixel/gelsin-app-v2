@@ -22,6 +22,8 @@ type TicketRow = {
   message: string
   status: string
   created_at: string
+  admin_reply?: string | null
+  replied_at?: string | null
 }
 
 function formatTicketDate(iso: string): string {
@@ -71,7 +73,7 @@ export default function CustomerSupportPage() {
     const supabase = createClient()
     const { data, error } = await supabase
       .from('support_tickets')
-      .select('id, category, title, message, status, created_at')
+      .select('id, category, title, message, status, created_at, admin_reply, replied_at')
       .eq('customer_id', userId)
       .order('created_at', { ascending: false })
     setTicketsLoading(false)
@@ -298,6 +300,17 @@ export default function CustomerSupportPage() {
                       </span>
                       <span className="text-xs text-slate-500">{formatTicketDate(t.created_at)}</span>
                     </div>
+                    {t.admin_reply && (
+                      <div className="mt-3 px-3 py-2 rounded-xl bg-blue-50 border border-blue-100">
+                        <p className="text-[11px] font-semibold text-blue-700 mb-1">Destek Yanıtı</p>
+                        <p className="text-xs text-slate-800 whitespace-pre-wrap">{t.admin_reply}</p>
+                        {t.replied_at && (
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            {new Date(t.replied_at).toLocaleString('tr-TR')}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
