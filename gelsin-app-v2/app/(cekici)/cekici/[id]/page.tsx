@@ -195,6 +195,8 @@ export default function CekiciDetailPage() {
   const mediaUrls: string[] = Array.isArray(job.images) ? (job.images as string[]) : Array.isArray((job as any).media_urls) ? ((job as any).media_urls as string[]) : []
   const isAccepted = status === 'accepted' || status === 'started'
   const isCompleted = status === 'completed'
+  const jobDescription: string | null =
+    typeof (job as any).description === 'string' ? ((job as any).description as string) : null
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-24">
@@ -218,8 +220,8 @@ export default function CekiciDetailPage() {
             </span>
           </div>
           <p className="text-sm font-medium text-slate-200">{job.title as string}</p>
-          {job.description && (
-            <p className="text-xs text-slate-400 mt-1 whitespace-pre-line">{String(job.description)}</p>
+          {jobDescription && (
+            <p className="text-xs text-slate-400 mt-1 whitespace-pre-line">{jobDescription}</p>
           )}
           {job.address && (
             <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
