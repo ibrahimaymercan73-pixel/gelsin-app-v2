@@ -197,6 +197,8 @@ export default function CekiciDetailPage() {
   const isCompleted = status === 'completed'
   const jobDescription: string | null =
     typeof (job as any).description === 'string' ? ((job as any).description as string) : null
+  const jobAddress: string | null =
+    typeof (job as any).address === 'string' ? ((job as any).address as string) : null
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-24">
@@ -223,10 +225,10 @@ export default function CekiciDetailPage() {
           {jobDescription && (
             <p className="text-xs text-slate-400 mt-1 whitespace-pre-line">{jobDescription}</p>
           )}
-          {job.address && (
+          {jobAddress && (
             <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5 text-orange-500" />
-              {String(job.address)}
+              {jobAddress}
             </p>
           )}
           {mediaUrls.length > 0 && (
