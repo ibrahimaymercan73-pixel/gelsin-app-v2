@@ -1,28 +1,23 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUserAndRole } from '@/lib/auth'
-import { createClient } from '@/lib/supabase'
+
+const navItems = [
+  { href: '/admin', icon: '📊', label: 'Özet' },
+  { href: '/admin/approvals', icon: '✅', label: 'Onay' },
+  { href: '/admin/cekici', icon: '🚛', label: 'Çekici Başvuruları' },
+  { href: '/admin/sofor', icon: '👨‍✈️', label: 'Şoför Başvuruları' },
+  { href: '/admin/live', icon: '🗺️', label: 'Canlı' },
+  { href: '/admin/finance', icon: '💰', label: 'Finans' },
+  { href: '/admin/messages', icon: '💬', label: 'Mesajlar' },
+  { href: '/admin/users', icon: '👥', label: 'Kullanıcılar' },
+]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [openDisputesCount, setOpenDisputesCount] = useState(0)
-
-  const navItems = useMemo(
-    () => [
-      { href: '/admin', icon: '📊', label: 'Özet' },
-      { href: '/admin/disputes', icon: '⚖️', label: 'Anlaşmazlıklar', badge: openDisputesCount },
-      { href: '/admin/approvals', icon: '✅', label: 'Onay' },
-      { href: '/admin/live', icon: '🗺️', label: 'Canlı' },
-      { href: '/admin/finance', icon: '💰', label: 'Finans' },
-      { href: '/admin/messages', icon: '💬', label: 'Mesajlar' },
-      { href: '/admin/support', icon: '🆘', label: 'Destek' },
-      { href: '/admin/users', icon: '👥', label: 'Kullanıcılar' },
-    ],
-    [openDisputesCount]
-  )
 
   useEffect(() => {
     const check = async () => {
@@ -38,26 +33,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     check()
   }, [router])
 
-  useEffect(() => {
-    let cancelled = false
-    const loadCount = async () => {
-      const supabase = createClient()
-      const { data: rows } = await supabase
-        .from('support_tickets')
-        .select('id, status')
-        .in('status', ['pending', 'in_progress'])
-      if (!cancelled) setOpenDisputesCount((rows || []).length)
-    }
-    loadCount()
-    const t = setInterval(loadCount, 15000)
-    return () => {
-      cancelled = true
-      clearInterval(t)
-    }
-  }, [])
-
   return (
-    <div className="min-h-screen bg-[#F4F7FA] flex font-sans">
+    <div className="min-h-dvh bg-[#F4F7FA] flex font-sans">
 
       {/* ── DESKTOP SIDEBAR ── */}
       <aside className="hidden lg:flex w-64 bg-slate-900 flex-col fixed h-full z-50">
@@ -84,12 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 }`}
               >
                 <span className="text-lg">{item.icon}</span>
-                <span className="flex-1">{item.label}</span>
-                {typeof (item as any).badge === 'number' && (item as any).badge > 0 && (
-                  <span className="ml-auto text-[11px] font-black px-2 py-0.5 rounded-full bg-rose-500 text-white">
-                    {(item as any).badge}
-                  </span>
-                )}
+                {item.label}
               </Link>
             )
           })}
@@ -104,7 +76,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* ── ANA İÇERİK ── */}
-      <main className="flex-1 lg:ml-64 pb-24 lg:pb-0 overflow-y-auto">
+      <main className="flex-1 lg:ml-64 pb-24 lg:pb-0">
         {children}
       </main>
 
@@ -120,14 +92,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 isActive ? 'text-blue-400' : 'text-slate-500'
               }`}
             >
-              <span className="text-xl relative">
-                {item.icon}
-                {typeof (item as any).badge === 'number' && (item as any).badge > 0 && (
-                  <span className="absolute -top-1.5 -right-2 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-rose-500 text-white leading-none">
-                    {(item as any).badge}
-                  </span>
-                )}
-              </span>
+              <span className="text-xl">{item.icon}</span>
               <span className="text-[10px] font-bold">{item.label}</span>
             </Link>
           )
