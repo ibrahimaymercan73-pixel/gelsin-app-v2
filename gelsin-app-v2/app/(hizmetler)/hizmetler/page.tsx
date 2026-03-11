@@ -19,7 +19,7 @@ export default function Page() {
 
         <main className="flex-1 flex flex-col gap-4">
           <Link
-            href="/cekici/giris"
+            href="/hizmetler/giris"
             className="w-full rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 text-slate-950 p-5 shadow-lg shadow-orange-500/30 flex flex-col items-start gap-2 active:scale-[0.99] transition-transform"
           >
             <div className="flex items-center gap-3">
@@ -34,7 +34,7 @@ export default function Page() {
           </Link>
 
           <Link
-            href="/sofor/giris"
+            href="/hizmetler/giris"
             className="w-full rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-slate-900 text-slate-50 p-5 shadow-lg shadow-indigo-800/40 flex flex-col items-start gap-2 active:scale-[0.99] transition-transform"
           >
             <div className="flex items-center gap-3">
