@@ -58,7 +58,7 @@ export default function SoforDetailPage() {
       .order('price', { ascending: true })
 
     const list = (offerRows || []) as any[]
-    const providerIds = [...new Set(list.map((o) => o.provider_id).filter(Boolean))]
+    const providerIds = Array.from(new Set(list.map((o) => o.provider_id).filter(Boolean)))
 
     let profilesById: Record<string, any> = {}
     let providerProfilesById: Record<string, any> = {}
