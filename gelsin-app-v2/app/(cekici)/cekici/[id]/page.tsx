@@ -20,7 +20,7 @@ export default function CekiciDetailPage() {
   const params = useParams()
   const router = useRouter()
   const id = typeof params?.id === 'string' ? params.id : ''
-  const [job, setJob] = useState<Record<string, unknown> | null>(null)
+  const [job, setJob] = useState<any | null>(null)
   const [offers, setOffers] = useState<any[]>([])
   const [counterpart, setCounterpart] = useState<{ full_name: string | null; phone: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
@@ -243,6 +243,7 @@ export default function CekiciDetailPage() {
           )}
         </section>
 
+        {(
         <section className="mb-6">
           <h2 className="text-sm font-semibold text-slate-400 mb-3">Gelen teklifler</h2>
           {offers.length === 0 ? (
@@ -283,6 +284,7 @@ export default function CekiciDetailPage() {
             </ul>
           )}
         </section>
+        ) as any}
 
         {/* ALT - Durum takibi */}
         {(isAccepted || isCompleted) && (counterpart || job.provider_id) && (
