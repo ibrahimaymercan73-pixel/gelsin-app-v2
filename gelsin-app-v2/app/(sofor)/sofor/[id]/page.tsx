@@ -1,60 +1,141 @@
- 'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Star } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 export default function SoforJobDetailPage() {
   const params = useParams()
   const router = useRouter()
 
-  // NOTE: İstek üzerine tüm state'ler any / any[] tipinde tutuluyor
-  const [loading, setLoading] = useState<any>(true)
+  const [checkingSession, setCheckingSession] = useState(true)
   const [job, setJob] = useState<any>(null)
   const [offers, setOffers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const [toast, setToast] = useState<string | null>(null)
+  const [paytrHtml, setPaytrHtml] = useState<string | null>(null)
+  const [paytrLoading, setPaytrLoading] = useState(false)
+
+  const jobId = (params as any)?.id as string | undefined
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true)
-        const supabase = createClient()
+    const init = async () => {
+      const supabase = createClient()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
-        const jobId = (params as any)?.id
-        if (!jobId) {
-          router.replace('/sofor/ilanlar')
-          return
-        }
+      if (!session?.user) {
+        router.replace('/login')
+        return
+      }
 
-        const { data: jdata, error: jerr } = await supabase
-          .from('jobs')
-          .select('*')
-          .eq('id', jobId)
-          .maybeSingle()
+      setCheckingSession(false)
 
-        if (jerr || !jdata) {
-          router.replace('/sofor/ilanlar')
-          return
-        }
+      if (!jobId) {
+        router.replace('/sofor/ilanlar')
+        return
+      }
 
-        setJob(jdata as any)
+      setLoading(true)
+      const { data: jdata } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('id', jobId)
+        .maybeSingle()
 
-        const { data: odata } = await supabase
-          .from('offers')
-          .select('*')
-          .eq('job_id', jobId)
+      if (!jdata) {
+        router.replace('/sofor/ilanlar')
+        return
+      }
 
-        setOffers((odata || []) as any[])
-      } finally {
-        setLoading(false)
+      setJob(jdata as any)
+
+      const { data: odata } = await supabase
+        .from('offers')
+        .select('*')
+        .eq('job_id', jobId)
+
+      setOffers((odata || []) as any[])
+      setLoading(false)
+
+      const channel = supabase
+        .channel(`offers-job-${jobId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'offers',
+            filter: `job_id=eq.${jobId}`,
+          },
+          (payload: any) => {
+            setOffers((prev) => [payload.new, ...prev])
+            setToast('Yeni bir teklif aldınız.')
+            setTimeout(() => setToast(null), 3000)
+          }
+        )
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
       }
     }
 
-    load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    init()
+  }, [jobId, router])
 
-  if (loading) {
+  const statusLabel = (s: any) => {
+    const v = String(s || '').toLowerCase()
+    if (v === 'open') return 'Açık'
+    if (v === 'in_progress') return 'Devam Ediyor'
+    if (v === 'completed') return 'Tamamlandı'
+    return 'Bilinmiyor'
+  }
+
+  const statusColor = (s: any) => {
+    const v = String(s || '').toLowerCase()
+    if (v === 'open') return 'bg-emerald-500/15 text-emerald-300 border-emerald-400/40'
+    if (v === 'in_progress') return 'bg-amber-500/15 text-amber-300 border-amber-400/40'
+    if (v === 'completed') return 'bg-slate-700/60 text-slate-200 border-slate-500/60'
+    return 'bg-slate-800 text-slate-300 border-slate-600'
+  }
+
+  const acceptOffer = async (offer: any) => {
+    if (!jobId) return
+    try {
+      setPaytrLoading(true)
+      const res = await fetch('/api/paytr/create-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobId,
+          offerId: offer.id,
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Ödeme başlatılamadı.')
+      }
+
+      const data = await res.json()
+      if (!data?.html && !data?.iframeHtml) {
+        throw new Error('Geçersiz PayTR yanıtı.')
+      }
+
+      setPaytrHtml(String(data.html || data.iframeHtml))
+    } catch (e: any) {
+      alert(e?.message || 'Teklif kabul edilirken hata oluştu.')
+    } finally {
+      setPaytrLoading(false)
+    }
+  }
+
+  if (checkingSession || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-indigo-950 text-slate-100">
         <Loader2 className="w-6 h-6 animate-spin" />
@@ -65,92 +146,179 @@ export default function SoforJobDetailPage() {
   if (!job) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-indigo-950 text-slate-100">
-        <p>İlan bulunamadı.</p>
+        <p>İş kaydı bulunamadı.</p>
       </div>
     )
   }
 
+  const vehicle = job.vehicle_type || 'Araç'
+  const transmission = job.transmission_type || 'Vites'
+  const pickup = job.pickup_location || job.address || ''
+  const dropoff = job.dropoff_location || ''
+
   return (
     <div className="min-h-screen bg-indigo-950 text-slate-100 pb-24">
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        <header className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.2em] text-amber-400 uppercase">Özel Şoför</p>
-            <h1 className="text-lg font-bold line-clamp-2">
-              {(job as any)?.title || 'İlan Detayı'}
-            </h1>
-          </div>
+      <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
+        <header className="flex items-start justify-between gap-3">
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-3 py-2 rounded-xl bg-indigo-900/80 text-slate-200 text-sm hover:bg-indigo-800"
+            className="rounded-full w-9 h-9 flex items-center justify-center bg-indigo-900/80 border border-indigo-700 text-slate-100"
+            aria-label="Geri"
           >
-            Geri
+            ←
           </button>
+          <div className="flex-1 space-y-2 text-right">
+            <div className="flex items-center justify-end gap-2">
+              <span
+                className={
+                  'inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-medium ' +
+                  statusColor(job.status)
+                }
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                {statusLabel(job.status)}
+              </span>
+            </div>
+            <h1 className="text-base font-semibold leading-snug line-clamp-2">
+              {job.title || 'Şoför Talebi'}
+            </h1>
+            <p className="text-[11px] text-slate-300">
+              {vehicle} · {transmission}
+            </p>
+          </div>
         </header>
 
-        <div className="rounded-2xl border border-indigo-800 bg-indigo-900/40 p-4 space-y-3">
-          {job.description ? (
-            <p className="text-sm text-slate-200 whitespace-pre-line">
+        <section className="rounded-2xl border border-indigo-800 bg-indigo-900/40 p-4 space-y-2 text-xs">
+          {pickup && (
+            <p className="text-slate-200">
+              <span className="font-semibold text-slate-300">
+                Alınacak:
+              </span>{' '}
+              {pickup}
+            </p>
+          )}
+          {dropoff && (
+            <p className="text-slate-200">
+              <span className="font-semibold text-slate-300">
+                Bırakılacak:
+              </span>{' '}
+              {dropoff}
+            </p>
+          )}
+          {job.driver_duration && (
+            <p className="text-slate-200">
+              <span className="font-semibold text-slate-300">
+                Süre:
+              </span>{' '}
+              {job.driver_duration}
+            </p>
+          )}
+          {job.description && (
+            <p className="text-slate-300 whitespace-pre-line mt-1">
               {String(job.description)}
             </p>
-          ) : null}
+          )}
+        </section>
 
-          <div className="text-xs text-slate-400 space-y-1">
-            {job.address && (
-              <p>
-                <span className="font-semibold text-slate-300">Adres: </span>
-                {String(job.address)}
-              </p>
-            )}
-            {job.status && (
-              <p>
-                <span className="font-semibold text-slate-300">Durum: </span>
-                {String(job.status)}
-              </p>
-            )}
-            {job.created_at && (
-              <p>
-                <span className="font-semibold text-slate-300">Oluşturulma: </span>
-                {new Date(job.created_at as any).toLocaleString('tr-TR')}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-slate-100">Teklifler</h2>
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-slate-100">
+            Gelen Teklifler
+          </h2>
           {offers.length === 0 ? (
-            <p className="text-xs text-slate-500">Bu ilana henüz teklif verilmemiş.</p>
+            <div className="rounded-2xl border border-indigo-800 bg-indigo-900/40 p-5 text-center text-xs text-slate-400 animate-pulse">
+              Henüz teklif gelmedi, bekliyorsunuz...
+            </div>
           ) : (
-            <ul className="space-y-2">
-              {offers.map((o: any) => (
-                <li
-                  key={String(o.id)}
-                  className="rounded-xl border border-indigo-800 bg-indigo-900/40 p-3 text-xs text-slate-200 space-y-1"
-                >
-                  {o.price && (
-                    <p>
-                      <span className="font-semibold text-slate-300">Tutar: </span>
-                      {String(o.price)} TL
-                    </p>
-                  )}
-                  {o.estimated_duration && (
-                    <p>
-                      <span className="font-semibold text-slate-300">Süre / Müsaitlik: </span>
-                      {String(o.estimated_duration)}
-                    </p>
-                  )}
-                  {o.message && (
-                    <p className="text-slate-400">{String(o.message)}</p>
-                  )}
-                </li>
-              ))}
+            <ul className="space-y-3">
+              {offers.map((offer) => {
+                const providerName =
+                  offer.provider_name ||
+                  offer.provider_full_name ||
+                  'Usta'
+                const rating = offer.provider_rating
+                const eta =
+                  offer.eta_minutes ||
+                  offer.estimated_duration ||
+                  null
+
+                return (
+                  <li
+                    key={String(offer.id)}
+                    className="rounded-2xl border border-indigo-800 bg-indigo-900/50 p-4 space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold">
+                          {providerName}
+                        </p>
+                        {eta && (
+                          <p className="text-[11px] text-slate-300">
+                            {typeof eta === 'number'
+                              ? `${eta} dakikada oradayım`
+                              : String(eta)}
+                          </p>
+                        )}
+                      </div>
+                      {rating ? (
+                        <div className="flex items-center gap-1 text-xs text-amber-300">
+                          <Star className="w-3 h-3 fill-amber-300 text-amber-300" />
+                          <span>{Number(rating).toFixed(1)}</span>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-lg font-bold text-emerald-300">
+                        {offer.price ? Number(offer.price).toLocaleString('tr-TR') : '-'} TL
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => acceptOffer(offer)}
+                        className="px-3 py-2 rounded-xl bg-emerald-500 text-emerald-950 text-xs font-semibold shadow-md shadow-emerald-900/40 disabled:opacity-60"
+                        disabled={paytrLoading}
+                      >
+                        Teklifi Kabul Et
+                      </button>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </section>
       </div>
+
+      {toast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-slate-900/90 border border-slate-700 text-xs text-slate-100 shadow-lg">
+          {toast}
+        </div>
+      )}
+
+      {paytrHtml && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+              <p className="text-sm font-semibold text-slate-100">
+                Ödeme Ekranı
+              </p>
+              <button
+                type="button"
+                onClick={() => setPaytrHtml(null)}
+                className="text-slate-400 text-sm"
+              >
+                Kapat
+              </button>
+            </div>
+            <div
+              className="bg-white"
+              dangerouslySetInnerHTML={{ __html: paytrHtml }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
 
