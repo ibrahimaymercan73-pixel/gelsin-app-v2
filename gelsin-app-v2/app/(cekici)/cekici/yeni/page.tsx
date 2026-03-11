@@ -323,7 +323,7 @@ export default function CekiciYeniPage() {
               <label className="block text-sm text-slate-400 mb-2">Serbest not (max 300 karakter)</label>
               <textarea
                 value={note}
-                onChange={(e) => setNote(e.target.slice(0, 300))}
+                onChange={(e) => setNote(e.target.value.slice(0, 300))}
                 maxLength={300}
                 rows={3}
                 className="w-full rounded-xl bg-slate-800 border border-slate-700 px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50"
