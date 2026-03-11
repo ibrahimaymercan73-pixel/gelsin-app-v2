@@ -1,14 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Search, ArrowRight, Shield, Clock, Star } from 'lucide-react'
+import { Search, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
-
-const badges = [
-  { icon: Shield, text: 'Güvenli Ödeme' },
-  { icon: Clock, text: 'Anında Teklif' },
-  { icon: Star, text: 'Onaylı Uzmanlar' },
-]
 
 export default function HeroSection() {
   return (
@@ -40,13 +34,25 @@ export default function HeroSection() {
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-sm text-slate-500 mb-12">
           Kayıt gerekmez. Önce uzmanları incele, sonra giriş yap.
         </motion.p>
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex flex-wrap justify-center gap-4 sm:gap-6">
-          {badges.map((b) => (
-            <div key={b.text} className="flex items-center gap-2 text-slate-500">
-              <b.icon className="h-4 w-4 text-orange-500" />
-              <span className="text-sm font-medium">{b.text}</span>
-            </div>
-          ))}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="flex flex-wrap justify-center gap-3 sm:gap-4"
+        >
+          <a
+            href="/cekici"
+            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-full font-semibold"
+          >
+            🚛 Çekici Hizmeti
+          </a>
+
+          <a
+            href="/sofor"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-full font-semibold"
+          >
+            👨‍✈️ Özel Şoför
+          </a>
         </motion.div>
       </div>
     </section>
