@@ -121,8 +121,8 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // Auth sayfalarına giren giriş yapmış kullanıcıları doğrudan paneline yönlendir
-  if (isAuthPage) {
+  // Login sayfasına giren giriş yapmış kullanıcıları doğrudan paneline yönlendir
+  if (pathname === '/login') {
     if (role === 'customer') {
       return NextResponse.redirect(new URL('/customer', req.url))
     }
