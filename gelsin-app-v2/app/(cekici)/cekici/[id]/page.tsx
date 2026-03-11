@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { ChevronLeft, MapPin, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const STATUS_LABELS: Record<string, string> = {
   open: 'Açık',
@@ -117,6 +118,17 @@ export default function CekiciDetailPage() {
     const channel = supabase
       .channel(`cekici-job-${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs', filter: `id=eq.${id}` }, () => load())
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'offers', filter: `job_id=eq.${id}` },
+        (payload) => {
+          const o: any = (payload as any)?.new || null
+          const price = o?.price != null ? String(o.price) : '—'
+          const msg = o?.message ? String(o.message) : (o?.estimated_duration ? String(o.estimated_duration) : '')
+          toast(`Yeni teklif: ${price} TL${msg ? ` - ${msg}` : ''}`)
+          load()
+        }
+      )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'offers', filter: `job_id=eq.${id}` }, () => load())
       .subscribe()
     return () => {
