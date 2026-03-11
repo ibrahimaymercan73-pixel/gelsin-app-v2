@@ -25,6 +25,8 @@ export default function CekiciDetailPage() {
   const [counterpart, setCounterpart] = useState<{ full_name: string | null; phone: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [authChecked, setAuthChecked] = useState(false)
+  const [accepting, setAccepting] = useState<string>('')
+  const [paymentModal, setPaymentModal] = useState<{ token: string; merchantOid: string } | null>(null)
 
   const load = async () => {
     if (!id) return
@@ -136,6 +138,41 @@ export default function CekiciDetailPage() {
     }
   }, [id])
 
+  const startPaymentForOffer = async (offer: any) => {
+    if (!job || !job.id) return
+    setAccepting(offer.id)
+    try {
+      const res = await fetch('/api/paytr/create-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          job_id: job.id,
+          offer_id: offer.id,
+          amount: offer.price,
+        }),
+      })
+      const data: any = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        if (data?.code === 'already_paid') {
+          toast.error('Bu teklif için ödeme zaten alınmış görünüyor.')
+        } else {
+          toast.error(data?.error || 'Ödeme başlatılamadı. Lütfen tekrar deneyin.')
+        }
+        return
+      }
+      if (!data?.token) {
+        toast.error('Ödeme servisi beklenmeyen yanıt döndürdü.')
+        return
+      }
+      setPaymentModal({ token: data.token as string, merchantOid: data.merchant_oid as string })
+    } catch (e) {
+      console.error('[paytr-start]', e)
+      toast.error('Ödeme başlatılırken bir hata oluştu. Lütfen tekrar deneyin.')
+    } finally {
+      setAccepting('')
+    }
+  }
+
   if (!authChecked || loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -232,10 +269,11 @@ export default function CekiciDetailPage() {
                   )}
                   <button
                     type="button"
-                    disabled
-                    className="w-full py-2.5 rounded-xl bg-slate-700 text-slate-400 text-sm font-medium cursor-not-allowed"
+                    onClick={() => startPaymentForOffer(offer)}
+                    disabled={!!accepting}
+                    className="w-full py-2.5 rounded-xl bg-orange-500 text-white text-sm font-medium disabled:opacity-60"
                   >
-                    Teklifi Kabul Et (Yakında)
+                    {accepting === offer.id ? 'İşleniyor...' : 'Teklifi Kabul Et'}
                   </button>
                 </li>
               ))}
@@ -275,6 +313,31 @@ export default function CekiciDetailPage() {
           </section>
         )}
       </div>
+
+      {paymentModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+              <p className="font-semibold text-slate-900 text-sm">Güvenli Ödeme – PayTR</p>
+              <button
+                type="button"
+                onClick={() => setPaymentModal(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100"
+                aria-label="Kapat"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src={`https://www.paytr.com/odeme/guvenli/${paymentModal.token}`}
+                className="w-full h-[600px] border-0"
+                allow="payment"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -105,11 +105,19 @@ export default function SoforTekliflerimPage() {
   const completeJob = async (jobId: string) => {
     setUpdatingJobId(jobId)
     try {
-      const supabase = createClient()
-      const { error } = await supabase.from('jobs').update({ status: 'completed' }).eq('id', jobId)
-      if (error) throw error
+      const res = await fetch('/api/qr/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId, action: 'end' }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        alert(data?.error || 'İş tamamlanamadı.')
+        setUpdatingJobId(null)
+        return
+      }
       await load()
-      alert('İş tamamlandı olarak işaretlendi.')
+      alert('İş tamamlandı ve ödeme süreci başlatıldı.')
     } catch (e: any) {
       alert(e?.message || 'Güncellenemedi.')
     } finally {

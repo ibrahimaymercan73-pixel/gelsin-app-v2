@@ -55,6 +55,9 @@ export async function middleware(req: NextRequest) {
   const isProviderArea = pathname.startsWith('/provider')
   const isAdminArea = pathname.startsWith('/admin')
   const isChatArea = pathname.startsWith('/chat')
+  const isHizmetlerArea = pathname.startsWith('/hizmetler')
+  const isCekiciUstalarArea = pathname.startsWith('/cekici/ustalar')
+  const isSoforUstalarArea = pathname.startsWith('/sofor/ustalar')
 
   // Eski onboarding route → choose-role
   if (pathname.startsWith('/provider/onboarding')) {
@@ -65,9 +68,17 @@ export async function middleware(req: NextRequest) {
 
   // Giriş yapılmamış kullanıcılar için panel ve sohbet sayfalarını koru
   if (!user) {
-    if (isCustomerArea || isProviderArea || isAdminArea || isChatArea) {
+    if (isHizmetlerArea || isCekiciUstalarArea || isSoforUstalarArea || isCustomerArea || isProviderArea || isAdminArea || isChatArea) {
       const redirectUrl = new URL('/login', req.url)
-      redirectUrl.searchParams.set('redirect', pathname)
+      if (isHizmetlerArea) {
+        redirectUrl.searchParams.set('redirect', '/hizmetler')
+      } else if (isCekiciUstalarArea) {
+        redirectUrl.searchParams.set('redirect', '/cekici/ustalar')
+      } else if (isSoforUstalarArea) {
+        redirectUrl.searchParams.set('redirect', '/sofor/ustalar')
+      } else {
+        redirectUrl.searchParams.set('redirect', pathname)
+      }
       const redirectRes = NextResponse.redirect(redirectUrl)
       // Supabase'in güncellediği cookie'leri redirect response'a kopyala (session refresh vb.)
       res.cookies.getAll().forEach((c) => redirectRes.cookies.set(c.name, c.value, c))

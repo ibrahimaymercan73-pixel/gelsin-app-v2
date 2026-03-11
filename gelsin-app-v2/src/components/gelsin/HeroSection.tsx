@@ -41,14 +41,14 @@ export default function HeroSection() {
           className="flex flex-wrap justify-center gap-3 sm:gap-4"
         >
           <a
-            href="/cekici"
+            href="/hizmetler"
             className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-full font-semibold"
           >
             🚛 Çekici Hizmeti
           </a>
 
           <a
-            href="/sofor"
+            href="/hizmetler"
             className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-full font-semibold"
           >
             👨‍✈️ Özel Şoför
