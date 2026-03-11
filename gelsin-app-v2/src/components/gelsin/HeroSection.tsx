@@ -34,26 +34,6 @@ export default function HeroSection() {
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-sm text-slate-500 mb-12">
           Kayıt gerekmez. Önce uzmanları incele, sonra giriş yap.
         </motion.p>
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="flex flex-wrap justify-center gap-3 sm:gap-4"
-        >
-          <a
-            href="/hizmetler/giris"
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-full font-semibold"
-          >
-            🚛 Çekici Hizmeti
-          </a>
-
-          <a
-            href="/hizmetler/giris"
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-full font-semibold"
-          >
-            👨‍✈️ Özel Şoför
-          </a>
-        </motion.div>
       </div>
     </section>
   )
