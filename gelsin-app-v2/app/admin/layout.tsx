@@ -7,6 +7,7 @@ import { getCurrentUserAndRole } from '@/lib/auth'
 const navItems = [
   { href: '/admin', icon: '📊', label: 'Özet' },
   { href: '/admin/approvals', icon: '✅', label: 'Onay' },
+  { href: '/admin/disputes', icon: '⚖️', label: 'Anlaşmazlıklar' },
   { href: '/admin/cekici', icon: '🚛', label: 'Çekici Başvuruları' },
   { href: '/admin/sofor', icon: '👨‍✈️', label: 'Şoför Başvuruları' },
   { href: '/admin/live', icon: '🗺️', label: 'Canlı' },
