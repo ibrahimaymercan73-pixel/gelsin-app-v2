@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { createHizmetlerClient } from '@/lib/supabase-hizmetler'
 
 export default function SoforLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -10,12 +10,16 @@ export default function SoforLayout({ children }: { children: React.ReactNode })
   const [ok, setOk] = useState(false)
 
   useEffect(() => {
+    const publicPaths = ['/sofor/giris', '/sofor/kayit']
+    if (publicPaths.includes(pathname)) {
+      setOk(true)
+      return
+    }
     const run = async () => {
-      const supabase = createClient()
+      const supabase = createHizmetlerClient()
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        const redirect = encodeURIComponent(pathname || '/sofor')
-        router.replace(`/login?redirect=${redirect}`)
+        router.replace('/sofor/giris')
         return
       }
       setOk(true)
