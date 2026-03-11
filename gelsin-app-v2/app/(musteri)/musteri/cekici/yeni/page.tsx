@@ -22,14 +22,12 @@ export default function MusteriCekiciYeniPage() {
 
   // Adım 3
   const [pickupLocation, setPickupLocation] = useState('')
-  const [files, setFiles] = useState<FileList | null>(null)
 
   const supabase = createHizmetlerClient()
 
   const canNextFromStep1 = () => brand.trim() !== '' && model.trim() !== ''
   const canNextFromStep2 = () => breakdownType !== null
-  const canSubmit = () =>
-    pickupLocation.trim() !== '' && files && files.length > 0
+  const canSubmit = () => pickupLocation.trim() !== ''
 
   const handleNext = () => {
     if (step === 1 && !canNextFromStep1()) return
@@ -53,24 +51,6 @@ export default function MusteriCekiciYeniPage() {
         return
       }
 
-      const uploadedUrls: string[] = []
-      if (files) {
-        for (const file of Array.from(files)) {
-          const form = new FormData()
-          form.append('file', file)
-          form.append('bucket', 'job-media')
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            body: form,
-          })
-          const data = await res.json()
-          if (!res.ok) {
-            throw new Error(data?.error || 'Fotoğraf yüklenemedi')
-          }
-          uploadedUrls.push(data.publicUrl)
-        }
-      }
-
       const { data, error } = await supabase
         .from('jobs')
         .insert({
@@ -81,7 +61,6 @@ export default function MusteriCekiciYeniPage() {
           vehicle_type: `${brand.trim()} ${model.trim()}`,
           breakdown_type: breakdownType,
           pickup_location: pickupLocation.trim(),
-          images: uploadedUrls,
         } as any)
         .select('id')
         .single()
@@ -195,18 +174,6 @@ export default function MusteriCekiciYeniPage() {
                   rows={3}
                   className="w-full rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-orange-500/40"
                   placeholder="Aracın bulunduğu adresi mümkün olduğunca detaylı yazın."
-                />
-              </div>
-              <div>
-                <label className="block mb-1 text-slate-200">
-                  Fotoğraflar (en az 1)
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => setFiles(e.target.files)}
-                  className="w-full text-xs text-slate-300"
                 />
               </div>
             </div>
