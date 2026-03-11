@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, MapPin, RefreshCw } from 'lucide-react'
-import { createClient } from '@/lib/supabase'
+import { createHizmetlerClient } from '@/lib/supabase-hizmetler'
 
 type JobRow = {
   id: string
@@ -32,7 +32,7 @@ export default function CekiciUstalarPage() {
 
   useEffect(() => {
     const init = async () => {
-      const supabase = createClient()
+      const supabase = createHizmetlerClient()
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -74,7 +74,7 @@ export default function CekiciUstalarPage() {
 
     const loadJobs = async () => {
       setLoadingJobs(true)
-      const supabase = createClient()
+      const supabase = createHizmetlerClient()
       const { data: jrows } = await supabase
         .from('jobs')
         .select(
@@ -118,7 +118,7 @@ export default function CekiciUstalarPage() {
     init()
   }, [router])
 
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => createHizmetlerClient(), [])
 
   const toggleAvailable = async () => {
     if (!profile) return

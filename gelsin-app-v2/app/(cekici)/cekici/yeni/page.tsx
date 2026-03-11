@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { createHizmetlerClient } from '@/lib/supabase-hizmetler'
 import {
   Car,
   Truck,
@@ -57,7 +57,7 @@ export default function CekiciYeniPage() {
 
   useEffect(() => {
     const check = async () => {
-      const supabase = createClient()
+      const supabase = createHizmetlerClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.replace('/login?redirect=/cekici/yeni')
@@ -71,7 +71,7 @@ export default function CekiciYeniPage() {
   useEffect(() => {
     if (!authChecked) return
     const load = async () => {
-      const supabase = createClient()
+      const supabase = createHizmetlerClient()
       const { data } = await supabase
         .from('service_categories')
         .select('id')
@@ -145,7 +145,7 @@ export default function CekiciYeniPage() {
 
   const submit = async () => {
     if (!categoryId || !canSubmit) return
-    const supabase = createClient()
+    const supabase = createHizmetlerClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       router.replace('/login?redirect=/cekici/yeni')

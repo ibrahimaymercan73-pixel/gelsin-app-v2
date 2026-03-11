@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, MapPin, RefreshCw, Clock } from 'lucide-react'
-import { createClient } from '@/lib/supabase'
+import { createHizmetlerClient } from '@/lib/supabase-hizmetler'
 
 type JobRow = {
   id: string
@@ -33,7 +33,7 @@ export default function SoforUstalarPage() {
 
   useEffect(() => {
     const init = async () => {
-      const supabase = createClient()
+      const supabase = createHizmetlerClient()
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -75,7 +75,7 @@ export default function SoforUstalarPage() {
 
     const loadJobs = async () => {
       setLoadingJobs(true)
-      const supabase = createClient()
+      const supabase = createHizmetlerClient()
       const { data: jrows } = await supabase
         .from('jobs')
         .select(
@@ -120,7 +120,7 @@ export default function SoforUstalarPage() {
     init()
   }, [router])
 
-  const supabase = useMemo(() => createClient(), [])
+  const supabase = useMemo(() => createHizmetlerClient(), [])
 
   const toggleAvailable = async () => {
     if (!profile) return

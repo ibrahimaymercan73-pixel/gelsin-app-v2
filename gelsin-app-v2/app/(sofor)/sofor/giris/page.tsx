@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase'
+import { createHizmetlerClient } from '@/lib/supabase-hizmetler'
 
 type Tab = 'login' | 'register'
 
@@ -15,7 +15,7 @@ export default function SoforGirisPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const supabase = createClient()
+  const supabase = createHizmetlerClient()
 
   const handleLogin = async () => {
     if (!email || !password) return

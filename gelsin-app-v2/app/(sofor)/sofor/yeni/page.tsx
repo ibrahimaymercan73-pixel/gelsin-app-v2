@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { createHizmetlerClient } from '@/lib/supabase-hizmetler'
 
 type Step = 1 | 2 | 3
 type ServiceKind = 'one-way' | 'hourly'
@@ -43,7 +43,7 @@ export default function Page() {
 
   useEffect(() => {
     const check = async () => {
-      const supabase = createClient()
+      const supabase = createHizmetlerClient()
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -163,7 +163,7 @@ export default function Page() {
 
     setSubmitting(true)
     try {
-      const supabase = createClient()
+      const supabase = createHizmetlerClient()
       const { data, error } = await supabase
         .from('jobs')
         .insert({

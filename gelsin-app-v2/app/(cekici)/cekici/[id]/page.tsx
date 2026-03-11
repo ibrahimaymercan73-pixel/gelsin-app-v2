@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Loader2, Star } from 'lucide-react'
-import { createClient } from '@/lib/supabase'
+import { createHizmetlerClient } from '@/lib/supabase-hizmetler'
 
 export default function CekiciJobDetailPage() {
   const params = useParams()
@@ -22,7 +22,7 @@ export default function CekiciJobDetailPage() {
 
   useEffect(() => {
     const init = async () => {
-      const supabase = createClient()
+      const supabase = createHizmetlerClient()
       const {
         data: { session },
       } = await supabase.auth.getSession()
