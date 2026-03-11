@@ -92,7 +92,7 @@ export default function MusteriCekiciYeniPage() {
 
       router.replace(`/musteri/cekici/bekle/${data.id}`)
     } catch (e: any) {
-      alert(e?.message || 'Talep oluşturulamadı.')
+      console.error(e)
     } finally {
       setLoading(false)
     }

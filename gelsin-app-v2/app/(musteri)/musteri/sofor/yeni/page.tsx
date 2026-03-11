@@ -92,7 +92,7 @@ export default function MusteriSoforYeniPage() {
 
       router.replace(`/musteri/sofor/bekle/${data.id}`)
     } catch (e: any) {
-      alert(e?.message || 'Talep oluşturulamadı.')
+      console.error(e)
     } finally {
       setLoading(false)
     }
