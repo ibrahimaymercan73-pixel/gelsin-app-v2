@@ -1,31 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import Link from 'next/link'
 
 export default function Page() {
-  const router = useRouter()
-
-  useEffect(() => {
-    const checkSession = async () => {
-      const supabase = createClient()
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      if (!session) {
-        router.replace('/login?redirect=/hizmetler')
-      }
-    }
-
-    checkSession()
-  }, [router])
-
-  const goTo = (path: string) => {
-    router.push(path)
-  }
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col">
       <div className="flex-1 flex flex-col max-w-md w-full mx-auto px-4 py-6 gap-6">
@@ -41,9 +18,8 @@ export default function Page() {
         </header>
 
         <main className="flex-1 flex flex-col gap-4">
-          <button
-            type="button"
-            onClick={() => goTo('/cekici/yeni')}
+          <Link
+            href="/cekici/giris"
             className="w-full rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 text-slate-950 p-5 shadow-lg shadow-orange-500/30 flex flex-col items-start gap-2 active:scale-[0.99] transition-transform"
           >
             <div className="flex items-center gap-3">
@@ -55,11 +31,10 @@ export default function Page() {
                 </span>
               </div>
             </div>
-          </button>
+          </Link>
 
-          <button
-            type="button"
-            onClick={() => goTo('/sofor/yeni')}
+          <Link
+            href="/sofor/giris"
             className="w-full rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-slate-900 text-slate-50 p-5 shadow-lg shadow-indigo-800/40 flex flex-col items-start gap-2 active:scale-[0.99] transition-transform"
           >
             <div className="flex items-center gap-3">
@@ -71,28 +46,10 @@ export default function Page() {
                 </span>
               </div>
             </div>
-          </button>
+          </Link>
         </main>
-
-        <footer className="flex flex-col gap-3 pb-2 text-xs text-slate-400">
-          <button
-            type="button"
-            onClick={() => goTo('/hizmetler/gecmis')}
-            className="text-center underline underline-offset-4 decoration-slate-600 hover:text-slate-200"
-          >
-            Geçmiş Taleplerim
-          </button>
-          <button
-            type="button"
-            onClick={() => goTo('/')}
-            className="text-center underline underline-offset-4 decoration-slate-600 hover:text-slate-200"
-          >
-            Ana Sayfaya Dön
-          </button>
-        </footer>
       </div>
     </div>
   )
 }
-
 
