@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
@@ -16,8 +16,22 @@ export default function HizmetlerGirisPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [showChoices, setShowChoices] = useState(false)
+  const [sessionChecked, setSessionChecked] = useState(false)
 
   const supabase = createHizmetlerClient()
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (session?.user) {
+        setShowChoices(true)
+      }
+      setSessionChecked(true)
+    }
+    checkSession()
+  }, [supabase])
 
   const handleLogin = async () => {
     if (!email || !password) return
@@ -69,6 +83,14 @@ export default function HizmetlerGirisPage() {
     } else {
       await handleRegister()
     }
+  }
+
+  if (!sessionChecked) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
+      </div>
+    )
   }
 
   if (showChoices) {
