@@ -243,7 +243,6 @@ export default function CekiciDetailPage() {
           )}
         </section>
 
-        {/* ORTA - Teklifler */}
         <section className="mb-6">
           <h2 className="text-sm font-semibold text-slate-400 mb-3">Gelen teklifler</h2>
           {offers.length === 0 ? (
