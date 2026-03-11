@@ -34,8 +34,11 @@ export async function middleware(req: NextRequest) {
     },
   })
 
-  // /cekici ve /sofor alanları middleware'den tamamen muaf
-  if (pathname.startsWith('/cekici') || pathname.startsWith('/sofor')) {
+  if (
+    pathname.startsWith('/cekici') ||
+    pathname.startsWith('/sofor') ||
+    pathname.startsWith('/hizmetler')
+  ) {
     return res
   }
 
@@ -146,7 +149,6 @@ export const config = {
     '/choose-role',
     '/onboarding',
     '/login',
-    '/',
   ],
 }
 
