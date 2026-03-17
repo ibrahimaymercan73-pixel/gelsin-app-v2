@@ -125,11 +125,11 @@ export async function POST(request: NextRequest) {
     if (providers && providers.length > 0) {
       const notifications = providers.map((p: { id: string }) => ({
         user_id: p.id,
-        type: 'live_session_request',
         title: '🔴 Canlı Destek Talebi!',
-        message: `${categoryName} kategorisinde müşteri video görüşmesi bekliyor. ₺150 danışmanlık ücreti garantili.`,
-        data: { session_id: session.id },
-        read: false,
+        body: `${categoryName} kategorisinde müşteri video görüşmesi bekliyor. ₺150 danışmanlık ücreti garantili.`,
+        type: 'live_session_request',
+        is_read: false,
+        related_job_id: null,
       }))
       await supabase.from('notifications').insert(notifications)
     }
