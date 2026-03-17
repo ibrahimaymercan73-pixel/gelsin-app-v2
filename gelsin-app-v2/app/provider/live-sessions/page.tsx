@@ -29,7 +29,7 @@ export default function ProviderLiveSessionsPage() {
 
     supabase
       .from('live_sessions')
-      .select('*, profiles!customer_id(full_name)')
+      .select('*')
       .eq('status', 'waiting_provider')
       .order('created_at', { ascending: false })
       .then(({ data }) => {
