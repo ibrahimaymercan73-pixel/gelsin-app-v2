@@ -272,13 +272,20 @@ export default function ProviderNotificationsPage() {
               {items.map((n) => {
                 const isChat = n.type === 'chat_message' && n.related_job_id
                 const isBargain = n.type === 'offer_negotiate' && n.related_job_id
-                const clickable = !!n.related_job_id || isChat || isBargain
+                const isLiveSupport = n.type === 'live_session_request'
+                const clickable = isLiveSupport || isChat || isBargain || !!n.related_job_id
                 const unread = n.is_read === false || n.is_read == null
 
                 const handleClick = async () => {
-                  if (!n.related_job_id) return
                   const supabase = createClient()
                   await supabase.from('notifications').update({ is_read: true }).eq('id', n.id)
+
+                  if (isLiveSupport) {
+                    router.push('/provider/live-sessions')
+                    return
+                  }
+
+                  if (!n.related_job_id) return
 
                   if (isBargain) {
                     router.push('/provider/jobs?bargain=' + n.related_job_id)
