@@ -106,24 +106,24 @@ export async function POST(request: NextRequest) {
       const categoryId = (session as any).category as string | null | undefined
       if (!categoryId) return new Response('OK', { status: 200 })
 
-      const r = await supabase
-        .from('provider_profiles')
-        .select('id, is_online, service_categories')
-        .contains('service_categories', [categoryId])
-      if ((r as any).error) {
-        console.error('[paytr/webhook] live support: provider_profiles query error', (r as any).error)
-      }
-      const ppRows = ((r as any).data as any[]) || []
-      console.log('[paytr/webhook] live support provider_profiles matched:', ppRows.length)
+      // GEÇİCİ TEST: Tüm ustalara gönder (kategori + online filtresi olmadan)
+      const { data: allProviders, error: allProvErr } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'provider')
 
-      const providerIds = ppRows
-        .filter((p: any) => p?.id)
-        .filter((p: any) => (typeof p?.is_online === 'boolean' ? p.is_online === true : true))
-        .map((p: any) => p.id as string)
-      console.log('[paytr/webhook] live support providerIds to notify:', providerIds.length)
+      if (allProvErr) {
+        console.error('[paytr/webhook] live support: profiles query error', allProvErr)
+        return new Response('OK', { status: 200 })
+      }
+
+      const providerIds = (allProviders as any[] || [])
+        .filter((p) => p?.id)
+        .map((p) => p.id as string)
+      console.log('[paytr/webhook] live support providerIds to notify (ALL providers):', providerIds.length)
 
       if (providerIds.length > 0) {
-        const notifications = providerIds.map((id) => ({
+        const notifications = providerIds.map((id: string) => ({
           user_id: id,
           title: '🔴 Canlı Destek Talebi!',
           body: `${categoryName} kategorisinde müşteri video görüşmesi bekliyor. ₺150 danışmanlık ücreti garantili.`,
