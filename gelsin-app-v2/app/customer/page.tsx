@@ -178,6 +178,31 @@ export default function CustomerHome() {
             </div>
           </Link>
 
+          <button
+            type="button"
+            onClick={() => router.push('/customer/live-support')}
+            className="group md:col-span-1 lg:col-span-1 rounded-[2rem] p-7 flex flex-col justify-between relative overflow-hidden cursor-pointer shadow-xl hover:-translate-y-1 transition-transform min-h-[220px] text-left bg-gradient-to-br from-[#F97316] to-[#EF4444]"
+          >
+            <div className="absolute top-6 right-6">
+              <span className="inline-flex items-center gap-2 rounded-full bg-green-500/20 px-3 py-1 text-xs font-bold text-green-50 ring-1 ring-green-400/40 backdrop-blur">
+                <span className="text-green-300">●</span> Canlı
+              </span>
+            </div>
+
+            <div className="relative z-10">
+              <h3 className="text-2xl font-extrabold text-white mb-2">Canlı Uzman Desteği</h3>
+              <p className="text-white/90 text-sm leading-relaxed max-w-sm">
+                Anında video bağlantısı. Uzman teşhis koyar, 150₺ danışmanlık ücreti.
+              </p>
+            </div>
+
+            <div className="relative z-10 mt-6">
+              <span className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-slate-900 shadow-sm group-hover:bg-white/95 transition-colors">
+                Hemen Bağlan →
+              </span>
+            </div>
+          </button>
+
           <Link
             href="/customer/jobs"
             className="group md:col-span-1 lg:col-span-1 bg-white rounded-[2rem] p-7 border border-slate-100 shadow-sm flex flex-col justify-between cursor-pointer hover:shadow-md transition-shadow min-h-[220px]"
