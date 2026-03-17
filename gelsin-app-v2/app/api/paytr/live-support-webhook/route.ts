@@ -84,79 +84,43 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
     const categoryName = (catRow as any)?.name || 'Kategori'
 
-    let targetProviderIds: string[] | null = null
     const customerCity = (session as any).customer_city as string | null | undefined
     const categoryId = (session as any).category as string | null | undefined
-    if (!categoryId) {
-      return new Response('OK', { status: 200 })
-    }
-    let pp: any[] | null = null
-    let ppErr: any = null
+    if (!categoryId) return new Response('OK', { status: 200 })
 
+    // Bu projede ustanın kategorileri genelde provider_profiles.service_categories (uuid[]) içinde tutuluyor.
+    // is_online de provider_profiles'ta.
+    let ppRows: any[] = []
     if (customerCity) {
       const r = await supabase
         .from('provider_profiles')
-        .select('id')
-        .eq('category_id', categoryId)
+        .select('id, is_online, city, service_categories')
+        .contains('service_categories', [categoryId])
         .eq('city', customerCity)
-      pp = (r as any).data
-      ppErr = (r as any).error
-      if (ppErr) {
+      if ((r as any).error) {
         const r2 = await supabase
           .from('provider_profiles')
-          .select('id')
-          .eq('category_id', categoryId)
-        pp = (r2 as any).data
-        ppErr = (r2 as any).error
+          .select('id, is_online, city, service_categories')
+          .contains('service_categories', [categoryId])
+        ppRows = ((r2 as any).data as any[]) || []
+      } else {
+        ppRows = ((r as any).data as any[]) || []
       }
     } else {
       const r = await supabase
         .from('provider_profiles')
-        .select('id')
-        .eq('category_id', categoryId)
-      pp = (r as any).data
-      ppErr = (r as any).error
+        .select('id, is_online, city, service_categories')
+        .contains('service_categories', [categoryId])
+      ppRows = ((r as any).data as any[]) || []
     }
 
-    if (!ppErr && pp) {
-      targetProviderIds = (pp as any[]).map((x) => x.id).filter(Boolean)
-    }
+    // is_online kolonu yoksa: hepsini kabul et (bildirim gitsin)
+    const providerIds = ppRows
+      .filter((p: any) => p?.id)
+      .filter((p: any) => (typeof p?.is_online === 'boolean' ? p.is_online === true : true))
+      .map((p: any) => p.id as string)
 
-    let providers: Array<{ id: string }> = []
-    if (targetProviderIds && targetProviderIds.length > 0) {
-      const { data: online, error: onlineErr } = await supabase
-        .from('profiles')
-        .select('id')
-        .in('id', targetProviderIds)
-        .eq('role', 'provider')
-        .eq('is_online', true)
-      if (!onlineErr && online) {
-        providers = online as any
-      } else {
-        const { data: allByCat } = await supabase
-          .from('profiles')
-          .select('id')
-          .in('id', targetProviderIds)
-          .eq('role', 'provider')
-        providers = (allByCat as any) || []
-      }
-    } else {
-      // is_online kolonu yoksa bu query hata verebilir; bu durumda fallback ile tüm provider'lara gider.
-      const { data: onlineAll, error: onlineAllErr } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('role', 'provider')
-        .eq('is_online', true)
-      if (!onlineAllErr && onlineAll) {
-        providers = onlineAll as any
-      } else {
-        const { data: allProviders } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('role', 'provider')
-        providers = (allProviders as any) || []
-      }
-    }
+    const providers = providerIds.map((id) => ({ id }))
 
     if (providers && providers.length > 0) {
       const notifications = providers.map((p: { id: string }) => ({
