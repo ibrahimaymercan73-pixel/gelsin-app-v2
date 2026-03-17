@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
     // 1) Canlı destek ödemeleri – merchant_oid "gelsinlive..." ile başlıyorsa
     if (merchant_oid.startsWith('gelsinlive')) {
       console.log('[paytr/webhook] live support payment detected')
+      console.log('[paytr/webhook] live support merchant_oid:', merchant_oid, 'status:', status, 'total_amount:', total_amount)
 
       // merchant_oid => "gelsinlive" + <customer uuid hex32> + <timestamp>
       const customerId = hexToUuid(
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
         console.log('[paytr/webhook] live support: could not derive customerId from merchant_oid')
         return new Response('OK', { status: 200 })
       }
+      console.log('[paytr/webhook] live support customerId:', customerId)
 
       const { data: session } = await supabase
         .from('live_sessions')
@@ -84,11 +86,15 @@ export async function POST(request: NextRequest) {
         console.log('[paytr/webhook] live support: no live_session found for customer', customerId)
         return new Response('OK', { status: 200 })
       }
+      console.log('[paytr/webhook] live support sessionId:', (session as any).id, 'category:', (session as any).category, 'customer_city:', (session as any).customer_city)
 
-      await supabase
+      const { error: updateLiveErr } = await supabase
         .from('live_sessions')
         .update({ fee_paid: true, status: 'waiting_provider' })
         .eq('id', session.id)
+      if (updateLiveErr) {
+        console.error('[paytr/webhook] live support: live_sessions update error', updateLiveErr)
+      }
 
       const { data: catRow } = await supabase
         .from('service_categories')
@@ -104,12 +110,17 @@ export async function POST(request: NextRequest) {
         .from('provider_profiles')
         .select('id, is_online, city, service_categories')
         .contains('service_categories', [categoryId])
+      if ((r as any).error) {
+        console.error('[paytr/webhook] live support: provider_profiles query error', (r as any).error)
+      }
       const ppRows = ((r as any).data as any[]) || []
+      console.log('[paytr/webhook] live support provider_profiles matched:', ppRows.length)
 
       const providerIds = ppRows
         .filter((p: any) => p?.id)
         .filter((p: any) => (typeof p?.is_online === 'boolean' ? p.is_online === true : true))
         .map((p: any) => p.id as string)
+      console.log('[paytr/webhook] live support providerIds to notify:', providerIds.length)
 
       if (providerIds.length > 0) {
         const notifications = providerIds.map((id) => ({
@@ -120,7 +131,12 @@ export async function POST(request: NextRequest) {
           is_read: false,
           related_job_id: null,
         }))
-        await supabase.from('notifications').insert(notifications)
+        const { error: notifErr } = await supabase.from('notifications').insert(notifications)
+        if (notifErr) {
+          console.error('[paytr/webhook] live support: notifications insert error', notifErr)
+        } else {
+          console.log('[paytr/webhook] live support: notifications inserted:', notifications.length)
+        }
       }
 
       return new Response('OK', { status: 200 })
