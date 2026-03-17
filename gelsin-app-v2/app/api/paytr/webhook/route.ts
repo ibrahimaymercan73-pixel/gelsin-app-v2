@@ -52,49 +52,10 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(url, serviceKey)
 
-    // Canlı destek ödemeleri için özel akış: merchant_oid "gelsinlive..." ile başlıyorsa
+    // Canlı destek ödemeleri için ana webhook'ta ekstra işlem yapma.
+    // Bu ödemeler merchant_notify_url üzerinden app/api/paytr/live-support-webhook/route.ts ile handle ediliyor.
     if (merchant_oid.startsWith('gelsinlive')) {
-      const session_id = merchant_oid.replace('gelsinlive', '')
-      const payment_status = status
-
-      if (payment_status === 'success') {
-        // live_sessions güncelle
-        await supabase
-          .from('live_sessions')
-          .update({
-            fee_paid: true,
-            status: 'waiting_provider',
-          })
-          .eq('id', session_id)
-
-        const { data: session } = await supabase
-          .from('live_sessions')
-          .select('category, customer_city')
-          .eq('id', session_id)
-          .single()
-
-        if (session) {
-          const { data: providers } = await supabase
-            .from('profiles')
-            .select('id, provider_profiles!inner(is_online)')
-            .eq('role', 'provider')
-            .eq('city', (session as any).customer_city)
-            .eq('provider_profiles.is_online', true)
-
-          if (providers && providers.length > 0) {
-            const notifs = providers.map((p: any) => ({
-              user_id: p.id,
-              title: '🔴 Canlı Destek Talebi!',
-              body: `${(session as any).category} kategorisinde müşteri video görüşmesi bekliyor. ₺150 danışmanlık ücreti garantili.`,
-              type: 'live_session_request',
-              is_read: false,
-              related_job_id: null,
-            }))
-            await supabase.from('notifications').insert(notifs)
-          }
-        }
-      }
-
+      console.log('[paytr/webhook] live support payment detected, delegating to live-support-webhook')
       return new Response('OK', { status: 200 })
     }
 
