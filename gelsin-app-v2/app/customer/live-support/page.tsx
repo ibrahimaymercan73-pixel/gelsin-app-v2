@@ -159,7 +159,7 @@ export default function LiveSupportPage() {
   useEffect(() => {
     if (step === 'video' && roomUrl && videoRef.current) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const DailyIframe = require('@daily-co/daily-js')
+      const DailyIframe = require('@daily-co/daily-js').DailyIframe
       const callFrame = DailyIframe.createFrame(videoRef.current, {
         showLeaveButton: true,
         showFullscreenButton: true,
