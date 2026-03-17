@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     const { data: session } = await supabase
       .from('live_sessions')
-      .select('id, category_id, fee_paid, status, customer_id')
+      .select('id, category_id, customer_city, fee_paid, status, customer_id')
       .eq('customer_id', customerId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -83,10 +83,35 @@ export async function POST(request: NextRequest) {
     const categoryName = (catRow as any)?.name || 'Kategori'
 
     let targetProviderIds: string[] | null = null
-    const { data: pp, error: ppErr } = await supabase
-      .from('provider_profiles')
-      .select('id')
-      .eq('category_id', (session as any).category_id)
+    const customerCity = (session as any).customer_city as string | null | undefined
+    let pp: any[] | null = null
+    let ppErr: any = null
+
+    if (customerCity) {
+      const r = await supabase
+        .from('provider_profiles')
+        .select('id')
+        .eq('category_id', (session as any).category_id)
+        .eq('city', customerCity)
+      pp = (r as any).data
+      ppErr = (r as any).error
+      if (ppErr) {
+        const r2 = await supabase
+          .from('provider_profiles')
+          .select('id')
+          .eq('category_id', (session as any).category_id)
+        pp = (r2 as any).data
+        ppErr = (r2 as any).error
+      }
+    } else {
+      const r = await supabase
+        .from('provider_profiles')
+        .select('id')
+        .eq('category_id', (session as any).category_id)
+      pp = (r as any).data
+      ppErr = (r as any).error
+    }
+
     if (!ppErr && pp) {
       targetProviderIds = (pp as any[]).map((x) => x.id).filter(Boolean)
     }

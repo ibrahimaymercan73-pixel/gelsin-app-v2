@@ -21,6 +21,7 @@ export default function LiveSupportPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState('')
   const [sessionId, setSessionId] = useState(initialSessionId)
   const [roomUrl, setRoomUrl] = useState('')
+  const [customerCity, setCustomerCity] = useState('')
   const [loading, setLoading] = useState(false)
   const [paymentModal, setPaymentModal] = useState<{ token: string; merchantOid: string } | null>(
     null
@@ -61,6 +62,36 @@ export default function LiveSupportPage() {
       }
     }
     loadCategories()
+  }, [])
+
+  useEffect(() => {
+    const loadCustomerCity = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('city')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (!error) {
+        const city = (data as any)?.city
+        if (typeof city === 'string' && city.trim()) setCustomerCity(city.trim())
+        return
+      }
+
+      const { data: fallback } = await supabase
+        .from('provider_profiles')
+        .select('city')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      const city = (fallback as any)?.city
+      if (typeof city === 'string' && city.trim()) setCustomerCity(city.trim())
+    }
+    loadCustomerCity()
   }, [])
 
   useEffect(() => {
@@ -130,6 +161,7 @@ export default function LiveSupportPage() {
         .insert({
           customer_id: user.id,
           category_id: selectedCategoryId,
+          customer_city: customerCity || null,
           status: 'payment_pending',
           consultation_fee: 150,
           fee_paid: false,
