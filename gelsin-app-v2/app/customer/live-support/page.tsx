@@ -172,7 +172,7 @@ export default function LiveSupportPage() {
         return
       }
 
-      const { data: created, error: createErr } = await supabase
+      const { data, error } = await supabase
         .from('live_sessions')
         .insert({
           customer_id: user.id,
@@ -186,14 +186,21 @@ export default function LiveSupportPage() {
         .select()
         .single()
 
-      if (createErr || !created?.id) {
+      if (error) {
+        console.error('live_sessions insert hatası:', error)
+        alert('Hata: ' + error.message)
         setLoading(false)
         return
       }
 
-      setSessionId(created.id)
+      if (!data?.id) {
+        setLoading(false)
+        return
+      }
+
+      setSessionId(data.id)
       try {
-        localStorage.setItem('live_support_session_id', created.id as string)
+        localStorage.setItem('live_support_session_id', data.id as string)
       } catch {}
 
       const res = await fetch('/api/paytr/create-live-support-token', {
@@ -201,12 +208,22 @@ export default function LiveSupportPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       })
-      const data: any = await res.json().catch(() => ({}))
-      if (!res.ok || !data?.token) {
+      if (!res.ok) {
+        const err = await res.text()
+        console.error('PayTR token hatası:', err)
+        alert('Ödeme başlatılamadı: ' + err)
         setLoading(false)
         return
       }
-      setPaymentModal({ token: data.token as string, merchantOid: data.merchant_oid as string })
+      const paytrData: any = await res.json().catch(() => ({}))
+      if (!paytrData?.token) {
+        setLoading(false)
+        return
+      }
+      setPaymentModal({
+        token: paytrData.token as string,
+        merchantOid: paytrData.merchant_oid as string,
+      })
     } catch {
       // no-op
     } finally {
