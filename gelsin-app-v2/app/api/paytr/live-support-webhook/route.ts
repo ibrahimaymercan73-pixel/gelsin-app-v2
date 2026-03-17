@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     const { data: session } = await supabase
       .from('live_sessions')
-      .select('id, category_id, customer_city, fee_paid, status, customer_id')
+      .select('id, category, customer_city, fee_paid, status, customer_id')
       .eq('customer_id', customerId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -78,12 +78,16 @@ export async function POST(request: NextRequest) {
     const { data: catRow } = await supabase
       .from('service_categories')
       .select('name')
-      .eq('id', (session as any).category_id)
+      .eq('id', (session as any).category)
       .maybeSingle()
     const categoryName = (catRow as any)?.name || 'Kategori'
 
     let targetProviderIds: string[] | null = null
     const customerCity = (session as any).customer_city as string | null | undefined
+    const categoryId = (session as any).category as string | null | undefined
+    if (!categoryId) {
+      return new Response('OK', { status: 200 })
+    }
     let pp: any[] | null = null
     let ppErr: any = null
 
@@ -91,7 +95,7 @@ export async function POST(request: NextRequest) {
       const r = await supabase
         .from('provider_profiles')
         .select('id')
-        .eq('category_id', (session as any).category_id)
+        .eq('category_id', categoryId)
         .eq('city', customerCity)
       pp = (r as any).data
       ppErr = (r as any).error
@@ -99,7 +103,7 @@ export async function POST(request: NextRequest) {
         const r2 = await supabase
           .from('provider_profiles')
           .select('id')
-          .eq('category_id', (session as any).category_id)
+          .eq('category_id', categoryId)
         pp = (r2 as any).data
         ppErr = (r2 as any).error
       }
@@ -107,7 +111,7 @@ export async function POST(request: NextRequest) {
       const r = await supabase
         .from('provider_profiles')
         .select('id')
-        .eq('category_id', (session as any).category_id)
+        .eq('category_id', categoryId)
       pp = (r as any).data
       ppErr = (r as any).error
     }

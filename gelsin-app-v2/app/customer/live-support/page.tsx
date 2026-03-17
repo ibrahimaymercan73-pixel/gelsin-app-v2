@@ -176,7 +176,7 @@ export default function LiveSupportPage() {
         .from('live_sessions')
         .insert({
           customer_id: user.id,
-          category_id: selectedCategoryId,
+          category: selectedCategoryId,
           customer_city: customerCity || null,
           status: 'payment_pending',
           consultation_fee: 150,
