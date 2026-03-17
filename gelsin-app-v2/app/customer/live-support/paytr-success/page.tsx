@@ -1,12 +1,29 @@
 'use client'
 
-import { useEffect } from 'react'
-import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function LiveSupportPaytrSuccessPage() {
+  const router = useRouter()
+  const [sessionId, setSessionId] = useState('')
+
   useEffect(() => {
     try {
       window.parent?.postMessage({ type: 'paytr-live-support-success' }, '*')
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href)
+      const sid =
+        url.searchParams.get('session_id') ||
+        localStorage.getItem('live_support_session_id') ||
+        ''
+      if (sid) {
+        localStorage.setItem('live_support_session_id', sid)
+        setSessionId(sid)
+      }
     } catch {}
   }, [])
 
@@ -18,12 +35,13 @@ export default function LiveSupportPaytrSuccessPage() {
         <p className="text-sm text-slate-600 mb-6">
           Ödemeniz alındı. Canlı destek başlatılıyor...
         </p>
-        <Link
-          href="/customer/live-support"
+        <button
+          type="button"
+          onClick={() => router.push('/customer/live-support?session_id=' + sessionId)}
           className="inline-flex items-center justify-center w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl text-sm"
         >
           Canlı Desteğe Dön
-        </Link>
+        </button>
       </div>
     </div>
   )

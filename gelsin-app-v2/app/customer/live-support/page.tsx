@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 const CATEGORIES = [
@@ -14,9 +14,14 @@ const CATEGORIES = [
 
 export default function LiveSupportPage() {
   const router = useRouter()
-  const [step, setStep] = useState<'category' | 'payment' | 'waiting' | 'video'>('category')
+  const searchParams = useSearchParams()
+  const initialSessionId = searchParams.get('session_id') || ''
+
+  const [step, setStep] = useState<'category' | 'payment' | 'waiting' | 'video'>(() =>
+    initialSessionId ? 'waiting' : 'category'
+  )
   const [selectedCategory, setSelectedCategory] = useState('')
-  const [sessionId, setSessionId] = useState('')
+  const [sessionId, setSessionId] = useState(initialSessionId)
   const [roomUrl, setRoomUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [paymentModal, setPaymentModal] = useState<{ token: string; merchantOid: string } | null>(
@@ -40,6 +45,50 @@ export default function LiveSupportPage() {
     return () => window.removeEventListener('message', onMessage)
   }, [handledPaytrSuccess])
 
+  useEffect(() => {
+    try {
+      const sid =
+        searchParams.get('session_id') ||
+        localStorage.getItem('live_support_session_id') ||
+        ''
+      if (sid) {
+        localStorage.setItem('live_support_session_id', sid)
+        setSessionId(sid)
+        setStep('waiting')
+      }
+    } catch {}
+  }, [searchParams])
+
+  useEffect(() => {
+    if (step !== 'waiting' || !sessionId) return
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`live_session_${sessionId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'live_sessions',
+          filter: `id=eq.${sessionId}`,
+        },
+        (payload) => {
+          // @ts-ignore - runtime payload from Supabase
+          if (payload.new.status === 'provider_joined' && payload.new.room_url) {
+            // @ts-ignore
+            setRoomUrl(payload.new.room_url as string)
+            setStep('video')
+            channel.unsubscribe()
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [step, sessionId])
+
   const handleCategorySelect = (id: string) => {
     setSelectedCategory(id)
     setStep('payment')
@@ -47,7 +96,37 @@ export default function LiveSupportPage() {
 
   const handlePayment = async () => {
     setLoading(true)
+    const supabase = createClient()
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setLoading(false)
+        return
+      }
+
+      const { data: created, error: createErr } = await supabase
+        .from('live_sessions')
+        .insert({
+          customer_id: user.id,
+          category: selectedCategory,
+          status: 'payment_pending',
+          consultation_fee: 150,
+          fee_paid: false,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single()
+
+      if (createErr || !created?.id) {
+        setLoading(false)
+        return
+      }
+
+      setSessionId(created.id)
+      try {
+        localStorage.setItem('live_support_session_id', created.id as string)
+      } catch {}
+
       const res = await fetch('/api/paytr/create-live-support-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,16 +154,19 @@ export default function LiveSupportPage() {
       return
     }
 
+    if (!sessionId) {
+      setLoading(false)
+      return
+    }
+
     const { data, error } = await supabase
       .from('live_sessions')
-      .insert({
-        customer_id: user.id,
-        category: selectedCategory,
-        status: 'waiting_provider',
-        consultation_fee: 150,
+      .update({
         fee_paid: true,
-        created_at: new Date().toISOString(),
+        status: 'waiting_provider',
       })
+      .eq('id', sessionId)
+      .eq('customer_id', user.id)
       .select()
       .single()
 
@@ -93,7 +175,9 @@ export default function LiveSupportPage() {
       return
     }
 
-    setSessionId(data.id)
+    try {
+      localStorage.setItem('live_support_session_id', sessionId)
+    } catch {}
 
     const { data: providers } = await supabase
       .from('profiles')
@@ -107,7 +191,7 @@ export default function LiveSupportPage() {
         type: 'live_session_request',
         title: '🔴 Canlı Destek Talebi!',
         message: `${selectedCategory} kategorisinde müşteri video görüşmesi bekliyor. 150₺ danışmanlık ücreti garantili.`,
-        data: { session_id: data.id },
+        data: { session_id: sessionId },
         read: false,
         created_at: new Date().toISOString(),
       }))
@@ -116,28 +200,6 @@ export default function LiveSupportPage() {
 
     setStep('waiting')
     setLoading(false)
-
-    const channel = supabase
-      .channel(`live_session_${data.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'live_sessions',
-          filter: `id=eq.${data.id}`,
-        },
-        (payload) => {
-          // @ts-ignore - runtime payload from Supabase
-          if (payload.new.status === 'provider_joined' && payload.new.room_url) {
-            // @ts-ignore
-            setRoomUrl(payload.new.room_url as string)
-            setStep('video')
-            channel.unsubscribe()
-          }
-        }
-      )
-      .subscribe()
   }
 
   return (

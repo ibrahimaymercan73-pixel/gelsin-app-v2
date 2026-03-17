@@ -1,0 +1,101 @@
+import { NextRequest } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
+
+function hexToUuid(hex32: string): string {
+  const s = hex32.replace(/[^a-fA-F0-9]/g, '').slice(0, 32)
+  if (s.length !== 32) return ''
+  return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const merchant_key = process.env.PAYTR_MERCHANT_KEY
+    const merchant_salt = process.env.PAYTR_MERCHANT_SALT
+
+    if (!url || !serviceKey || !merchant_key || !merchant_salt) {
+      return new Response('OK', { status: 200 })
+    }
+
+    const body = await request.text()
+    const params = new URLSearchParams(body)
+
+    const merchant_oid = params.get('merchant_oid') || ''
+    const status = params.get('status') || ''
+    const total_amount = params.get('total_amount') || ''
+    const hashRaw = params.get('hash') || ''
+
+    if (!merchant_oid || !status || !hashRaw) {
+      return new Response('OK', { status: 200 })
+    }
+
+    const hashStr = merchant_oid + merchant_salt + status + total_amount
+    const expectedHash = crypto
+      .createHmac('sha256', merchant_key)
+      .update(hashStr)
+      .digest('base64')
+
+    const receivedHash = decodeURIComponent(hashRaw)
+    if (receivedHash !== expectedHash) {
+      return new Response('PAYTR notification failed', { status: 400 })
+    }
+
+    if (status !== 'success') {
+      return new Response('OK', { status: 200 })
+    }
+
+    const supabase = createClient(url, serviceKey)
+
+    // merchant_oid => "gelsinlive" + <customer uuid hex32> + <timestamp>
+    let customerId = ''
+    if (merchant_oid.startsWith('gelsinlive')) {
+      customerId = hexToUuid(merchant_oid.slice('gelsinlive'.length, 'gelsinlive'.length + 32))
+    }
+
+    if (!customerId) {
+      return new Response('OK', { status: 200 })
+    }
+
+    const { data: session } = await supabase
+      .from('live_sessions')
+      .select('id, category, fee_paid, status, customer_id')
+      .eq('customer_id', customerId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!session) {
+      return new Response('OK', { status: 200 })
+    }
+
+    await supabase
+      .from('live_sessions')
+      .update({ fee_paid: true, status: 'waiting_provider' })
+      .eq('id', session.id)
+
+    const { data: providers } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'provider')
+      .eq('is_online', true)
+
+    if (providers && providers.length > 0) {
+      const notifications = providers.map((p: { id: string }) => ({
+        user_id: p.id,
+        type: 'live_session_request',
+        title: '🔴 Canlı Destek Talebi!',
+        message: `${session.category} kategorisinde müşteri video görüşmesi bekliyor. ₺150 danışmanlık ücreti garantili.`,
+        data: { session_id: session.id },
+        read: false,
+      }))
+      await supabase.from('notifications').insert(notifications)
+    }
+
+    return new Response('OK', { status: 200 })
+  } catch {
+    return new Response('OK', { status: 200 })
+  }
+}
+
