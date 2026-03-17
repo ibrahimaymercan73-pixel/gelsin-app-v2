@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -13,7 +13,6 @@ export default function LiveSupportPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialSessionId = searchParams.get('session_id') || ''
-  const videoRef = useRef<HTMLDivElement>(null)
 
   const [step, setStep] = useState<'category' | 'payment' | 'waiting' | 'video'>(() =>
     initialSessionId ? 'waiting' : 'category'
@@ -155,22 +154,6 @@ export default function LiveSupportPage() {
       channel.unsubscribe()
     }
   }, [step, sessionId])
-
-  useEffect(() => {
-    if (step === 'video' && roomUrl && videoRef.current) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const dailyMod = require('@daily-co/daily-js')
-      const DailyIframe = dailyMod.DailyIframe || dailyMod
-      const callFrame = DailyIframe.createFrame(videoRef.current as HTMLDivElement, {
-        showLeaveButton: true,
-        showFullscreenButton: true,
-      })
-      callFrame.join({ url: roomUrl })
-      return () => {
-        callFrame.destroy()
-      }
-    }
-  }, [step, roomUrl])
 
   const selectedCategoryLabel =
     categories.find((c) => c.id === selectedCategoryId)?.label || selectedCategoryId || '-'
@@ -445,10 +428,18 @@ export default function LiveSupportPage() {
             Uzman Bağlandı! 🎉
           </h2>
           <div
-            ref={videoRef}
             className="rounded-2xl overflow-hidden border border-gray-200 mb-4"
-            style={{ height: '500px', width: '100%' }}
-          />
+            style={{ height: '500px' }}
+          >
+            <iframe
+              src={roomUrl}
+              allow="camera *; microphone *; fullscreen *; speaker *; display-capture *"
+              style={{ width: '100%', height: '100%', border: 'none' }}
+            />
+          </div>
+          <p className="text-xs text-gray-400 text-center">
+            Görüşme bittikten sonra uzman sana teklif gönderecek.
+          </p>
         </div>
       )}
 
