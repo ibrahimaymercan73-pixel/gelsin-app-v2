@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -19,6 +19,26 @@ export default function LiveSupportPage() {
   const [sessionId, setSessionId] = useState('')
   const [roomUrl, setRoomUrl] = useState('')
   const [loading, setLoading] = useState(false)
+  const [paymentModal, setPaymentModal] = useState<{ token: string; merchantOid: string } | null>(
+    null
+  )
+  const [handledPaytrSuccess, setHandledPaytrSuccess] = useState(false)
+
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'paytr-live-support-success') {
+        if (handledPaytrSuccess) return
+        setHandledPaytrSuccess(true)
+        setPaymentModal(null)
+        finalizePaidSession()
+      }
+      if (e.data?.type === 'paytr-live-support-fail') {
+        setPaymentModal(null)
+      }
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [handledPaytrSuccess])
 
   const handleCategorySelect = (id: string) => {
     setSelectedCategory(id)
@@ -26,6 +46,27 @@ export default function LiveSupportPage() {
   }
 
   const handlePayment = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/paytr/create-live-support-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const data: any = await res.json().catch(() => ({}))
+      if (!res.ok || !data?.token) {
+        setLoading(false)
+        return
+      }
+      setPaymentModal({ token: data.token as string, merchantOid: data.merchant_oid as string })
+    } catch {
+      // no-op
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const finalizePaidSession = async () => {
     setLoading(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -242,6 +283,38 @@ export default function LiveSupportPage() {
           <p className="text-xs text-gray-400 text-center">
             Görüşme bittikten sonra uzman sana teklif gönderecek.
           </p>
+        </div>
+      )}
+
+      {paymentModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4"
+          onClick={() => !loading && setPaymentModal(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+              <p className="font-semibold text-slate-900 text-sm">Güvenli Ödeme – PayTR</p>
+              <button
+                type="button"
+                onClick={() => setPaymentModal(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100"
+                aria-label="Kapat"
+                disabled={loading}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src={`https://www.paytr.com/odeme/guvenli/${paymentModal.token}`}
+                className="w-full h-[600px] border-0"
+                allow="payment"
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
