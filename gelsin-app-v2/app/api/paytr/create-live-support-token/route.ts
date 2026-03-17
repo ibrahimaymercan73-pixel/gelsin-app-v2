@@ -78,8 +78,14 @@ export async function POST(req: NextRequest) {
 
     const merchant_oid = `gelsinlive${String(user.id).replace(/[^a-zA-Z0-9]/g, '')}${Date.now()}`
 
-    const merchant_ok_url = 'https://gelsin.dev/customer/live-support/paytr-success'
-    const merchant_fail_url = 'https://gelsin.dev/customer/live-support/paytr-fail'
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+    if (!siteUrl) {
+      return NextResponse.json({ error: 'NEXT_PUBLIC_SITE_URL tanımlı değil.' }, { status: 500 })
+    }
+
+    const merchant_ok_url = siteUrl + '/customer/live-support/paytr-success'
+    const merchant_fail_url = siteUrl + '/customer/live-support/paytr-fail'
+    const merchant_notify_url = siteUrl + '/api/paytr/live-support-webhook'
     console.log('merchant_ok_url:', merchant_ok_url)
     console.log('merchant_fail_url:', merchant_fail_url)
 
@@ -121,6 +127,7 @@ export async function POST(req: NextRequest) {
     params.set('paytr_token', paytr_token)
     params.set('merchant_ok_url', merchant_ok_url)
     params.set('merchant_fail_url', merchant_fail_url)
+    params.set('merchant_notify_url', merchant_notify_url)
 
     const tokenRes = await fetch('https://www.paytr.com/odeme/api/get-token', {
       method: 'POST',
