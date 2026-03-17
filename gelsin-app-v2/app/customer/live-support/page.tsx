@@ -3,14 +3,11 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
-const CATEGORIES = [
-  { id: 'tesisat', label: 'Tesisat & Elektrik', icon: '🔧' },
-  { id: 'boyabadana', label: 'Boya & Badana', icon: '🖌️' },
-  { id: 'temizlik', label: 'Temizlik', icon: '🧹' },
-  { id: 'aracyardim', label: 'Araç Yardım', icon: '🚗' },
-  { id: 'elektrik', label: 'Elektrik', icon: '⚡' },
-  { id: 'guzellik', label: 'Güzellik', icon: '✂️' },
-]
+type CategoryItem = {
+  id: string
+  label: string
+  icon: string
+}
 
 export default function LiveSupportPage() {
   const router = useRouter()
@@ -20,7 +17,8 @@ export default function LiveSupportPage() {
   const [step, setStep] = useState<'category' | 'payment' | 'waiting' | 'video'>(() =>
     initialSessionId ? 'waiting' : 'category'
   )
-  const [selectedCategory, setSelectedCategory] = useState('')
+  const [categories, setCategories] = useState<CategoryItem[]>([])
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
   const [sessionId, setSessionId] = useState(initialSessionId)
   const [roomUrl, setRoomUrl] = useState('')
   const [loading, setLoading] = useState(false)
@@ -44,6 +42,26 @@ export default function LiveSupportPage() {
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
   }, [handledPaytrSuccess])
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('service_categories')
+        .select('id, name, icon')
+        .order('name', { ascending: true })
+      if (data && data.length > 0) {
+        setCategories(
+          data.map((c: any) => ({
+            id: c.id as string,
+            label: (c.name as string) ?? '',
+            icon: (c.icon as string) ?? '🛠️',
+          }))
+        )
+      }
+    }
+    loadCategories()
+  }, [])
 
   useEffect(() => {
     try {
@@ -89,8 +107,11 @@ export default function LiveSupportPage() {
     }
   }, [step, sessionId])
 
+  const selectedCategoryLabel =
+    categories.find((c) => c.id === selectedCategoryId)?.label || selectedCategoryId || '-'
+
   const handleCategorySelect = (id: string) => {
-    setSelectedCategory(id)
+    setSelectedCategoryId(id)
     setStep('payment')
   }
 
@@ -108,7 +129,7 @@ export default function LiveSupportPage() {
         .from('live_sessions')
         .insert({
           customer_id: user.id,
-          category: selectedCategory,
+          category_id: selectedCategoryId,
           status: 'payment_pending',
           consultation_fee: 150,
           fee_paid: false,
@@ -190,7 +211,7 @@ export default function LiveSupportPage() {
         user_id: p.id,
         type: 'live_session_request',
         title: '🔴 Canlı Destek Talebi!',
-        message: `${selectedCategory} kategorisinde müşteri video görüşmesi bekliyor. 150₺ danışmanlık ücreti garantili.`,
+        message: `${selectedCategoryLabel} kategorisinde müşteri video görüşmesi bekliyor. 150₺ danışmanlık ücreti garantili.`,
         data: { session_id: sessionId },
         read: false,
         created_at: new Date().toISOString(),
@@ -228,7 +249,7 @@ export default function LiveSupportPage() {
             Bir uzmanla anında video görüşmesi başlat.
           </p>
           <div className="grid grid-cols-2 gap-3">
-            {CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => handleCategorySelect(cat.id)}
@@ -257,7 +278,7 @@ export default function LiveSupportPage() {
             <div className="flex justify-between items-center mb-4">
               <span className="text-sm text-gray-500">Seçilen kategori</span>
               <span className="text-sm font-bold text-gray-900 capitalize">
-                {selectedCategory || '-'}
+                {selectedCategoryLabel}
               </span>
             </div>
             <div className="flex justify-between items-center mb-4">

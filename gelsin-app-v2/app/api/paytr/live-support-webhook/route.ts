@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     const { data: session } = await supabase
       .from('live_sessions')
-      .select('id, category, fee_paid, status, customer_id')
+      .select('id, category_id, fee_paid, status, customer_id')
       .eq('customer_id', customerId)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -75,18 +75,64 @@ export async function POST(request: NextRequest) {
       .update({ fee_paid: true, status: 'waiting_provider' })
       .eq('id', session.id)
 
-    const { data: providers } = await supabase
-      .from('profiles')
+    const { data: catRow } = await supabase
+      .from('service_categories')
+      .select('name')
+      .eq('id', (session as any).category_id)
+      .maybeSingle()
+    const categoryName = (catRow as any)?.name || 'Kategori'
+
+    let targetProviderIds: string[] | null = null
+    const { data: pp, error: ppErr } = await supabase
+      .from('provider_profiles')
       .select('id')
-      .eq('role', 'provider')
-      .eq('is_online', true)
+      .eq('category_id', (session as any).category_id)
+    if (!ppErr && pp) {
+      targetProviderIds = (pp as any[]).map((x) => x.id).filter(Boolean)
+    }
+
+    let providers: Array<{ id: string }> = []
+    if (targetProviderIds && targetProviderIds.length > 0) {
+      const { data: online, error: onlineErr } = await supabase
+        .from('profiles')
+        .select('id')
+        .in('id', targetProviderIds)
+        .eq('role', 'provider')
+        .eq('is_online', true)
+      if (!onlineErr && online) {
+        providers = online as any
+      } else {
+        const { data: allByCat } = await supabase
+          .from('profiles')
+          .select('id')
+          .in('id', targetProviderIds)
+          .eq('role', 'provider')
+        providers = (allByCat as any) || []
+      }
+    } else {
+      // is_online kolonu yoksa bu query hata verebilir; bu durumda fallback ile tüm provider'lara gider.
+      const { data: onlineAll, error: onlineAllErr } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'provider')
+        .eq('is_online', true)
+      if (!onlineAllErr && onlineAll) {
+        providers = onlineAll as any
+      } else {
+        const { data: allProviders } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('role', 'provider')
+        providers = (allProviders as any) || []
+      }
+    }
 
     if (providers && providers.length > 0) {
       const notifications = providers.map((p: { id: string }) => ({
         user_id: p.id,
         type: 'live_session_request',
         title: '🔴 Canlı Destek Talebi!',
-        message: `${session.category} kategorisinde müşteri video görüşmesi bekliyor. ₺150 danışmanlık ücreti garantili.`,
+        message: `${categoryName} kategorisinde müşteri video görüşmesi bekliyor. ₺150 danışmanlık ücreti garantili.`,
         data: { session_id: session.id },
         read: false,
       }))
