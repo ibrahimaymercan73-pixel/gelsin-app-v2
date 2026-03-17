@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -8,7 +8,6 @@ export default function ProviderLiveSessionRoomPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const params = useParams()
-  const videoRef = useRef<HTMLDivElement>(null)
   const [roomUrl, setRoomUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -56,22 +55,6 @@ export default function ProviderLiveSessionRoomPage() {
     load()
   }, [sessionId, searchParams])
 
-  useEffect(() => {
-    if (roomUrl && videoRef.current) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const dailyMod = require('@daily-co/daily-js')
-      const DailyIframe = dailyMod.DailyIframe || dailyMod
-      const callFrame = DailyIframe.createFrame(videoRef.current as HTMLDivElement, {
-        showLeaveButton: true,
-        showFullscreenButton: true,
-      })
-      callFrame.join({ url: roomUrl })
-      return () => {
-        callFrame.destroy()
-      }
-    }
-  }, [roomUrl])
-
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -108,10 +91,15 @@ export default function ProviderLiveSessionRoomPage() {
         <p className="text-xs text-gray-400">Canlı destek görüşmesi</p>
       </div>
       <div
-        ref={videoRef}
         className="rounded-2xl overflow-hidden border border-gray-200"
         style={{ height: '500px', width: '100%' }}
-      />
+      >
+        <iframe
+          src={roomUrl as string}
+          allow="camera *; microphone *; fullscreen *; speaker *; display-capture *"
+          style={{ width: '100%', height: '100%', border: 'none' }}
+        />
+      </div>
     </div>
   )
 }
