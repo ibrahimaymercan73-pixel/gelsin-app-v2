@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 
       const r = await supabase
         .from('provider_profiles')
-        .select('id, is_online, city, service_categories')
+        .select('id, is_online, service_categories')
         .contains('service_categories', [categoryId])
       if ((r as any).error) {
         console.error('[paytr/webhook] live support: provider_profiles query error', (r as any).error)
