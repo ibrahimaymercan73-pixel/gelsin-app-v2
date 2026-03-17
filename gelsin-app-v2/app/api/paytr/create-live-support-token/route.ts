@@ -78,6 +78,11 @@ export async function POST(req: NextRequest) {
 
     const merchant_oid = `gelsinlive${String(user.id).replace(/[^a-zA-Z0-9]/g, '')}${Date.now()}`
 
+    const merchant_ok_url = 'https://gelsin.dev/customer/live-support/paytr-success'
+    const merchant_fail_url = 'https://gelsin.dev/customer/live-support/paytr-fail'
+    console.log('merchant_ok_url:', merchant_ok_url)
+    console.log('merchant_fail_url:', merchant_fail_url)
+
     const title = 'Canlı Destek Danışmanlık Ücreti'
     const user_basket = Buffer.from(JSON.stringify([[title, amount, 1]])).toString('base64')
 
@@ -114,8 +119,8 @@ export async function POST(req: NextRequest) {
     params.set('max_installment', max_installment)
     params.set('test_mode', test_mode)
     params.set('paytr_token', paytr_token)
-    params.set('merchant_ok_url', 'https://gelsin.dev/customer/live-support/paytr-success')
-    params.set('merchant_fail_url', 'https://gelsin.dev/customer/live-support/paytr-fail')
+    params.set('merchant_ok_url', merchant_ok_url)
+    params.set('merchant_fail_url', merchant_fail_url)
 
     const tokenRes = await fetch('https://www.paytr.com/odeme/api/get-token', {
       method: 'POST',

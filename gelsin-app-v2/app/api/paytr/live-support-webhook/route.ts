@@ -9,6 +9,7 @@ function hexToUuid(hex32: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('=== LIVE SUPPORT WEBHOOK TETİKLENDİ ===')
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.text()
+    console.log('Webhook body:', body)
     const params = new URLSearchParams(body)
 
     const merchant_oid = params.get('merchant_oid') || ''
