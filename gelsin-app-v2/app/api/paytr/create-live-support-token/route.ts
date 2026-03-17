@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     const merchant_ok_url = siteUrl + '/customer/live-support/paytr-success'
     const merchant_fail_url = siteUrl + '/customer/live-support/paytr-fail'
-    const merchant_notify_url = siteUrl + '/api/paytr/live-support-webhook'
+    const merchant_notify_url = siteUrl + '/api/paytr/webhook'
     console.log('merchant_ok_url:', merchant_ok_url)
     console.log('merchant_fail_url:', merchant_fail_url)
 

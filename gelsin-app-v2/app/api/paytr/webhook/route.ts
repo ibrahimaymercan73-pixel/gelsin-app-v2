@@ -5,6 +5,12 @@ import crypto from 'crypto'
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.GELSIN_FROM_EMAIL ?? 'Gelsin <bildirim@gelsin.dev>'
 
+function hexToUuid(hex32: string): string {
+  const s = hex32.replace(/[^a-fA-F0-9]/g, '').slice(0, 32)
+  if (s.length !== 32) return ''
+  return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('[paytr/webhook] incoming request')
@@ -52,13 +58,75 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient(url, serviceKey)
 
-    // Canlı destek ödemeleri için ana webhook'ta ekstra işlem yapma.
-    // Bu ödemeler merchant_notify_url üzerinden app/api/paytr/live-support-webhook/route.ts ile handle ediliyor.
+    // 1) Canlı destek ödemeleri – merchant_oid "gelsinlive..." ile başlıyorsa
     if (merchant_oid.startsWith('gelsinlive')) {
-      console.log('[paytr/webhook] live support payment detected, delegating to live-support-webhook')
+      console.log('[paytr/webhook] live support payment detected')
+
+      // merchant_oid => "gelsinlive" + <customer uuid hex32> + <timestamp>
+      const customerId = hexToUuid(
+        merchant_oid.slice('gelsinlive'.length, 'gelsinlive'.length + 32)
+      )
+
+      if (!customerId) {
+        console.log('[paytr/webhook] live support: could not derive customerId from merchant_oid')
+        return new Response('OK', { status: 200 })
+      }
+
+      const { data: session } = await supabase
+        .from('live_sessions')
+        .select('id, category, customer_city, fee_paid, status, customer_id')
+        .eq('customer_id', customerId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!session) {
+        console.log('[paytr/webhook] live support: no live_session found for customer', customerId)
+        return new Response('OK', { status: 200 })
+      }
+
+      await supabase
+        .from('live_sessions')
+        .update({ fee_paid: true, status: 'waiting_provider' })
+        .eq('id', session.id)
+
+      const { data: catRow } = await supabase
+        .from('service_categories')
+        .select('name')
+        .eq('id', (session as any).category)
+        .maybeSingle()
+      const categoryName = (catRow as any)?.name || 'Kategori'
+
+      const categoryId = (session as any).category as string | null | undefined
+      if (!categoryId) return new Response('OK', { status: 200 })
+
+      const r = await supabase
+        .from('provider_profiles')
+        .select('id, is_online, city, service_categories')
+        .contains('service_categories', [categoryId])
+      const ppRows = ((r as any).data as any[]) || []
+
+      const providerIds = ppRows
+        .filter((p: any) => p?.id)
+        .filter((p: any) => (typeof p?.is_online === 'boolean' ? p.is_online === true : true))
+        .map((p: any) => p.id as string)
+
+      if (providerIds.length > 0) {
+        const notifications = providerIds.map((id) => ({
+          user_id: id,
+          title: '🔴 Canlı Destek Talebi!',
+          body: `${categoryName} kategorisinde müşteri video görüşmesi bekliyor. ₺150 danışmanlık ücreti garantili.`,
+          type: 'live_session_request',
+          is_read: false,
+          related_job_id: null,
+        }))
+        await supabase.from('notifications').insert(notifications)
+      }
+
       return new Response('OK', { status: 200 })
     }
 
+    // 2) Diğer tüm ödemeler – normal iş akışı
     const { data: payment } = await supabase
       .from('payments')
       .select('id, job_id, offer_id, customer_id, provider_id, amount, provider_amount, status')
