@@ -84,35 +84,17 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
     const categoryName = (catRow as any)?.name || 'Kategori'
 
-    const customerCity = (session as any).customer_city as string | null | undefined
     const categoryId = (session as any).category as string | null | undefined
     if (!categoryId) return new Response('OK', { status: 200 })
 
-    // Bu projede ustanın kategorileri genelde provider_profiles.service_categories (uuid[]) içinde tutuluyor.
-    // is_online de provider_profiles'ta.
+    // Bu projede ustanın kategorileri provider_profiles.service_categories (uuid[]) içinde tutuluyor.
+    // GEÇİCİ TEST: Şehir filtresini kaldır, sadece kategori + is_online ile git.
     let ppRows: any[] = []
-    if (customerCity) {
-      const r = await supabase
-        .from('provider_profiles')
-        .select('id, is_online, city, service_categories')
-        .contains('service_categories', [categoryId])
-        .eq('city', customerCity)
-      if ((r as any).error) {
-        const r2 = await supabase
-          .from('provider_profiles')
-          .select('id, is_online, city, service_categories')
-          .contains('service_categories', [categoryId])
-        ppRows = ((r2 as any).data as any[]) || []
-      } else {
-        ppRows = ((r as any).data as any[]) || []
-      }
-    } else {
-      const r = await supabase
-        .from('provider_profiles')
-        .select('id, is_online, city, service_categories')
-        .contains('service_categories', [categoryId])
-      ppRows = ((r as any).data as any[]) || []
-    }
+    const r = await supabase
+      .from('provider_profiles')
+      .select('id, is_online, city, service_categories')
+      .contains('service_categories', [categoryId])
+    ppRows = ((r as any).data as any[]) || []
 
     // is_online kolonu yoksa: hepsini kabul et (bildirim gitsin)
     const providerIds = ppRows
