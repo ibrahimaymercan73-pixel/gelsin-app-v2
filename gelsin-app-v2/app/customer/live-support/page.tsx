@@ -71,26 +71,43 @@ export default function LiveSupportPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data, error } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('city')
         .eq('id', user.id)
-        .maybeSingle()
+        .single()
 
-      if (!error) {
-        const city = (data as any)?.city
-        if (typeof city === 'string' && city.trim()) setCustomerCity(city.trim())
-        return
+      if ((profile as any)?.city) {
+        setCustomerCity((profile as any).city as string)
+      } else {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const { latitude, longitude } = pos.coords
+
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=tr`
+            )
+            const data = await res.json()
+
+            const city =
+              data.address?.province ||
+              data.address?.city ||
+              data.address?.town ||
+              data.address?.state
+
+            if (city) {
+              setCustomerCity(city)
+              await supabase
+                .from('profiles')
+                .update({ city: city })
+                .eq('id', user.id)
+            }
+          },
+          (err) => {
+            console.log('Konum alınamadı:', err)
+          }
+        )
       }
-
-      const { data: fallback } = await supabase
-        .from('provider_profiles')
-        .select('city')
-        .eq('id', user.id)
-        .maybeSingle()
-
-      const city = (fallback as any)?.city
-      if (typeof city === 'string' && city.trim()) setCustomerCity(city.trim())
     }
     loadCustomerCity()
   }, [])
@@ -177,7 +194,7 @@ export default function LiveSupportPage() {
         .insert({
           customer_id: user.id,
           category: selectedCategoryId,
-          customer_city: customerCity || null,
+          customer_city: customerCity,
           status: 'payment_pending',
           consultation_fee: 150,
           fee_paid: false,
@@ -313,6 +330,12 @@ export default function LiveSupportPage() {
           <p className="text-sm text-gray-400 mb-8">
             Bir uzmanla anında video görüşmesi başlat.
           </p>
+          {!customerCity && step === 'category' && (
+            <div className="flex items-center gap-2 text-xs text-gray-400 mb-4">
+              <div className="w-3 h-3 border border-gray-300 border-t-transparent rounded-full animate-spin" />
+              Konumunuz alınıyor...
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             {categories.map((cat) => (
               <button
