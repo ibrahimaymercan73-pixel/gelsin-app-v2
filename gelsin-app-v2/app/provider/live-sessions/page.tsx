@@ -31,6 +31,7 @@ export default function ProviderLiveSessionsPage() {
       .from('live_sessions')
       .select('*')
       .eq('status', 'waiting_provider')
+      .eq('fee_paid', true)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         if (data) setSessions(data as any[])
