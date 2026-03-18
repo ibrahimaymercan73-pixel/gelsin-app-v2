@@ -127,31 +127,50 @@ export default function LiveSupportPage() {
 
   useEffect(() => {
     if (step !== 'waiting' || !sessionId) return
+
     const supabase = createClient()
+
+    // Önce mevcut durumu kontrol et (usta zaten bağlandıysa kaçırma)
+    supabase
+      .from('live_sessions')
+      .select('status, room_url')
+      .eq('id', sessionId)
+      .single()
+      .then(({ data }) => {
+        if (data?.status === 'provider_joined' && data?.room_url) {
+          setRoomUrl(data.room_url)
+          setStep('video')
+        }
+      })
+
+    // Realtime dinle
     const channel = supabase
-      .channel(`live_session_${sessionId}`)
+      .channel('session_' + sessionId)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'live_sessions',
-          filter: `id=eq.${sessionId}`,
+          filter: 'id=eq.' + sessionId,
         },
         (payload) => {
-          // @ts-ignore - runtime payload from Supabase
-          if (payload.new.status === 'provider_joined' && payload.new.room_url) {
-            // @ts-ignore
-            setRoomUrl(payload.new.room_url as string)
+          console.log('Session güncellendi:', payload.new)
+          if (
+            payload.new.status === 'provider_joined' &&
+            payload.new.room_url
+          ) {
+            setRoomUrl(payload.new.room_url)
             setStep('video')
-            channel.unsubscribe()
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Realtime status:', status)
+      })
 
     return () => {
-      channel.unsubscribe()
+      supabase.removeChannel(channel)
     }
   }, [step, sessionId])
 
