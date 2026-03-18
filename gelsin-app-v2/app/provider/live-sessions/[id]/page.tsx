@@ -12,12 +12,15 @@ export default function ProviderLiveSessionRoomPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const sessionId = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params.id[0] : ''
+  const id = params?.id as string
 
   useEffect(() => {
     const existingRoom = searchParams.get('room')
     const load = async () => {
-      if (!sessionId) {
+      console.log('Session ID:', id)
+
+      if (!id || id === 'undefined') {
+        console.error('ID yok!')
         setError('Oturum bulunamadı.')
         setLoading(false)
         return
@@ -33,8 +36,10 @@ export default function ProviderLiveSessionRoomPage() {
       const { data, error } = await supabase
         .from('live_sessions')
         .select('room_url, status')
-        .eq('id', sessionId)
-        .maybeSingle()
+        .eq('id', id)
+        .single()
+
+      console.log('Session data:', data, 'Error:', error)
 
       if (error || !data) {
         setError('Canlı oturum bilgisi bulunamadı.')
@@ -53,7 +58,7 @@ export default function ProviderLiveSessionRoomPage() {
     }
 
     load()
-  }, [sessionId, searchParams])
+  }, [id, searchParams])
 
   if (loading) {
     return (
