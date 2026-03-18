@@ -32,6 +32,7 @@ export default function ProviderLiveSessionsPage() {
       .select('*')
       .eq('status', 'waiting_provider')
       .eq('fee_paid', true)
+      .gte('created_at', new Date(Date.now() - 3600000).toISOString())
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         if (data) setSessions(data as any[])
@@ -69,7 +70,7 @@ export default function ProviderLiveSessionsPage() {
       .eq('id', session.id)
 
     setLoading(false)
-    router.push(`/provider/live-sessions/${session.id}?room=${encodeURIComponent(room_url)}`)
+    router.push('/provider/live-sessions/' + session.id)
   }
 
   return (
