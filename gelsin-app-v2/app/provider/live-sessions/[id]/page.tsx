@@ -15,6 +15,14 @@ export default function ProviderLiveSessionRoomPage() {
   const id = params?.id as string
 
   useEffect(() => {
+    // Next.js client tarafında params ilk render'da boş gelebilir; id gelince hata ekranını sıfırlayıp tekrar yükleyelim.
+    if (id && id !== 'undefined') {
+      setError(null)
+      setLoading(true)
+    }
+  }, [id])
+
+  useEffect(() => {
     const existingRoom = searchParams.get('room')
     const load = async () => {
       console.log('Session ID:', id)
