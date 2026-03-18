@@ -281,7 +281,11 @@ export default function ProviderNotificationsPage() {
                   await supabase.from('notifications').update({ is_read: true }).eq('id', n.id)
 
                   if (isLiveSupport) {
-                    router.push('/provider/live-sessions')
+                    if (!n.related_job_id) {
+                      router.push('/provider/live-sessions')
+                      return
+                    }
+                    router.push(`/provider/live-sessions/${encodeURIComponent(String(n.related_job_id))}`)
                     return
                   }
 

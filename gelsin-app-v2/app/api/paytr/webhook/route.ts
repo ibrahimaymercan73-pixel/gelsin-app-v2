@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
           body: `${categoryName} kategorisinde müşteri video görüşmesi bekliyor. ₺150 danışmanlık ücreti garantili.`,
           type: 'live_session_request',
           is_read: false,
-          related_job_id: null,
+          related_job_id: (session as any).id, // provider bildiriminde kullanılacak session id
         }))
         const { error: notifErr } = await supabase.from('notifications').insert(notifications)
         if (notifErr) {
