@@ -8,10 +8,12 @@ export const JITSI_SCRIPT = `https://${JITSI_DOMAIN}/external_api.js`
 
 export type JitsiEmbedRole = 'customer' | 'provider'
 
+/** IFrame API — dokümanda geçen ek metodlar */
 export type JitsiApi = {
   dispose: () => void
   addEventListeners: (listeners: Record<string, (...args: unknown[]) => void>) => void
   executeCommand?: (command: string, ...args: unknown[]) => void
+  getNumberOfParticipants?: () => number
 }
 
 declare global {
@@ -119,8 +121,10 @@ export function getJitsiMeetEmbedBundle(
         enableClosePage: false,
         enableInsecureRoomNameWarning: false,
         requireDisplayName: false,
+        /** Bekleme salonu / lobby kapalı */
         enableLobby: false,
         enableNoisyMicDetection: false,
+        disableModeratorIndicator: true,
       },
       interfaceConfigOverwrite: {
         TOOLBAR_BUTTONS: toolbarMinimal,
@@ -144,4 +148,127 @@ export function getJitsiMeetEmbedBundle(
 export function getJitsiMeetEmbedOptions(displayName: string) {
   const { embedProps } = getJitsiMeetEmbedBundle(displayName, 'provider')
   return embedProps
+}
+
+const DISPLAY_NAME_REAPPLY_MS = [0, 50, 200, 800, 2000] as const
+/** Karşıdaki katılımcının videosu için bekleme (ms) */
+const REVEAL_AFTER_REMOTE_MS = 750
+const PARTICIPANT_POLL_MS = 350
+
+function safeParticipantCount(api: JitsiApi): number {
+  try {
+    const n = api.getNumberOfParticipants?.()
+    return typeof n === 'number' && !Number.isNaN(n) ? n : 0
+  } catch {
+    return 0
+  }
+}
+
+export type JitsiMeetingListenerOptions = {
+  displayNameForCommand: string
+  isCancelled: () => boolean
+  /** En az 2 kişi (veya force) + gecikme sonrası — overlay kapanır, iframe görünür */
+  onRevealUI: () => void
+  onPasswordRequired?: () => void
+  onReadyToClose: () => void
+  onVideoConferenceLeft: () => void
+  /** Karşı taraf hiç gelmezse kaç sn sonra yine de UI açılsın (takılı kalmayı önler) */
+  loneFallbackSeconds?: number
+}
+
+/**
+ * - videoConferenceJoined: isim komutları; iframe görünmez kalır
+ * - Karşı taraf: participantJoined (id ≠ yerel) veya getNumberOfParticipants() ≥ 2
+ * - O zaman onRevealUI (fade + iframe göster)
+ */
+export function createJitsiMeetingListeners(
+  api: JitsiApi,
+  options: JitsiMeetingListenerOptions
+): {
+  listeners: Record<string, (...args: unknown[]) => void>
+  dispose: () => void
+} {
+  let localId: string | null = null
+  let revealed = false
+  /** DOM timer id (Node @types ile ReturnType<typeof setInterval> çakışmasın diye number) */
+  let pollId: number | null = null
+  const timeoutIds: number[] = []
+
+  const clearPoll = () => {
+    if (pollId != null) {
+      clearInterval(pollId)
+      pollId = null
+    }
+  }
+
+  const applyDisplayName = () => {
+    if (options.isCancelled()) return
+    try {
+      api.executeCommand?.('displayName', options.displayNameForCommand)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const doReveal = (force: boolean) => {
+    if (revealed || options.isCancelled()) return
+    if (!force && safeParticipantCount(api) < 2) return
+    revealed = true
+    clearPoll()
+    const t = window.setTimeout(() => {
+      if (!options.isCancelled()) options.onRevealUI()
+    }, REVEAL_AFTER_REMOTE_MS)
+    timeoutIds.push(t)
+  }
+
+  const loneSec = options.loneFallbackSeconds ?? 90
+
+  const listeners: Record<string, (...args: unknown[]) => void> = {
+    videoConferenceJoined: (payload: unknown) => {
+      const p = payload as { id?: string }
+      localId = p?.id ?? null
+
+      DISPLAY_NAME_REAPPLY_MS.forEach((ms) => {
+        const tid = window.setTimeout(() => applyDisplayName(), ms)
+        timeoutIds.push(tid)
+      })
+
+      if (safeParticipantCount(api) >= 2) {
+        doReveal(false)
+      } else {
+        pollId = window.setInterval(() => {
+          if (options.isCancelled()) return
+          if (safeParticipantCount(api) >= 2) doReveal(false)
+        }, PARTICIPANT_POLL_MS)
+      }
+
+      const lone = window.setTimeout(() => {
+        if (options.isCancelled() || revealed) return
+        doReveal(true)
+      }, loneSec * 1000)
+      timeoutIds.push(lone)
+    },
+
+    participantJoined: (participant: unknown) => {
+      const p = participant as { id?: string }
+      if (localId && p?.id && p.id !== localId) {
+        doReveal(true)
+      }
+    },
+
+    passwordRequired: () => {
+      options.onPasswordRequired?.()
+    },
+
+    readyToClose: () => options.onReadyToClose(),
+    videoConferenceLeft: () => options.onVideoConferenceLeft(),
+  }
+
+  const dispose = () => {
+    clearPoll()
+    timeoutIds.forEach((id) => clearTimeout(id))
+    timeoutIds.length = 0
+  }
+
+  return { listeners, dispose }
 }

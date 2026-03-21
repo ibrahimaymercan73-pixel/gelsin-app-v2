@@ -8,6 +8,7 @@ import {
   parseJitsiRoomName,
   loadJitsiScript,
   getJitsiMeetEmbedBundle,
+  createJitsiMeetingListeners,
   type JitsiApi,
 } from '@/lib/jitsi-embed'
 
@@ -131,7 +132,7 @@ function ProviderLiveSessionRoomInner() {
     }
 
     let cancelled = false
-    let fallbackTimer: ReturnType<typeof setTimeout> | null = null
+    let disposeJitsiListeners = () => {}
     setJitsiConnecting(true)
     setJitsiVideoVisible(false)
 
@@ -156,37 +157,27 @@ function ProviderLiveSessionRoomInner() {
 
         jitsiApiRef.current = api
 
-        const onJoined = () => {
-          if (cancelled) return
-          try {
-            api.executeCommand?.('displayName', displayNameForCommand)
-          } catch {
-            /* ignore */
-          }
-          setJitsiConnecting(false)
-          requestAnimationFrame(() => {
-            if (!cancelled) setJitsiVideoVisible(true)
-          })
-        }
-
-        api.addEventListeners({
-          videoConferenceJoined: onJoined,
-          passwordRequired: () => {
+        const { listeners, dispose } = createJitsiMeetingListeners(api, {
+          displayNameForCommand,
+          isCancelled: () => cancelled,
+          onRevealUI: () => {
+            setJitsiConnecting(false)
+            requestAnimationFrame(() => {
+              if (!cancelled) setJitsiVideoVisible(true)
+            })
+          },
+          onPasswordRequired: () => {
             if (!cancelled) {
               setJitsiConnecting(true)
               setJitsiVideoVisible(false)
             }
           },
-          readyToClose: () => navigateAfterHangup(),
-          videoConferenceLeft: () => navigateAfterHangup(),
+          onReadyToClose: () => navigateAfterHangup(),
+          onVideoConferenceLeft: () => navigateAfterHangup(),
+          loneFallbackSeconds: 90,
         })
-
-        fallbackTimer = setTimeout(() => {
-          if (!cancelled) {
-            setJitsiConnecting(false)
-            setJitsiVideoVisible(true)
-          }
-        }, 20000)
+        disposeJitsiListeners = dispose
+        api.addEventListeners(listeners)
       } catch (e) {
         console.error('Jitsi başlatılamadı:', e)
         if (!cancelled) setJitsiConnecting(false)
@@ -195,7 +186,7 @@ function ProviderLiveSessionRoomInner() {
 
     return () => {
       cancelled = true
-      if (fallbackTimer) clearTimeout(fallbackTimer)
+      disposeJitsiListeners()
       try {
         jitsiApiRef.current?.dispose()
       } catch {
@@ -232,27 +223,28 @@ function ProviderLiveSessionRoomInner() {
   return (
     <div className="fixed inset-0 z-[100] flex items-stretch justify-center bg-slate-950 sm:bg-slate-900 sm:p-4 md:p-6">
       <div className="relative flex h-[100dvh] w-full max-w-[1200px] flex-1 overflow-hidden bg-black shadow-xl sm:h-[min(92dvh,calc(100dvh-2rem))] sm:rounded-2xl sm:ring-1 sm:ring-white/10">
-        {jitsiConnecting && (
+        <div
+          className={`absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950 px-6 text-center transition-opacity duration-700 ease-in-out ${
+            jitsiConnecting ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+          }`}
+          aria-live="polite"
+          aria-busy={jitsiConnecting}
+          aria-hidden={!jitsiConnecting}
+        >
+          <p className="text-2xl font-bold tracking-tight text-white">
+            GELSİN<span className="text-blue-400">.</span>
+          </p>
+          <p className="mt-5 max-w-xs text-base font-medium text-slate-300">
+            Müşteriye bağlanıyorsunuz...
+          </p>
           <div
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950 px-6 text-center"
-            aria-live="polite"
-            aria-busy="true"
-          >
-            <p className="text-2xl font-bold tracking-tight text-white">
-              GELSİN<span className="text-blue-400">.</span>
-            </p>
-            <p className="mt-5 max-w-xs text-base font-medium text-slate-300">
-              Görüşmeye bağlanıyorsunuz...
-            </p>
-            <div
-              className="mt-10 h-9 w-9 animate-spin rounded-full border-2 border-slate-600 border-t-blue-500"
-              aria-hidden
-            />
-          </div>
-        )}
+            className="mt-10 h-9 w-9 animate-spin rounded-full border-2 border-slate-600 border-t-blue-500"
+            aria-hidden
+          />
+        </div>
         <div
           ref={jitsiParentRef}
-          className={`absolute inset-0 h-full w-full transition-all duration-500 ease-out will-change-[opacity,transform] ${
+          className={`absolute inset-0 z-10 h-full w-full transition-all duration-700 ease-out will-change-[opacity,transform] ${
             jitsiVideoVisible
               ? 'opacity-100 scale-100'
               : 'pointer-events-none opacity-0 scale-[0.98]'
