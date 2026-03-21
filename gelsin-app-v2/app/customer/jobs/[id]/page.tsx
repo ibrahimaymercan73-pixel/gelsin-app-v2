@@ -8,6 +8,18 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useChatOverlay } from '@/components/ChatOverlay'
 import { isOnline, formatLastSeenRelative } from '@/lib/presence'
 import { toast } from 'sonner'
+import {
+  Check,
+  ChevronLeft,
+  MapPin,
+  MessageCircle,
+  Phone,
+  QrCode,
+  Star,
+  ShieldCheck,
+  AlertTriangle,
+  X,
+} from 'lucide-react'
 
 const CATEGORY_LABELS: Record<string, string> = {
   painting: 'Boya',
@@ -293,8 +305,8 @@ export default function JobDetailPage() {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center min-h-dvh">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-dvh items-center justify-center bg-slate-50">
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-slate-700" />
       </div>
     )
 
@@ -351,17 +363,19 @@ export default function JobDetailPage() {
   const canOpenDispute = rawStatus === 'accepted' || rawStatus === 'started'
 
   const stepItems = [
-    { key: 'open', label: 'Teklif', icon: '📢' },
-    { key: 'offer', label: 'Onay', icon: '✅' },
-    { key: 'accepted', label: 'Yolda', icon: '🚗' },
-    { key: 'started', label: 'Devam', icon: '🔨' },
-    { key: 'completed', label: 'Bitti', icon: '🏁' },
+    { key: 'open', label: 'Teklif' },
+    { key: 'offer', label: 'Onay' },
+    { key: 'accepted', label: 'Yolda' },
+    { key: 'started', label: 'Devam' },
+    { key: 'completed', label: 'Bitti' },
   ] as const
 
   let activeStep = 0
-  if (rawStatus === 'accepted') activeStep = 2
+  if (rawStatus === 'completed') activeStep = 4
   else if (rawStatus === 'started') activeStep = 3
-  else if (rawStatus === 'completed') activeStep = 4
+  else if (rawStatus === 'accepted') activeStep = 2
+  else if (hasOffers && rawStatus === 'open') activeStep = 1
+  else activeStep = 0
 
   const commissionRate = 0.02
   const commissionAmount =
@@ -433,47 +447,75 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 w-full flex flex-col flex-1 overflow-x-hidden overflow-y-auto pb-28">
-      <div className="bg-white px-3 pt-6 pb-2 border-b border-sky-100 shadow-sm shrink-0">
-        <button onClick={() => router.back()} className="text-blue-600 font-medium text-xs mb-2 flex items-center gap-1">
-          ← Geri
+    <div className="min-h-dvh bg-gradient-to-b from-slate-100/80 via-white to-slate-50/90 w-full flex flex-col flex-1 overflow-x-hidden overflow-y-auto pb-28 font-sans antialiased">
+      <header className="sticky top-0 z-30 shrink-0 border-b border-slate-200/60 bg-white/90 backdrop-blur-xl px-4 pt-4 pb-3">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="text-slate-500 hover:text-slate-800 text-xs font-medium mb-3 inline-flex items-center gap-1 transition-colors"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2} />
+          Geri
         </button>
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-sky-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-lg ring-1 ring-slate-200/80">
             {job?.service_categories?.icon}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="font-bold text-slate-900 text-sm truncate">{job?.title}</h1>
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold mt-0.5 ${sc.bg} ${sc.color}`}>
+            <h1 className="font-semibold text-slate-900 text-[15px] leading-snug line-clamp-2">{job?.title}</h1>
+            <span
+              className={`mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${sc.bg} ${sc.color}`}
+            >
               {sc.label}
             </span>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="w-full max-w-7xl mx-auto">
-        {/* Durum Stepper — kompakt */}
-        <div className="px-3 pt-2">
-          <div className="bg-white rounded-xl px-2 py-1.5 border border-sky-100 shadow-sm">
-            <div className="flex items-center gap-1 md:gap-4 w-full overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="w-full max-w-lg mx-auto">
+        {/* Stepper — ince, yeşil tamamlanan, aktif pulse */}
+        <div className="px-4 pt-4">
+          <div className="rounded-2xl border border-slate-200/60 bg-white/80 px-3 py-3 shadow-[0_1px_8px_rgba(15,23,42,0.04)]">
+            <div className="flex items-center justify-between gap-0.5 overflow-x-auto scrollbar-hide pb-0.5">
               {stepItems.map((step, index) => {
-                const isActive = index <= activeStep
+                const done = index < activeStep
+                const current = index === activeStep
                 return (
-                  <div key={step.label} className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-                    <div
-                      className={`w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                        isActive
-                          ? 'bg-gradient-to-br from-sky-500 to-emerald-500 text-white shadow-sm'
-                          : 'bg-slate-100 text-slate-400'
-                      }`}
-                    >
-                      {step.icon}
+                  <div key={step.label} className="flex flex-1 min-w-0 items-center">
+                    <div className="flex flex-col items-center gap-1 min-w-[3.25rem] flex-1">
+                      <div className="relative flex h-7 w-7 items-center justify-center">
+                        {current && (
+                          <span
+                            className="absolute inset-0 rounded-full bg-emerald-400/25 animate-ping"
+                            aria-hidden
+                          />
+                        )}
+                        <div
+                          className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold transition-all ${
+                            done
+                              ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/25'
+                              : current
+                                ? 'bg-white text-emerald-600 ring-2 ring-emerald-500 shadow-md shadow-emerald-500/15'
+                                : 'bg-slate-100 text-slate-400'
+                          }`}
+                        >
+                          {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : index + 1}
+                        </div>
+                      </div>
+                      <span
+                        className={`text-[9px] font-medium tracking-tight text-center leading-tight max-w-[4.5rem] ${
+                          done || current ? 'text-slate-700' : 'text-slate-400'
+                        }`}
+                      >
+                        {step.label}
+                      </span>
                     </div>
-                    <span className={`text-[10px] md:text-xs font-medium ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>
-                      {step.label}
-                    </span>
                     {index < stepItems.length - 1 && (
-                      <div className="w-2 md:w-4 h-px bg-slate-200 flex-shrink-0" />
+                      <div
+                        className={`h-px flex-1 min-w-[6px] mx-0.5 mb-5 rounded-full ${
+                          index < activeStep ? 'bg-emerald-300' : 'bg-slate-200'
+                        }`}
+                      />
                     )}
                   </div>
                 )
@@ -482,113 +524,88 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        <div className="px-3 py-2 space-y-2">
-        {/* Başlangıç QR — accepted durumunda */}
+        <div className="px-4 py-4 space-y-4">
+        {/* Başlangıç QR — kabul sonrası ana odağı */}
         {mounted && job?.status === 'accepted' && (
-          <div className="card p-5 border-2 border-blue-200 animate-scale-in">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-xl">📱</div>
+          <section className="rounded-2xl border border-slate-200/60 bg-white p-6 sm:p-7 shadow-[0_12px_40px_-16px_rgba(15,23,42,0.15)] animate-scale-in">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg shadow-slate-900/20">
+                <QrCode className="h-6 w-6" strokeWidth={2} aria-hidden />
+              </div>
               <div>
-                <p className="font-bold text-gray-900">Başlangıç QR Kodu</p>
-                <p className="text-xs text-gray-500">Uzman gelince gösterin — kodu okutmadan iş başlamaz</p>
+                <h2 className="text-base font-semibold text-slate-900 tracking-tight">Başlangıç QR kodu</h2>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  Uzman adresine geldiğinde gösterin; okutulmadan iş resmen başlamaz.
+                </p>
               </div>
             </div>
-            {showStartQR ? (
-              <div className="flex flex-col items-center gap-3">
-                <div className="bg-white p-4 rounded-2xl border-2 border-blue-100">
-                  {mounted && hasStartToken ? (
-                    <QRCodeSVG
-                      value={startQrData}
-                      size={180}
-                      level="H"
-                      imageSettings={{
-                        src: '',
-                        height: 0,
-                        width: 0,
-                        excavate: false,
-                      }}
-                    />
-                  ) : (
-                    <div className="w-[180px] h-[180px] flex items-center justify-center text-xs text-gray-400">
-                      Kod hazırlanıyor...
-                    </div>
-                  )}
-                </div>
-                {hasStartToken && (
-                  <div className="bg-gray-900 text-white px-6 py-2.5 rounded-2xl font-mono text-2xl font-black tracking-[0.3em]">
-                    {job?.qr_token?.slice(-6).toUpperCase()}
-                  </div>
-                )}
-                <p className="text-xs text-gray-400 text-center">
-                  QR veya PIN'i uzmanla paylaşın
+            {job?.qr_scanned_at ? (
+              <div className="rounded-2xl bg-emerald-50/90 border border-emerald-100/80 px-4 py-3.5 text-center">
+                <p className="text-sm font-semibold text-emerald-900">İş başladı</p>
+                <p className="text-xs text-emerald-700/90 mt-0.5">
+                  {new Date(job.qr_scanned_at).toLocaleString('tr-TR')}
                 </p>
-                {job?.qr_scanned_at && (
-                  <div className="badge-green w-full justify-center py-2.5 text-sm">
-                    ✅ İş Başladı —{' '}
-                    {new Date(job.qr_scanned_at).toLocaleTimeString('tr-TR')}
-                  </div>
-                )}
               </div>
             ) : (
-              <button className="btn-primary" onClick={() => setShowStartQR(true)}>
-                📱 QR Kodunu Göster
+              <button
+                type="button"
+                onClick={() => setShowStartQR(true)}
+                className="flex w-full items-center justify-center gap-2.5 rounded-full bg-slate-900 py-4 text-[15px] font-semibold text-white shadow-xl shadow-slate-900/20 transition-transform hover:bg-slate-800 active:scale-[0.99]"
+              >
+                <QrCode className="h-5 w-5 shrink-0" strokeWidth={2} />
+                QR kodunu göster
               </button>
             )}
-          </div>
+          </section>
         )}
 
-        {/* Bitiş QR — iş devam ederken veya bitiş kodu üretilmişse */}
+        {/* Bitiş QR */}
         {showEndSection && (
-          <div className="card p-5 border-2 border-emerald-200 animate-scale-in">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">🏁</div>
-              <div>
-                <p className="font-bold text-gray-900">İş Tamamlandı mı?</p>
-                <p className="text-xs text-gray-500">
-                  Onaylayın, ustanın ödemesi başlatılsın (IBAN transferi).
-                </p>
-              </div>
-            </div>
+          <section className="rounded-2xl border border-emerald-200/50 bg-emerald-50/40 p-6 sm:p-7 shadow-[0_8px_28px_-14px_rgba(16,185,129,0.2)] animate-scale-in">
+            <h2 className="text-base font-semibold text-slate-900">İş tamamlandı mı?</h2>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              Onaylayınca bitiş kodu oluşur; uzman okutunca ödeme süreci başlar.
+            </p>
             {showEndQR && hasEndToken ? (
-              <div className="flex flex-col items-center gap-3">
-                <div className="bg-white p-4 rounded-2xl border-2 border-emerald-100">
+              <div className="mt-5 flex flex-col items-center gap-4">
+                <div className="rounded-2xl bg-white p-5 shadow-[0_4px_24px_-8px_rgba(15,23,42,0.1)]">
                   {mounted && hasEndToken ? (
                     <QRCodeSVG
                       value={endQrData}
-                      size={180}
+                      size={200}
                       level="H"
-                      imageSettings={{
-                        src: '',
-                        height: 0,
-                        width: 0,
-                        excavate: false,
-                      }}
+                      imageSettings={{ src: '', height: 0, width: 0, excavate: false }}
                     />
                   ) : (
-                    <div className="w-[180px] h-[180px] flex items-center justify-center text-xs text-gray-400">
+                    <div className="flex h-[200px] w-[200px] items-center justify-center text-xs text-slate-400">
                       Kod hazırlanıyor...
                     </div>
                   )}
                 </div>
-                <div className="bg-emerald-700 text-white px-6 py-2.5 rounded-2xl font-mono text-2xl font-black tracking-[0.3em]">
+                <div className="rounded-2xl bg-emerald-700 px-8 py-3 font-mono text-2xl font-bold tracking-[0.35em] text-white shadow-lg shadow-emerald-700/25">
                   {job?.end_qr_token?.slice(-6).toUpperCase()}
                 </div>
-                <p className="text-xs text-gray-400 text-center">
-                  Uzman okutunca ödeme cüzdanına aktarılır ve IBAN\'ınıza transfer süreci başlar.
+                <p className="max-w-xs text-center text-[11px] leading-relaxed text-slate-500">
+                  Uzman bu kodu okutunca ödeme aktarımı tetiklenir.
                 </p>
               </div>
             ) : (
-              <button className="btn-success" onClick={generateEndQR} disabled={generatingEnd}>
-                {generatingEnd ? 'Hazırlanıyor...' : '✅ Onayla & Bitiş QR Üret'}
+              <button
+                type="button"
+                className="mt-5 w-full rounded-2xl bg-emerald-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition-colors hover:bg-emerald-500 disabled:opacity-60"
+                onClick={generateEndQR}
+                disabled={generatingEnd}
+              >
+                {generatingEnd ? 'Hazırlanıyor…' : 'Onayla ve bitiş QR üret'}
               </button>
             )}
-          </div>
+          </section>
         )}
 
         {/* Değerlendirme - iş tamamlandıysa */}
         {job?.status === 'completed' && (
-          <div className="card p-4 space-y-2.5 border border-emerald-200 bg-emerald-50/60">
-            <p className="text-xs font-bold text-emerald-900">
+          <div className="rounded-2xl border border-emerald-100/80 bg-emerald-50/50 p-5 sm:p-6 shadow-sm space-y-3">
+            <p className="text-sm font-semibold text-emerald-900">
               İşi nasıl buldunuz? Uzmanınızı değerlendirin.
             </p>
 
@@ -665,40 +682,41 @@ export default function JobDetailPage() {
           </div>
         )}
 
-        {/* İş detayları + konum — tek kompakt kart */}
-        <div className="card p-2.5 space-y-2">
-          {job?.description && (
-            <p className="text-gray-600 text-xs leading-snug line-clamp-3">{job.description}</p>
-          )}
-          <div className="flex items-center gap-1.5">
-            <span className="text-gray-400 text-xs">📍</span>
-            <p className="text-gray-700 text-xs flex-1 truncate">{job?.address}</p>
-          </div>
-          {job?.agreed_price && (
-            <div className="space-y-0.5">
-              <div className="flex items-center justify-between bg-blue-50 px-2.5 py-2 rounded-lg">
-                <span className="text-gray-600 text-xs font-medium">
-                  Anlaşılan Fiyat
-                </span>
-                <span className="text-blue-700 font-bold text-base">
-                  ₺{job.agreed_price}
-                </span>
-              </div>
+        {/* İş detayları + fiyat — yumuşak bloklar, çizgisiz */}
+        <section className="rounded-2xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm space-y-5">
+          {job?.agreed_price != null && Number(job.agreed_price) > 0 && (
+            <div className="rounded-2xl bg-slate-50/90 px-5 py-5">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Anlaşılan tutar</p>
+              <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 tabular-nums">
+                ₺{Number(job.agreed_price).toLocaleString('tr-TR')}
+              </p>
               {providerNetAmount !== null && (
-                <p className="text-[11px] text-slate-400 text-right">
-                  Platform hizmet bedeli: %2 &nbsp;•&nbsp; Uzmana geçecek net
-                  tutar ≈{' '}
-                  <span className="font-semibold text-slate-600">
-                    ₺{providerNetAmount.toFixed(2)}
-                  </span>
-                </p>
+                <div className="mt-4 space-y-1.5 text-xs text-slate-400">
+                  <p className="flex justify-between gap-4">
+                    <span>Platform hizmet bedeli</span>
+                    <span className="tabular-nums text-slate-500">%2</span>
+                  </p>
+                  <p className="flex justify-between gap-4 border-t border-slate-200/60 pt-2">
+                    <span className="text-slate-500">Uzmana yaklaşık net</span>
+                    <span className="font-medium tabular-nums text-slate-600">
+                      ₺{providerNetAmount.toFixed(2)}
+                    </span>
+                  </p>
+                </div>
               )}
             </div>
           )}
+          {job?.description && (
+            <p className="text-sm leading-relaxed text-slate-600 line-clamp-4">{job.description}</p>
+          )}
+          <div className="flex items-start gap-2.5 text-sm text-slate-700">
+            <MapPin className="h-4 w-4 shrink-0 text-slate-400 mt-0.5" strokeWidth={2} aria-hidden />
+            <span className="leading-snug">{job?.address}</span>
+          </div>
           {mediaUrls.length > 0 && (
-            <div className="pt-2 space-y-1">
-              <p className="text-xs font-bold text-gray-800">Ekler / Görseller</p>
-              <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-1 px-1">
+            <div className="rounded-2xl bg-slate-50/60 p-4">
+              <p className="text-xs font-semibold text-slate-700 mb-3">Ekler</p>
+              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
                 {mediaUrls.map((url) => {
                   const isVideo = /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)
                   return (
@@ -706,21 +724,12 @@ export default function JobDetailPage() {
                       key={url}
                       type="button"
                       onClick={() => setLightbox({ url, type: isVideo ? 'video' : 'image' })}
-                      className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-black/5 flex-shrink-0"
+                      className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm"
                     >
                       {isVideo ? (
-                        <video
-                          src={url}
-                          className="w-full h-full object-cover"
-                          muted
-                          playsInline
-                        />
+                        <video src={url} className="h-full w-full object-cover" muted playsInline />
                       ) : (
-                        <img
-                          src={url}
-                          alt="Ek görsel"
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={url} alt="" className="h-full w-full object-cover" />
                       )}
                     </button>
                   )
@@ -728,183 +737,223 @@ export default function JobDetailPage() {
               </div>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Sorun Bildir */}
-        {canOpenDispute && (
-          <div className="rounded-xl p-2.5 border border-amber-200 bg-amber-50/60">
-            <p className="text-[11px] font-semibold text-amber-800 mb-1.5">
-              Sorun mu var? Uyuşmazlık talebi oluşturabilirsiniz.
-            </p>
-            <button
-              className="btn-secondary py-2 text-xs w-full border-amber-300 text-amber-800"
-              onClick={() => setShowDispute(true)}
-            >
-              ⚠️ Sorun Bildir
-            </button>
-          </div>
-        )}
-
-        {/* Mesajlaşma */}
-        {job?.provider_id && (
-          <button
-            className="btn-secondary py-2 text-xs w-full"
-            onClick={() => openChat(job.id)}
-          >
-            💬 Uzmanla Mesajlaş
-          </button>
-        )}
-
-        {/* Teklifler */}
+        {/* Teklifler / uzman kartı */}
         {offers.length > 0 && (
           <div>
-            <p className="font-bold text-gray-800 text-xs mb-2">Teklifler ({offers.length})</p>
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:block lg:space-y-2">
-              {offers.map(offer => (
-                <div
-                  key={offer.id}
-                  className={`card p-4 w-full sm:w-72 flex-shrink-0 lg:w-full ${
-                  offer.status === 'accepted' ? 'border-2 border-emerald-400' :
-                  offer.status === 'rejected' ? 'opacity-50' : ''
-                }`}>
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      {offer.profiles?.avatar_url ? (
-                        <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-                          <Image
-                            src={offer.profiles.avatar_url}
-                            alt=""
-                            width={48}
-                            height={48}
-                            className="w-full h-full object-cover"
-                          />
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-3">
+              Teklifler · {offers.length}
+            </p>
+            <div className="flex gap-4 overflow-x-auto pb-1 -mx-1 px-1 lg:mx-0 lg:block lg:space-y-4">
+              {offers.map((offer) => {
+                const isAccepted = offer.status === 'accepted'
+                const r = Number(offer.provider_profiles?.rating)
+                const hasRating = Number.isFinite(r) && r > 0
+                const reviews = offer.provider_profiles?.total_reviews ?? 0
+                return (
+                  <div
+                    key={offer.id}
+                    className={`w-full min-w-[280px] shrink-0 overflow-hidden rounded-2xl border bg-white shadow-sm transition-opacity lg:min-w-0 ${
+                      isAccepted
+                        ? 'border-emerald-200/80 shadow-[0_8px_30px_-12px_rgba(16,185,129,0.18)]'
+                        : 'border-slate-200/70'
+                    } ${offer.status === 'rejected' ? 'opacity-45' : ''}`}
+                  >
+                    <div className="p-5 sm:p-6">
+                      <div className="flex items-start gap-4">
+                        {offer.profiles?.avatar_url ? (
+                          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white shadow-md ring-offset-2 ring-offset-slate-50">
+                            <Image
+                              src={offer.profiles.avatar_url}
+                              alt=""
+                              width={56}
+                              height={56}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-lg font-semibold text-slate-600">
+                            {(offer.profiles?.full_name || offer.profiles?.phone || 'U').charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-semibold text-slate-900 text-[15px] leading-tight truncate">
+                              {offer.profiles?.full_name || offer.profiles?.phone || 'Uzman'}
+                            </p>
+                            {offer.profiles?.face_verified && (
+                              <ShieldCheck
+                                className="h-4 w-4 shrink-0 text-emerald-600"
+                                strokeWidth={2}
+                                aria-label="Doğrulanmış"
+                              />
+                            )}
+                          </div>
+                          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            {hasRating ? (
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`h-3.5 w-3.5 ${
+                                      star <= Math.round(r)
+                                        ? 'fill-amber-400 text-amber-400'
+                                        : 'fill-slate-100 text-slate-200'
+                                    }`}
+                                    strokeWidth={star <= Math.round(r) ? 0 : 1.5}
+                                  />
+                                ))}
+                              </div>
+                            ) : null}
+                            {hasRating && (
+                              <span className="text-xs font-medium tabular-nums text-slate-600">
+                                {r.toFixed(1)}
+                              </span>
+                            )}
+                            <span className="text-xs text-slate-400">
+                              {reviews} değerlendirme
+                            </span>
+                          </div>
+                          {isAccepted && job?.id && job?.provider_id === offer.provider_id && (
+                            <button
+                              type="button"
+                              onClick={() => openChat(job.id)}
+                              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-sm font-medium text-slate-800 transition-colors hover:bg-slate-100 sm:w-auto sm:px-4"
+                            >
+                              <MessageCircle className="h-4 w-4 text-slate-500" strokeWidth={2} />
+                              Uzmanla yazış
+                            </button>
+                          )}
                         </div>
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center text-lg font-bold text-gray-600 flex-shrink-0">
-                          {(offer.profiles?.full_name || offer.profiles?.phone || 'U').charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="font-bold text-sm text-gray-900 truncate">
-                            {offer.profiles?.full_name || offer.profiles?.phone || 'İsimsiz Uzman'}
+                        <div className="shrink-0 text-right">
+                          <p className="text-xl font-semibold tracking-tight text-slate-900 tabular-nums">
+                            ₺{Number(offer.price).toLocaleString('tr-TR')}
                           </p>
-                          {offer.profiles?.face_verified && (
-                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white text-[10px] flex-shrink-0" title="Kimlik doğrulandı">✓</span>
+                          {offer.estimated_duration && (
+                            <p className="text-[11px] text-slate-400 mt-0.5">{offer.estimated_duration}</p>
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 flex-wrap mt-0.5">
-                          <span className="text-yellow-500">★</span>
-                          <span>{offer.provider_profiles?.rating ?? '—'}</span>
-                          <span className="text-gray-400">·</span>
-                          <span>{offer.provider_profiles?.total_reviews ?? 0} değerlendirme</span>
-                          {(offer.provider_profiles?.completed_jobs != null && offer.provider_profiles.completed_jobs > 0) && (
-                            <>
-                              <span className="text-gray-400">·</span>
-                              <span>{offer.provider_profiles.completed_jobs} tamamlanan iş</span>
-                            </>
-                          )}
-                        </div>
-                        {Array.isArray(offer.provider_profiles?.service_categories) &&
-                          offer.provider_profiles.service_categories.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {offer.provider_profiles.service_categories.slice(0, 4).map((c: string) => (
+                      </div>
+
+                      {Array.isArray(offer.provider_profiles?.service_categories) &&
+                        offer.provider_profiles.service_categories.length > 0 && (
+                          <div className="mt-4 flex flex-wrap gap-1.5">
+                            {offer.provider_profiles.service_categories.slice(0, 5).map((c: string) => (
                               <span
                                 key={c}
-                                className="px-1.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-[9px] font-semibold text-blue-700"
+                                className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-medium text-slate-600"
                               >
                                 {CATEGORY_LABELS[c] || c}
                               </span>
                             ))}
                           </div>
                         )}
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-2xl font-black text-blue-700">₺{offer.price}</p>
-                      {offer.estimated_duration && (
-                        <p className="text-xs text-gray-400">⏱ {offer.estimated_duration}</p>
+
+                      {offer.provider_profiles?.bio && (
+                        <p className="mt-4 text-sm leading-relaxed text-slate-600 line-clamp-3 rounded-xl bg-slate-50/80 px-3 py-2.5">
+                          {offer.provider_profiles.bio}
+                        </p>
                       )}
-                    </div>
-                  </div>
-                  {offer.provider_profiles?.bio && (
-                    <p className="text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl mb-2 line-clamp-2">
-                      {offer.provider_profiles.bio}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <Link
-                      href={`/customer/provider/${offer.provider_id}`}
-                      className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
-                    >
-                      Profili Gör →
-                    </Link>
-                    {(() => {
-                      const { phone, canShow } = getOfferPhoneDisplay(offer)
-                      if (!phone || !canShow) return null
-                      return (
-                        <a
-                          href={`tel:${phone}`}
-                          className="inline-flex items-center gap-0.5 text-green-600 bg-green-50 hover:bg-green-100 border border-green-200 rounded-md px-1.5 py-0.5 text-xs font-medium"
+
+                      <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+                        <Link
+                          href={`/customer/provider/${offer.provider_id}`}
+                          className="font-medium text-slate-700 underline decoration-slate-300 underline-offset-4 hover:text-slate-900"
                         >
-                          📞 Beni Ara
-                        </a>
-                      )
-                    })()}
-                  </div>
-                  {typeof offer.provider_profiles?.avg_response_time_mins === 'number' && (
-                    <p className="text-[11px] text-slate-500 mb-2">
-                      ⚡ Genellikle {offer.provider_profiles.avg_response_time_mins} dk içinde yanıt verir
-                    </p>
-                  )}
-                  {offer.provider_profiles?.last_seen && (
-                    <p className="text-[11px] text-slate-500 mb-2">
-                      {isOnline(offer.provider_profiles.last_seen) ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Çevrimiçi
-                        </span>
-                      ) : (
-                        <span>🕒 {formatLastSeenRelative(offer.provider_profiles.last_seen)}</span>
+                          Profili aç
+                        </Link>
+                        {(() => {
+                          const { phone, canShow } = getOfferPhoneDisplay(offer)
+                          if (!phone || !canShow) return null
+                          return (
+                            <a
+                              href={`tel:${phone}`}
+                              className="inline-flex items-center gap-1.5 font-medium text-emerald-700 hover:text-emerald-800"
+                            >
+                              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50">
+                                <Phone className="h-3.5 w-3.5" strokeWidth={2} />
+                              </span>
+                              Ara
+                            </a>
+                          )
+                        })()}
+                      </div>
+
+                      {typeof offer.provider_profiles?.avg_response_time_mins === 'number' && (
+                        <p className="mt-3 text-[11px] text-slate-400">
+                          Ort. yanıt ~{offer.provider_profiles.avg_response_time_mins} dk
+                        </p>
                       )}
-                    </p>
-                  )}
-                  {offer.message && (
-                    <p className="text-xs text-gray-500 bg-gray-50 p-2.5 rounded-xl mb-3">{offer.message}</p>
-                  )}
-                  {offer.status === 'pending' && job?.status !== 'accepted' && job?.status !== 'started' && (
-                    <div className="flex flex-col gap-2">
-                      <button
-                        className="btn-primary py-3 text-sm"
-                        onClick={() => startPaymentForOffer(offer)}
-                        disabled={!!accepting}
-                      >
-                        {accepting === offer.id ? 'İşleniyor...' : '✅ Bu Teklifi Kabul Et'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary py-2.5 text-xs"
-                        onClick={() => requestBargain(offer)}
-                      >
-                        🤝 Pazarlık Et
-                      </button>
+                      {offer.provider_profiles?.last_seen && (
+                        <p className="mt-1 text-[11px] text-slate-400">
+                          {isOnline(offer.provider_profiles.last_seen) ? (
+                            <span className="inline-flex items-center gap-1.5 text-emerald-600 font-medium">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Çevrimiçi
+                            </span>
+                          ) : (
+                            formatLastSeenRelative(offer.provider_profiles.last_seen)
+                          )}
+                        </p>
+                      )}
+                      {offer.message && (
+                        <p className="mt-3 text-xs leading-relaxed text-slate-500 rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2.5">
+                          {offer.message}
+                        </p>
+                      )}
+                      {offer.status === 'pending' &&
+                        job?.status !== 'accepted' &&
+                        job?.status !== 'started' && (
+                          <div className="mt-5 flex flex-col gap-2.5">
+                            <button
+                              type="button"
+                              className="w-full rounded-2xl bg-slate-900 py-3.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition-colors hover:bg-slate-800 disabled:opacity-50"
+                              onClick={() => startPaymentForOffer(offer)}
+                              disabled={!!accepting}
+                            >
+                              {accepting === offer.id ? 'İşleniyor…' : 'Bu teklifi kabul et'}
+                            </button>
+                            <button
+                              type="button"
+                              className="w-full rounded-2xl border border-slate-200 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                              onClick={() => requestBargain(offer)}
+                            >
+                              Pazarlık iste
+                            </button>
+                          </div>
+                        )}
                     </div>
-                  )}
-                  {offer.status === 'accepted' && (
-                    <div className="badge-green w-full justify-center py-2">✅ Kabul Edildi</div>
-                  )}
-                </div>
-              ))}
+                    {isAccepted && (
+                      <div className="border-t border-emerald-100/80 bg-emerald-50/70 px-5 py-2.5 text-center">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-800">
+                          Kabul edildi
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
 
         {offers.length === 0 && job?.status === 'open' && (
-          <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 flex items-center gap-2.5">
-            <span className="text-xl flex-shrink-0">⏳</span>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-700 text-xs">Teklif bekleniyor...</p>
-              <p className="text-[10px] text-gray-500">Yakın uzmanlar bildirim aldı</p>
-            </div>
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3.5">
+            <p className="font-medium text-slate-800 text-sm">Teklif bekleniyor</p>
+            <p className="text-xs text-slate-500 mt-0.5">Yakındaki uzmanlar bildirim aldı.</p>
+          </div>
+        )}
+
+        {canOpenDispute && (
+          <div className="pt-2 pb-1 text-center">
+            <button
+              type="button"
+              onClick={() => setShowDispute(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-orange-800/80 transition-colors"
+            >
+              <AlertTriangle className="h-3.5 w-3.5 opacity-70" strokeWidth={2} />
+              Sorun mu var? Bildir
+            </button>
           </div>
         )}
         </div>
@@ -912,6 +961,60 @@ export default function JobDetailPage() {
 
       {/* Spacer: alt menü + FAB altında kalmaması için yeterli fiziksel boşluk */}
       <div className="h-44 md:h-16 w-full shrink-0 pointer-events-none" aria-hidden />
+
+      {/* Başlangıç QR — tam ekran modal */}
+      {showStartQR && mounted && job?.status === 'accepted' && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 p-5 backdrop-blur-md"
+          onClick={() => setShowStartQR(false)}
+          role="presentation"
+        >
+          <div
+            className="relative w-full max-w-sm rounded-3xl bg-white p-8 shadow-[0_24px_64px_-12px_rgba(15,23,42,0.35)]"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="start-qr-title"
+          >
+            <button
+              type="button"
+              className="absolute right-4 top-4 rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              onClick={() => setShowStartQR(false)}
+              aria-label="Kapat"
+            >
+              <X className="h-5 w-5" strokeWidth={2} />
+            </button>
+            <h3 id="start-qr-title" className="pr-10 text-center text-lg font-semibold tracking-tight text-slate-900">
+              Başlangıç QR
+            </h3>
+            <p className="mt-1 text-center text-xs text-slate-500">Uzmana gösterin</p>
+            <div className="mt-6 flex justify-center rounded-2xl bg-white p-5 shadow-[inset_0_1px_3px_rgba(15,23,42,0.06)] ring-1 ring-slate-100">
+              {hasStartToken ? (
+                <QRCodeSVG
+                  value={startQrData}
+                  size={220}
+                  level="H"
+                  imageSettings={{ src: '', height: 0, width: 0, excavate: false }}
+                />
+              ) : (
+                <div className="flex h-[220px] w-[220px] items-center justify-center text-sm text-slate-400">
+                  Yükleniyor…
+                </div>
+              )}
+            </div>
+            {hasStartToken && (
+              <>
+                <div className="mt-5 rounded-2xl bg-slate-900 py-3.5 text-center font-mono text-2xl font-bold tracking-[0.35em] text-white shadow-lg">
+                  {job?.qr_token?.slice(-6).toUpperCase()}
+                </div>
+                <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-400">
+                  İsterseniz bu PIN’i sözlü olarak da paylaşabilirsiniz.
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {paymentModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4">
