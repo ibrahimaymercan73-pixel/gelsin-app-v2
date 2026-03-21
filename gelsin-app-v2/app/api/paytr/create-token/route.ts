@@ -34,8 +34,17 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}))
-    const jobId = typeof body?.job_id === 'string' ? body.job_id : null
-    const offerId = typeof body?.offer_id === 'string' ? body.offer_id : null
+    const { job_id, offer_id, amount: amountFromBody, milestone_id } = body as {
+      job_id?: string
+      offer_id?: string
+      amount?: unknown
+      milestone_id?: string
+    }
+
+    console.log('create-token body:', body)
+
+    const jobId = typeof job_id === 'string' ? job_id : null
+    const offerId = typeof offer_id === 'string' ? offer_id : null
 
     if (!jobId || !offerId) {
       return NextResponse.json({ error: 'job_id ve offer_id zorunludur' }, { status: 400 })
@@ -81,7 +90,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok.' }, { status: 403 })
     }
 
-    const amount = Number(offer.price)
+    const amount =
+      milestone_id != null &&
+      amountFromBody != null &&
+      Number.isFinite(Number(amountFromBody)) &&
+      Number(amountFromBody) > 0
+        ? Number(amountFromBody)
+        : Number(offer.price)
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json({ error: 'Geçersiz teklif tutarı.' }, { status: 400 })
     }
@@ -132,12 +147,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Teklif akışı için merchant_oid – sadece alfanumerik:
-    // gelsin + offerId (UUID, tireler temizlenmiş) + timestamp
-    const cleanOfferId = String(offerId).replace(/[^a-zA-Z0-9]/g, '')
-    const newMerchantOid = `gelsin${cleanOfferId}${Date.now()}`
+    const baseMerchantOid = milestone_id
+      ? 'gelsinmilestone' + String(milestone_id).replace(/-/g, '').slice(0, 16)
+      : 'gelsin' + String(jobId).replace(/-/g, '').slice(0, 16) + String(offerId).replace(/-/g, '').slice(0, 8)
 
-    const merchant_oid = existingPayment?.paytr_merchant_oid ?? newMerchantOid
+    const merchant_oid = existingPayment?.paytr_merchant_oid ?? baseMerchantOid
 
     const payment_amount = Math.round(amount * 100)
     const currency = 'TL'

@@ -37,7 +37,6 @@ export default function JobDetailPage() {
   const [job, setJob] = useState<any>(null)
   const [offers, setOffers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [accepting, setAccepting] = useState('')
   const [showStartQR, setShowStartQR] = useState(false)
   const [showEndQR, setShowEndQR] = useState(false)
   const [generatingEnd, setGeneratingEnd] = useState(false)
@@ -216,34 +215,85 @@ export default function JobDetailPage() {
     }
   }
 
-  const startPaymentForOffer = async (offer: any) => {
+  const handleAcceptOffer = async (offerId: string) => {
     if (!job?.id) return
-    setAccepting(offer.id)
+    setLoading(true)
     try {
-      const res = await fetch('/api/paytr/create-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_id: job.id, offer_id: offer.id }),
-      })
-      const data: any = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        if (data?.code === 'already_paid') {
-          toast.error('Bu teklif için ödeme zaten alınmış görünüyor.')
-        } else {
-          toast.error(data?.error || 'Ödeme başlatılamadı. Lütfen tekrar deneyin.')
+      const supabase = createClient()
+
+      const { data: offer, error: offerError } = await supabase
+        .from('offers')
+        .select('*, milestones(*)')
+        .eq('id', offerId)
+        .single()
+
+      if (offerError) throw offerError
+
+      console.log('Offer:', offer)
+      console.log('is_milestone:', (offer as { is_milestone?: boolean }).is_milestone)
+
+      if ((offer as { is_milestone?: boolean }).is_milestone) {
+        const raw = (offer as { milestones?: any[] }).milestones
+        const firstMilestone = raw
+          ? [...raw].sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))[0]
+          : undefined
+
+        console.log('First milestone:', firstMilestone)
+
+        const res = await fetch('/api/paytr/create-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            job_id: job.id,
+            offer_id: offerId,
+            amount: firstMilestone?.amount ?? (offer as { price?: number }).price,
+            milestone_id: firstMilestone?.id,
+          }),
+        })
+
+        if (!res.ok) {
+          const err = await res.text()
+          console.error('PayTR hatası:', err)
+          alert('Ödeme başlatılamadı: ' + err)
+          return
         }
-        return
+
+        const data = await res.json().catch(() => ({}))
+        console.log('PayTR token:', data.token)
+        if (!data?.token) {
+          toast.error('Ödeme servisi beklenmeyen yanıt döndürdü.')
+          return
+        }
+        setPaymentModal({
+          token: data.token as string,
+          merchantOid: data.merchant_oid as string,
+        })
+      } else {
+        const res = await fetch('/api/paytr/create-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ job_id: job.id, offer_id: offerId }),
+        })
+        const data: any = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          if (data?.code === 'already_paid') {
+            toast.error('Bu teklif için ödeme zaten alınmış görünüyor.')
+          } else {
+            toast.error(data?.error || 'Ödeme başlatılamadı. Lütfen tekrar deneyin.')
+          }
+          return
+        }
+        if (!data?.token) {
+          toast.error('Ödeme servisi beklenmeyen yanıt döndürdü.')
+          return
+        }
+        setPaymentModal({ token: data.token as string, merchantOid: data.merchant_oid as string })
       }
-      if (!data?.token) {
-        toast.error('Ödeme servisi beklenmeyen yanıt döndürdü.')
-        return
-      }
-      setPaymentModal({ token: data.token as string, merchantOid: data.merchant_oid as string })
-    } catch (e) {
-      console.error('[paytr-start]', e)
-      toast.error('Ödeme başlatılırken bir hata oluştu. Lütfen tekrar deneyin.')
+    } catch (err) {
+      console.error('Hata:', err)
+      alert('Bir hata oluştu: ' + err)
     } finally {
-      setAccepting('')
+      setLoading(false)
     }
   }
 
@@ -1017,10 +1067,10 @@ export default function JobDetailPage() {
                             <button
                               type="button"
                               className="w-full rounded-2xl bg-slate-900 py-3.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition-colors hover:bg-slate-800 disabled:opacity-50"
-                              onClick={() => startPaymentForOffer(offer)}
-                              disabled={!!accepting}
+                              onClick={() => void handleAcceptOffer(offer.id)}
+                              disabled={loading}
                             >
-                              {accepting === offer.id ? 'İşleniyor…' : 'Bu teklifi kabul et'}
+                              {loading ? 'İşleniyor…' : 'Bu teklifi kabul et'}
                             </button>
                             <button
                               type="button"
