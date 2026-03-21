@@ -270,35 +270,43 @@ function CustomerJobsPageContent() {
       </header>
 
       <div className="mx-auto w-full max-w-[1000px] px-4 py-6 sm:px-6">
-        {/* Pills tabs */}
-        <div className="mb-8 flex flex-wrap gap-2">
-          {(Object.keys(tabConfig) as TabKey[]).map((key) => {
-            const selected = activeTab === key
-            const n = counts[key]
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setActiveTab(key)}
-                className={`inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-semibold transition-all sm:px-4 sm:py-2.5 sm:text-[13px] ${
-                  selected
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-500/20'
-                    : 'bg-white/90 text-slate-600 shadow-sm shadow-slate-900/[0.04] ring-1 ring-slate-200/80 hover:bg-white hover:ring-slate-300/90'
-                }`}
-              >
-                <span>{tabConfig[key].label}</span>
-                <span
-                  className={`flex min-h-[1.375rem] min-w-[1.375rem] items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums ${
+        {/* Pills tabs: mobile = single-row horizontal scroll, desktop = wrap */}
+        <div className="mb-8 -mx-4 overflow-x-auto overflow-y-hidden hide-scrollbar sm:mx-0 sm:overflow-visible">
+          <div
+            className="flex w-max min-w-full flex-nowrap gap-2 px-[18px] pb-0.5 sm:w-auto sm:min-w-0 sm:flex-wrap sm:gap-2 sm:px-0 sm:pb-0"
+            role="tablist"
+            aria-label="İş kategorileri"
+          >
+            {(Object.keys(tabConfig) as TabKey[]).map((key) => {
+              const selected = activeTab === key
+              const n = counts[key]
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => setActiveTab(key)}
+                  className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-all sm:gap-2 sm:px-4 sm:py-2.5 sm:text-[13px] ${
                     selected
-                      ? 'bg-white/20 text-white'
-                      : 'bg-slate-200/90 text-slate-800 ring-1 ring-slate-300/50'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-[0_4px_20px_-2px_rgba(37,99,235,0.55)] ring-2 ring-blue-400/50 sm:from-blue-600 sm:to-blue-600 sm:shadow-md sm:shadow-blue-600/25 sm:ring-blue-500/20'
+                      : 'bg-slate-500/[0.06] text-slate-600 ring-1 ring-slate-300/25 backdrop-blur-[2px] hover:bg-slate-500/[0.1] sm:bg-white/90 sm:shadow-sm sm:shadow-slate-900/[0.04] sm:ring-slate-200/80 sm:backdrop-blur-none sm:hover:bg-white sm:hover:ring-slate-300/90'
                   }`}
                 >
-                  {n}
-                </span>
-              </button>
-            )
-          })}
+                  <span className="whitespace-nowrap">{tabConfig[key].label}</span>
+                  <span
+                    className={`flex min-h-[1.25rem] min-w-[1.25rem] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums sm:min-h-[1.375rem] sm:min-w-[1.375rem] sm:px-1.5 sm:text-[11px] ${
+                      selected
+                        ? 'bg-white/25 text-white ring-1 ring-white/30'
+                        : 'bg-slate-400/15 text-slate-700 ring-1 ring-slate-400/20 sm:bg-slate-200/90 sm:text-slate-800 sm:ring-slate-300/50'
+                    }`}
+                  >
+                    {n}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {activeJobs.length === 0 ? (
