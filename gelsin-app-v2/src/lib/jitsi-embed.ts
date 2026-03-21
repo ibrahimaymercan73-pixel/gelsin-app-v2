@@ -6,9 +6,12 @@
 export const JITSI_DOMAIN = 'meet.jit.si'
 export const JITSI_SCRIPT = `https://${JITSI_DOMAIN}/external_api.js`
 
+export type JitsiEmbedRole = 'customer' | 'provider'
+
 export type JitsiApi = {
   dispose: () => void
   addEventListeners: (listeners: Record<string, (...args: unknown[]) => void>) => void
+  executeCommand?: (command: string, ...args: unknown[]) => void
 }
 
 declare global {
@@ -49,43 +52,96 @@ export function loadJitsiScript(): Promise<void> {
 
 const TOOLBAR_MINIMAL = ['microphone', 'camera', 'hangup'] as const
 
-/** userInfo + configOverwrite + interfaceConfigOverwrite */
-export function getJitsiMeetEmbedOptions(displayName: string) {
+/**
+ * Görünen isim (userInfo + executeCommand için).
+ * Müşteri tarafında: "Müşteri Veli" formatı.
+ */
+export function resolveJitsiDisplayName(rawFirstName: string, role: JitsiEmbedRole): string {
+  const t = rawFirstName.trim() || (role === 'customer' ? 'Müşteri' : 'Uzman')
+  if (role === 'customer') {
+    const lower = t.toLowerCase()
+    if (lower === 'müşteri' || lower.startsWith('müşteri ')) return t
+    return `Müşteri ${t}`
+  }
+  return t
+}
+
+export function defaultRemoteDisplayNameForRole(role: JitsiEmbedRole): string {
+  return role === 'customer' ? 'Uzman' : 'Müşteri'
+}
+
+export type JitsiMeetEmbedBundle = {
+  /** API'ye spread edilecek userInfo + configOverwrite + interfaceConfigOverwrite */
+  embedProps: {
+    userInfo: { displayName: string }
+    configOverwrite: Record<string, unknown>
+    interfaceConfigOverwrite: Record<string, unknown>
+  }
+  /** videoConferenceJoined sonrası executeCommand('displayName', …) */
+  displayNameForCommand: string
+}
+
+/** userInfo + configOverwrite + interfaceConfigOverwrite (+ komut için isim) */
+export function getJitsiMeetEmbedBundle(
+  rawDisplayName: string,
+  role: JitsiEmbedRole = 'provider'
+): JitsiMeetEmbedBundle {
   const toolbarMinimal = [...TOOLBAR_MINIMAL]
+  const inMeetName = resolveJitsiDisplayName(rawDisplayName, role)
+  const defaultRemote = defaultRemoteDisplayNameForRole(role)
+
   return {
-    userInfo: {
-      displayName,
-    },
-    configOverwrite: {
-      prejoinPageEnabled: false,
-      disableDeepLinking: true,
-      startWithAudioMuted: false,
-      startWithVideoMuted: false,
-      toolbarButtons: toolbarMinimal,
-      subject: '',
-      hideConferenceSubject: true,
-      hideConferenceTimer: true,
-      disablePolls: true,
-      disableReactions: true,
-      disablePrivateMessages: true,
-      disableChat: true,
-      disableProfile: true,
-      disableSelfViewSettings: true,
-      notifications: [],
-      disableInviteFunctions: true,
-    },
-    interfaceConfigOverwrite: {
-      TOOLBAR_BUTTONS: toolbarMinimal,
-      SHOW_JITSI_WATERMARK: false,
-      SHOW_WATERMARK_FOR_GUESTS: false,
-      SHOW_BRAND_WATERMARK: false,
-      SHOW_PROMOTIONAL_CLOSE_PAGE: false,
-      SHOW_CHROME_EXTENSION_BANNER: false,
-      MOBILE_APP_PROMO: false,
-      HIDE_INVITE_MORE_HEADER: true,
-      DISPLAY_WELCOME_PAGE_CONTENT: false,
-      TOOLBAR_ALWAYS_VISIBLE: true,
-      DEFAULT_BACKGROUND: '#0f172a',
+    displayNameForCommand: inMeetName,
+    embedProps: {
+      userInfo: {
+        displayName: inMeetName,
+      },
+      configOverwrite: {
+        prejoinPageEnabled: false,
+        skipPrejoinButton: true,
+        disableDeepLinking: true,
+        startWithAudioMuted: false,
+        startWithVideoMuted: false,
+        toolbarButtons: toolbarMinimal,
+        subject: '',
+        hideConferenceSubject: true,
+        hideConferenceTimer: true,
+        disablePolls: true,
+        disableReactions: true,
+        disablePrivateMessages: true,
+        disableChat: true,
+        disableProfile: true,
+        disableSelfViewSettings: true,
+        notifications: [],
+        disableInviteFunctions: true,
+        /** Ek giriş / uyarı ekranlarını azaltır (sunucu destekliyorsa) */
+        enableWelcomePage: false,
+        enableClosePage: false,
+        enableInsecureRoomNameWarning: false,
+        requireDisplayName: false,
+        enableLobby: false,
+        enableNoisyMicDetection: false,
+      },
+      interfaceConfigOverwrite: {
+        TOOLBAR_BUTTONS: toolbarMinimal,
+        SHOW_JITSI_WATERMARK: false,
+        SHOW_WATERMARK_FOR_GUESTS: false,
+        SHOW_BRAND_WATERMARK: false,
+        SHOW_PROMOTIONAL_CLOSE_PAGE: false,
+        SHOW_CHROME_EXTENSION_BANNER: false,
+        MOBILE_APP_PROMO: false,
+        HIDE_INVITE_MORE_HEADER: true,
+        DISPLAY_WELCOME_PAGE_CONTENT: false,
+        TOOLBAR_ALWAYS_VISIBLE: true,
+        DEFAULT_BACKGROUND: '#0f172a',
+        DEFAULT_REMOTE_DISPLAY_NAME: defaultRemote,
+      },
     },
   }
+}
+
+/** @deprecated — doğrudan getJitsiMeetEmbedBundle(...).embedProps kullanın */
+export function getJitsiMeetEmbedOptions(displayName: string) {
+  const { embedProps } = getJitsiMeetEmbedBundle(displayName, 'provider')
+  return embedProps
 }

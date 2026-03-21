@@ -7,7 +7,7 @@ import {
   JITSI_DOMAIN,
   parseJitsiRoomName,
   loadJitsiScript,
-  getJitsiMeetEmbedOptions,
+  getJitsiMeetEmbedBundle,
   type JitsiApi,
 } from '@/lib/jitsi-embed'
 
@@ -22,6 +22,7 @@ function ProviderLiveSessionRoomInner() {
   const [error, setError] = useState<string | null>(null)
   const [providerDisplayName, setProviderDisplayName] = useState<string | null>(null)
   const [jitsiConnecting, setJitsiConnecting] = useState(true)
+  const [jitsiVideoVisible, setJitsiVideoVisible] = useState(false)
 
   const jitsiParentRef = useRef<HTMLDivElement>(null)
   const jitsiApiRef = useRef<JitsiApi | null>(null)
@@ -132,6 +133,7 @@ function ProviderLiveSessionRoomInner() {
     let cancelled = false
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null
     setJitsiConnecting(true)
+    setJitsiVideoVisible(false)
 
     ;(async () => {
       try {
@@ -142,27 +144,48 @@ function ProviderLiveSessionRoomInner() {
 
         jitsiParentRef.current.innerHTML = ''
 
-        const embedOpts = getJitsiMeetEmbedOptions(providerDisplayName)
+        const { embedProps, displayNameForCommand } = getJitsiMeetEmbedBundle(
+          providerDisplayName,
+          'provider'
+        )
         const api = new API(JITSI_DOMAIN, {
           roomName,
           parentNode: jitsiParentRef.current,
-          ...embedOpts,
+          ...embedProps,
         })
 
         jitsiApiRef.current = api
 
         const onJoined = () => {
-          if (!cancelled) setJitsiConnecting(false)
+          if (cancelled) return
+          try {
+            api.executeCommand?.('displayName', displayNameForCommand)
+          } catch {
+            /* ignore */
+          }
+          setJitsiConnecting(false)
+          requestAnimationFrame(() => {
+            if (!cancelled) setJitsiVideoVisible(true)
+          })
         }
 
         api.addEventListeners({
           videoConferenceJoined: onJoined,
+          passwordRequired: () => {
+            if (!cancelled) {
+              setJitsiConnecting(true)
+              setJitsiVideoVisible(false)
+            }
+          },
           readyToClose: () => navigateAfterHangup(),
           videoConferenceLeft: () => navigateAfterHangup(),
         })
 
         fallbackTimer = setTimeout(() => {
-          if (!cancelled) setJitsiConnecting(false)
+          if (!cancelled) {
+            setJitsiConnecting(false)
+            setJitsiVideoVisible(true)
+          }
         }, 20000)
       } catch (e) {
         console.error('Jitsi başlatılamadı:', e)
@@ -227,7 +250,15 @@ function ProviderLiveSessionRoomInner() {
             />
           </div>
         )}
-        <div ref={jitsiParentRef} className="absolute inset-0 h-full w-full" />
+        <div
+          ref={jitsiParentRef}
+          className={`absolute inset-0 h-full w-full transition-all duration-500 ease-out will-change-[opacity,transform] ${
+            jitsiVideoVisible
+              ? 'opacity-100 scale-100'
+              : 'pointer-events-none opacity-0 scale-[0.98]'
+          }`}
+          aria-hidden={!jitsiVideoVisible}
+        />
       </div>
     </div>
   )

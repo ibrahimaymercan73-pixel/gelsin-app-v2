@@ -7,7 +7,7 @@ import {
   JITSI_DOMAIN,
   parseJitsiRoomName,
   loadJitsiScript,
-  getJitsiMeetEmbedOptions,
+  getJitsiMeetEmbedBundle,
   type JitsiApi,
 } from '@/lib/jitsi-embed'
 
@@ -40,6 +40,8 @@ function LiveSupportPageInner() {
   )
   const [handledPaytrSuccess, setHandledPaytrSuccess] = useState(false)
   const [jitsiConnecting, setJitsiConnecting] = useState(true)
+  /** Görüşmeye girilene kadar Jitsi iframe'i gizli (iç yükleme görünmez) */
+  const [jitsiVideoVisible, setJitsiVideoVisible] = useState(false)
 
   const jitsiParentRef = useRef<HTMLDivElement>(null)
   const jitsiApiRef = useRef<JitsiApi | null>(null)
@@ -292,6 +294,7 @@ function LiveSupportPageInner() {
     let cancelled = false
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null
     setJitsiConnecting(true)
+    setJitsiVideoVisible(false)
 
     ;(async () => {
       try {
@@ -302,27 +305,49 @@ function LiveSupportPageInner() {
 
         jitsiParentRef.current.innerHTML = ''
 
-        const embedOpts = getJitsiMeetEmbedOptions(customerDisplayName)
+        const { embedProps, displayNameForCommand } = getJitsiMeetEmbedBundle(
+          customerDisplayName,
+          'customer'
+        )
         const api = new API(JITSI_DOMAIN, {
           roomName,
           parentNode: jitsiParentRef.current,
-          ...embedOpts,
+          ...embedProps,
         })
 
         jitsiApiRef.current = api
 
         const onJoined = () => {
-          if (!cancelled) setJitsiConnecting(false)
+          if (cancelled) return
+          try {
+            api.executeCommand?.('displayName', displayNameForCommand)
+          } catch {
+            /* ignore */
+          }
+          setJitsiConnecting(false)
+          requestAnimationFrame(() => {
+            if (!cancelled) setJitsiVideoVisible(true)
+          })
         }
 
         api.addEventListeners({
           videoConferenceJoined: onJoined,
+          /** Şifre / bekleme — Jitsi gri ekranı yerine üstteki overlay kalır */
+          passwordRequired: () => {
+            if (!cancelled) {
+              setJitsiConnecting(true)
+              setJitsiVideoVisible(false)
+            }
+          },
           readyToClose: () => navigateAfterHangup(),
           videoConferenceLeft: () => navigateAfterHangup(),
         })
 
         fallbackTimer = setTimeout(() => {
-          if (!cancelled) setJitsiConnecting(false)
+          if (!cancelled) {
+            setJitsiConnecting(false)
+            setJitsiVideoVisible(true)
+          }
         }, 20000)
       } catch (e) {
         console.error('Jitsi başlatılamadı:', e)
@@ -441,7 +466,7 @@ function LiveSupportPageInner() {
                   GELSİN<span className="text-blue-400">.</span>
                 </p>
                 <p className="mt-5 max-w-xs text-base font-medium text-slate-300">
-                  Uzmanımıza bağlanıyorsunuz...
+                  Uzmana bağlanıyorsunuz...
                 </p>
                 <div
                   className="mt-10 h-9 w-9 rounded-full border-2 border-slate-600 border-t-blue-500 animate-spin"
@@ -449,7 +474,15 @@ function LiveSupportPageInner() {
                 />
               </div>
             )}
-            <div ref={jitsiParentRef} className="absolute inset-0 h-full w-full" />
+            <div
+              ref={jitsiParentRef}
+              className={`absolute inset-0 h-full w-full transition-all duration-500 ease-out will-change-[opacity,transform] ${
+                jitsiVideoVisible
+                  ? 'opacity-100 scale-100'
+                  : 'pointer-events-none opacity-0 scale-[0.98]'
+              }`}
+              aria-hidden={!jitsiVideoVisible}
+            />
           </div>
         </div>
       ) : (
