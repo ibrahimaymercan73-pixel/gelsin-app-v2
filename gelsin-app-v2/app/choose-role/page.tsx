@@ -85,17 +85,30 @@ export default function ChooseRolePage() {
       setFullName((profile?.full_name as string) || '')
       setPhone((profile?.phone as string) || '')
       setCity((profile?.city as string) || '')
-      if (currentRole) setRole(currentRole)
+      let effectiveRole = currentRole
+      if (!effectiveRole && typeof window !== 'undefined') {
+        try {
+          const pending = sessionStorage.getItem('gelsin_register_role') as 'customer' | 'provider' | null
+          if (pending === 'customer' || pending === 'provider') {
+            effectiveRole = pending
+            sessionStorage.removeItem('gelsin_register_role')
+            await supabase.from('profiles').upsert({ id: user.id, role: pending }, { onConflict: 'id' })
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      if (effectiveRole) setRole(effectiveRole)
       if (pp?.main_category) {
         const cat = SERVICE_CATEGORIES.find(c => c.id === pp.main_category)
         if (cat) setSelectedCategory(cat)
       }
       if (pp?.service_categories) setSelectedServices((pp.service_categories as string[]) || [])
 
-      if (!currentRole) setStep(1)
+      if (!effectiveRole) setStep(1)
       else if (!hasCity) setStep(2)
-      else if (currentRole === 'provider' && !isOnboarded) setStep(3)
-      else if (currentRole === 'provider' && isOnboarded) setStep(4)
+      else if (effectiveRole === 'provider' && !isOnboarded) setStep(3)
+      else if (effectiveRole === 'provider' && isOnboarded) setStep(4)
       else setStep(2)
       setLoading(false)
     }
