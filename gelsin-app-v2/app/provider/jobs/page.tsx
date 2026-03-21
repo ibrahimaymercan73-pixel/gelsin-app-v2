@@ -1,6 +1,23 @@
 'use client'
 import { Suspense, useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
+import type { LucideIcon } from 'lucide-react'
+import {
+  Briefcase,
+  Clock,
+  Droplets,
+  Flame,
+  Hammer,
+  LayoutGrid,
+  MapPin,
+  Navigation,
+  Paintbrush,
+  Puzzle,
+  Radar,
+  Sparkles,
+  Wrench,
+  Zap,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 
 const SKILL_LABELS: Record<string, string> = {
@@ -11,6 +28,53 @@ const SKILL_LABELS: Record<string, string> = {
   cleaning: 'Temizlik',
   assembly: 'Montaj',
   repair: 'Tamir',
+}
+
+type CategoryVisual = {
+  Icon: LucideIcon
+  box: string
+  iconColor: string
+}
+
+function categoryVisualFromJob(job: any): CategoryVisual {
+  const slug = String(job?.service_categories?.slug || '').toLowerCase()
+  const name = String(job?.service_categories?.name || '').toLowerCase()
+  const sub = String(job?.sub_service || '').toLowerCase()
+  const main = String(job?.main_category || '').toLowerCase()
+  const hay = `${slug} ${name} ${sub} ${main}`
+
+  if (/plumb|tesisat|su|su tesisat|sıhhi|lavabo|musluk|klozet|pipe/.test(hay)) {
+    return { Icon: Droplets, box: 'bg-sky-500/12 ring-sky-200/60', iconColor: 'text-sky-600' }
+  }
+  if (/clean|temiz|temizlik|ev temiz|hali|halı|süpürge|supurge/.test(hay)) {
+    return { Icon: Sparkles, box: 'bg-violet-500/12 ring-violet-200/60', iconColor: 'text-violet-600' }
+  }
+  if (/paint|boya|badana|boyama|duvar/.test(hay)) {
+    return { Icon: Paintbrush, box: 'bg-rose-500/12 ring-rose-200/60', iconColor: 'text-rose-600' }
+  }
+  if (/electric|elektrik|kablo|priz|aydınlatma|aydinlatma|lamba/.test(hay)) {
+    return { Icon: Zap, box: 'bg-amber-500/15 ring-amber-200/60', iconColor: 'text-amber-600' }
+  }
+  if (/carpent|marangoz|ahşap|ahsap|wood|dolap|mobilya/.test(hay)) {
+    return { Icon: Hammer, box: 'bg-amber-800/10 ring-amber-200/50', iconColor: 'text-amber-800' }
+  }
+  if (/assembl|montaj|kurulum|ikea|kit/.test(hay)) {
+    return { Icon: Puzzle, box: 'bg-indigo-500/12 ring-indigo-200/60', iconColor: 'text-indigo-600' }
+  }
+  if (/repair|tamir|onarım|onarim|arıza|ariza|fix|servis/.test(hay)) {
+    return { Icon: Wrench, box: 'bg-slate-500/12 ring-slate-200/60', iconColor: 'text-slate-700' }
+  }
+  return { Icon: Briefcase, box: 'bg-blue-500/10 ring-blue-200/50', iconColor: 'text-blue-600' }
+}
+
+const SKILL_ICONS: Record<string, LucideIcon> = {
+  plumbing: Droplets,
+  painting: Paintbrush,
+  carpentry: Hammer,
+  electric: Zap,
+  cleaning: Sparkles,
+  assembly: Puzzle,
+  repair: Wrench,
 }
 
 function ProviderJobsPageContent() {
@@ -244,13 +308,18 @@ function ProviderJobsPageContent() {
     }))
   }
 
-  const chips = [
-    { id: 'all', label: 'Tümü' },
-    { id: 'urgent', label: '🔥 Acil İşler' },
-    { id: 'nearby', label: '📍 Yakınımdakiler' },
+  const chips: {
+    id: string
+    label: string
+    Icon: LucideIcon
+  }[] = [
+    { id: 'all', label: 'Tümü', Icon: LayoutGrid },
+    { id: 'urgent', label: 'Acil işler', Icon: Flame },
+    { id: 'nearby', label: 'Yakınımdakiler', Icon: MapPin },
     ...skills.map((s) => ({
       id: `cat:${s}`,
       label: SKILL_LABELS[s] || s,
+      Icon: SKILL_ICONS[s] || Briefcase,
     })),
   ]
 
@@ -295,27 +364,50 @@ function ProviderJobsPageContent() {
     return null
   }
 
-  return (
-    <div className="min-h-screen bg-[#f8fafc] overflow-x-hidden w-full max-w-full">
-      <header className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200">
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-900">🔍 Radar</h1>
-        <p className="text-slate-600 text-xs sm:text-sm mt-0.5">Yakınımdaki açık işler</p>
+  /** Kart alt satırı için (emoji yok, ikon ayrı) */
+  const timeMetaForCard = (job: any): { kind: 'urgent' | 'date'; text: string } | null => {
+    if (job?.job_type === 'urgent') return { kind: 'urgent', text: 'Hemen' }
+    if (job?.scheduled_at) {
+      const d = new Date(job.scheduled_at)
+      if (!Number.isNaN(d.getTime())) {
+        return {
+          kind: 'date',
+          text: d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
+        }
+      }
+    }
+    return null
+  }
 
-        {/* Filtreler: mobilde satıra sığdır (wrap), taşma yok */}
-        <div className="mt-3 sm:mt-4 flex flex-wrap gap-2">
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-violet-50/30 overflow-x-hidden w-full max-w-full font-sans">
+      <header className="w-full max-w-3xl mx-auto px-5 sm:px-8 py-6 sm:py-8 sticky top-0 z-40 border-b border-white/60 bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/55">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-lg shadow-violet-500/25">
+            <Radar className="h-6 w-6" strokeWidth={2} aria-hidden />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">İş Radarı</h1>
+            <p className="text-slate-500 text-sm mt-0.5">Çevrendeki açık talepleri keşfet, teklif ver</p>
+          </div>
+        </div>
+
+        <div className="mt-5 sm:mt-6 flex flex-wrap gap-2.5">
           {chips.map((c) => {
             const active = filter === c.id
+            const ChipIcon = c.Icon
             return (
               <button
                 key={c.id}
                 type="button"
                 onClick={() => setFilter(c.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 whitespace-nowrap ${
+                className={`inline-flex items-center gap-2 pl-3.5 pr-4 py-2 rounded-full text-xs font-semibold transition-all active:scale-[0.98] whitespace-nowrap ring-1 ${
                   active
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25 ring-violet-500/30'
+                    : 'bg-slate-100/90 text-slate-600 ring-slate-200/80 hover:bg-slate-100 hover:text-slate-800'
                 }`}
               >
+                <ChipIcon className={`h-3.5 w-3.5 shrink-0 ${active ? 'text-white' : 'text-slate-500'}`} strokeWidth={2} />
                 {c.label}
               </button>
             )
@@ -323,16 +415,18 @@ function ProviderJobsPageContent() {
         </div>
       </header>
 
-      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6 pb-32 lg:pb-6 overflow-hidden">
-        <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-full">
+      <div className="w-full max-w-3xl mx-auto px-5 sm:px-8 py-6 sm:py-8 pb-32 lg:pb-10 overflow-hidden">
+        <div className="flex flex-col gap-5 sm:gap-6 w-full max-w-full">
           {filtered.map((job, i) => {
             const urgent = job.job_type === 'urgent'
-            const distText = job.dist != null
-              ? job.dist < 1
-                ? `${(job.dist * 1000).toFixed(0)}m`
-                : `${job.dist.toFixed(1)}km`
-              : null
-            const time = whenLabel(job)
+            const distText =
+              job.dist != null
+                ? job.dist < 1
+                  ? `${(job.dist * 1000).toFixed(0)} m`
+                  : `${job.dist.toFixed(1)} km`
+                : null
+            const timeRow = timeMetaForCard(job)
+            const { Icon: CatIcon, box: catBox, iconColor: catIconColor } = categoryVisualFromJob(job)
 
             return (
               <div
@@ -343,72 +437,79 @@ function ProviderJobsPageContent() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') setSelectedJobId(job.id)
                 }}
-                className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer overflow-hidden animate-slide-up w-full max-w-full"
+                className="group bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl hover:shadow-slate-900/[0.07] hover:-translate-y-1 hover:border-violet-200/70 transition-all duration-300 cursor-pointer overflow-hidden animate-slide-up w-full max-w-full"
                 style={{ animationDelay: `${Math.min(i, 8) * 0.04}s` }}
               >
-                <div className="p-3 sm:p-4 md:p-5 overflow-hidden">
-                  {/* Mobil: Kompakt üst satır (ikon + başlık + rozet) */}
-                  <div className="flex items-start gap-3 mb-2 overflow-hidden">
-                    {/* İkon */}
-                    <div className="w-11 h-11 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-blue-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-2xl md:text-3xl text-blue-600 flex-shrink-0">
-                      {job.service_categories?.icon || '🔧'}
+                <div className="p-4 sm:p-5 md:p-6 overflow-hidden">
+                  <div className="flex items-start gap-4 mb-3 overflow-hidden">
+                    <div
+                      className={`flex h-16 w-16 sm:h-[4.5rem] sm:w-[4.5rem] shrink-0 items-center justify-center rounded-2xl ring-2 ${catBox}`}
+                    >
+                      <CatIcon className={`h-8 w-8 sm:h-9 sm:w-9 ${catIconColor}`} strokeWidth={2} aria-hidden />
                     </div>
 
-                    {/* Başlık ve kategori */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <h3 className="font-bold text-slate-900 text-sm sm:text-base md:text-lg leading-snug line-clamp-2 break-words">
+                          <h3 className="font-bold text-slate-900 text-base sm:text-lg leading-snug line-clamp-2 break-words">
                             {job.title}
                           </h3>
-                          <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">{job.service_categories?.name}</p>
+                          <p className="text-xs text-slate-500 mt-1 font-medium">
+                            {job.service_categories?.name}
+                          </p>
                         </div>
-                        {/* Rozet: Teklif Verildi / Müşteri pazarlık istedi veya Acil */}
                         {myOffers.has(job.id) && (
-                          <span className={`flex-shrink-0 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold border ${
-                            myOfferMeta[job.id]?.is_bargain_requested
-                              ? 'bg-amber-100 text-amber-800 border-amber-200'
-                              : 'bg-emerald-100 text-emerald-700 border-emerald-200'
-                          }`}>
+                          <span
+                            className={`flex-shrink-0 max-w-[48%] sm:max-w-none text-right px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold border leading-tight ${
+                              myOfferMeta[job.id]?.is_bargain_requested
+                                ? 'bg-amber-50 text-amber-900 border-amber-200/90'
+                                : 'bg-emerald-50 text-emerald-800 border-emerald-200/90'
+                            }`}
+                          >
                             {myOfferMeta[job.id]?.is_bargain_requested
-                              ? '📉 Müşteri indirim bekliyor'
-                              : '✅ Teklif Verildi - Müşteri Yanıtı Bekleniyor'}
+                              ? 'Müşteri indirim bekliyor'
+                              : 'Teklif gönderildi'}
                           </span>
                         )}
                         {urgent && !myOffers.has(job.id) && (
-                          <span className="flex-shrink-0 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200">
-                            🔥 Acil
+                          <span className="relative flex-shrink-0 inline-flex">
+                            <span
+                              className="absolute -inset-1 rounded-full bg-red-500/35 blur-md animate-pulse"
+                              aria-hidden
+                            />
+                            <span className="relative inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold text-white border border-red-400/50 bg-gradient-to-r from-rose-500 via-red-500 to-red-600 shadow-lg shadow-red-500/40 ring-2 ring-red-400/30 animate-pulse">
+                              <Flame className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
+                              Acil
+                            </span>
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Açıklama - 2 satır */}
                   {job.description && (
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-2 mb-2 sm:mb-3 break-words overflow-hidden">
+                    <p className="text-sm text-slate-600 leading-relaxed line-clamp-2 mb-1 break-words overflow-hidden">
                       {job.description}
                     </p>
                   )}
 
-                  {/* Alt satır: Lokasyon ve zaman */}
-                  <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-[11px] text-slate-500 pt-2 border-t border-gray-100 overflow-hidden">
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-4 mt-3 border-t border-slate-100">
                     {job.address && (
-                      <span className="inline-flex items-center gap-1 max-w-[60%] overflow-hidden">
-                        <span className="flex-shrink-0">📍</span>
-                        <span className="truncate">{job.address}</span>
+                      <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 min-w-0">
+                        <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" strokeWidth={2} aria-hidden />
+                        <span className="truncate max-w-[220px] sm:max-w-md">{job.address}</span>
                       </span>
                     )}
-                    {time && (
-                      <span className="inline-flex items-center gap-1 flex-shrink-0">
-                        <span>🕒</span>
-                        <span>{time.replace(/^[📅⏱]\s*/, '')}</span>
+                    {timeRow && (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 shrink-0">
+                        <Clock className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} aria-hidden />
+                        <span>{timeRow.text}</span>
                       </span>
                     )}
                     {distText && (
-                      <span className="inline-flex items-center gap-1 text-blue-600 font-semibold flex-shrink-0">
-                        <span>📏</span>
-                        <span>{distText}</span>
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-600 shrink-0">
+                        <Navigation className="h-3.5 w-3.5 text-violet-500" strokeWidth={2} aria-hidden />
+                        {distText}
                       </span>
                     )}
                   </div>
@@ -419,10 +520,14 @@ function ProviderJobsPageContent() {
         </div>
 
         {jobs.length === 0 && (
-          <div className="flex flex-col items-center py-20 text-center">
-            <div className="text-6xl mb-4">🔍</div>
-            <p className="font-bold text-slate-700">Açık iş bulunamadı</p>
-            <p className="text-sm text-slate-400 mt-1">Yeni işler gelince burada görünecek</p>
+          <div className="flex flex-col items-center py-24 text-center px-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 mb-4">
+              <Radar className="h-8 w-8" strokeWidth={1.5} aria-hidden />
+            </div>
+            <p className="font-bold text-slate-800 text-lg">Açık iş bulunamadı</p>
+            <p className="text-sm text-slate-500 mt-2 max-w-sm leading-relaxed">
+              Filtreleri değiştir veya daha sonra tekrar bak — yeni talepler burada belirecek.
+            </p>
           </div>
         )}
       </div>
@@ -433,9 +538,17 @@ function ProviderJobsPageContent() {
           <div className="w-full max-w-lg bg-white border border-gray-200 rounded-3xl p-4 max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/20">
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-xl text-blue-600 flex-shrink-0">
-                  {selectedJob.service_categories?.icon}
-                </div>
+                {(() => {
+                  const v = categoryVisualFromJob(selectedJob)
+                  const VIcon = v.Icon
+                  return (
+                    <div
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ring-2 ${v.box}`}
+                    >
+                      <VIcon className={`h-6 w-6 ${v.iconColor}`} strokeWidth={2} aria-hidden />
+                    </div>
+                  )
+                })()}
                 <div className="min-w-0">
                   <p className="font-black text-slate-900 text-base truncate">{selectedJob.title}</p>
                   <p className="text-xs text-slate-600 truncate">{selectedJob.service_categories?.name}</p>
@@ -633,8 +746,8 @@ export default function ProviderJobsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+          <div className="w-9 h-9 border-[3px] border-violet-200 border-t-violet-600 rounded-full animate-spin" />
         </div>
       }
     >
