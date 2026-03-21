@@ -212,7 +212,7 @@ export default function ProviderJobOfferPage() {
         description: m.description.trim(),
         amount: parsePriceToNumber(m.amount),
         percentage: calculatePercentage(parsePriceToNumber(m.amount), newPrice),
-        sort_order: i,
+        order_index: i + 1,
       }))
     }
 
@@ -248,18 +248,22 @@ export default function ProviderJobOfferPage() {
 
         await supabase.from('milestones').delete().eq('offer_id', existingOfferId)
         if (milestoneFlag && milestonePayload.length) {
-          const rows = milestonePayload.map((row) => ({
+          const milestoneRecords = milestonePayload.map((row: any, index: number) => ({
             job_id: jobId,
             offer_id: existingOfferId,
             title: row.title,
-            description: row.description,
+            description: row.description || '',
             amount: row.amount,
             percentage: row.percentage,
-            sort_order: row.sort_order,
+            order_index: index + 1,
             status: 'pending',
           }))
-          const { error: mErr } = await supabase.from('milestones').insert(rows)
-          if (mErr) console.error('[milestones]', mErr)
+          const { error: milestoneError } = await supabase.from('milestones').insert(milestoneRecords)
+          if (milestoneError) {
+            console.error('Milestone kayıt hatası:', milestoneError)
+          } else {
+            console.log('Milestones kaydedildi:', milestoneRecords)
+          }
         }
       } else {
         const { data: ins, error } = await supabase
@@ -288,18 +292,22 @@ export default function ProviderJobOfferPage() {
 
         const offerId = ins?.id as string
         if (milestoneFlag && milestonePayload.length && offerId) {
-          const rows = milestonePayload.map((row) => ({
+          const milestoneRecords = milestonePayload.map((row: any, index: number) => ({
             job_id: jobId,
             offer_id: offerId,
             title: row.title,
-            description: row.description,
+            description: row.description || '',
             amount: row.amount,
             percentage: row.percentage,
-            sort_order: row.sort_order,
+            order_index: index + 1,
             status: 'pending',
           }))
-          const { error: mErr } = await supabase.from('milestones').insert(rows)
-          if (mErr) console.error('[milestones]', mErr)
+          const { error: milestoneError } = await supabase.from('milestones').insert(milestoneRecords)
+          if (milestoneError) {
+            console.error('Milestone kayıt hatası:', milestoneError)
+          } else {
+            console.log('Milestones kaydedildi:', milestoneRecords)
+          }
         }
 
         await supabase.from('notifications').insert({
