@@ -3,6 +3,19 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import {
+  QrCode,
+  MessageCircle,
+  Navigation,
+  MapPin,
+  User,
+  Phone,
+  Lock,
+  AlertTriangle,
+  Package,
+  Hammer,
+  CheckCircle2,
+} from 'lucide-react'
 import { useChatOverlay } from '@/components/ChatOverlay'
 
 const QrScanner = dynamic(() => import('@/components/QrScanner'), { ssr: false })
@@ -33,7 +46,7 @@ export default function ProviderMyJobsPage() {
     const { data: jobsByProvider } = await supabase
       .from('jobs')
       .select(
-        'id, title, status, agreed_price, address, lat, lng, customer_id, qr_scanned_at, payment_released, qr_used_at, service_categories(name, icon)'
+        'id, title, status, agreed_price, address, lat, lng, customer_id, qr_scanned_at, payment_released, qr_used_at, created_at, service_categories(name, icon)'
       )
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false })
@@ -58,7 +71,7 @@ export default function ProviderMyJobsPage() {
       const { data: jobsByOffers } = await supabase
         .from('jobs')
         .select(
-          'id, title, status, agreed_price, address, lat, lng, customer_id, qr_scanned_at, payment_released, qr_used_at, service_categories(name, icon)'
+          'id, title, status, agreed_price, address, lat, lng, customer_id, qr_scanned_at, payment_released, qr_used_at, created_at, service_categories(name, icon)'
         )
         .in('id', jobIds)
 
@@ -272,21 +285,70 @@ export default function ProviderMyJobsPage() {
     await load()
   }
 
+  const statusPill = (job: any) => {
+    switch (job.status) {
+      case 'started':
+        return {
+          text: 'Devam ediyor',
+          className:
+            'bg-amber-500/12 text-amber-800 ring-1 ring-amber-500/20 border border-amber-200/40',
+        }
+      case 'accepted':
+        return {
+          text: 'Bekliyor',
+          className:
+            'bg-emerald-500/10 text-emerald-800 ring-1 ring-emerald-500/15 border border-emerald-200/50',
+        }
+      case 'completed':
+        return {
+          text: 'Tamamlandı',
+          className:
+            'bg-slate-500/8 text-slate-700 ring-1 ring-slate-400/15 border border-slate-200/60',
+        }
+      case 'disputed':
+        return {
+          text: 'Uyuşmazlık',
+          className:
+            'bg-rose-500/10 text-rose-800 ring-1 ring-rose-400/20 border border-rose-200/50',
+        }
+      default:
+        return {
+          text: 'İptal',
+          className:
+            'bg-slate-400/10 text-slate-600 ring-1 ring-slate-400/15 border border-slate-200/60',
+        }
+    }
+  }
+
   return (
-    <div className="min-h-dvh bg-[#F4F7FA] w-full flex flex-col flex-1 overflow-x-hidden overflow-y-auto pb-28">
-      <div className="bg-white px-3 pt-6 pb-2 border-b border-gray-100 shadow-sm shrink-0">
-        <h1 className="text-base font-black text-gray-900">Kabul Ettiğim İşler</h1>
-        <p className="text-gray-500 text-[11px] mt-0.5">QR okutarak başlat ve bitir</p>
-      </div>
+    <div className="min-h-dvh bg-gradient-to-b from-slate-100/90 via-slate-50 to-white w-full flex flex-col flex-1 overflow-x-hidden overflow-y-auto pb-28 font-sans antialiased">
+      <header className="sticky top-0 z-30 shrink-0 border-b border-white/80 bg-white/85 backdrop-blur-xl px-4 sm:px-5 pt-5 pb-4">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">İş yönetimi</p>
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900 mt-0.5">
+          Kabul ettiğim işler
+        </h1>
+        <p className="text-slate-500 text-sm mt-1">QR ile başlat / bitir · müşteriyle hızlı iletişim</p>
+      </header>
 
       {result && (
-        <div className={`mx-3 mt-2 p-3 rounded-xl flex items-center gap-2 animate-scale-in shrink-0 ${
-          result.ok ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'
-        }`}>
-          <p className={`font-semibold text-xs flex-1 ${result.ok ? 'text-emerald-800' : 'text-red-700'}`}>
+        <div
+          className={`mx-4 sm:mx-5 mt-3 p-3.5 rounded-2xl flex items-start gap-3 animate-scale-in shrink-0 border shadow-sm ${
+            result.ok
+              ? 'bg-emerald-50/90 border-emerald-200/80'
+              : 'bg-red-50/90 border-red-200/80'
+          }`}
+        >
+          <p className={`text-sm font-medium flex-1 leading-snug ${result.ok ? 'text-emerald-900' : 'text-red-800'}`}>
             {result.msg}
           </p>
-          <button onClick={() => setResult(null)} className="text-gray-400 text-sm">✕</button>
+          <button
+            type="button"
+            onClick={() => setResult(null)}
+            className="text-slate-400 hover:text-slate-600 text-lg leading-none p-0.5"
+            aria-label="Kapat"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -378,124 +440,181 @@ export default function ProviderMyJobsPage() {
         </div>
       )}
 
-      <div className="px-3 py-2 space-y-2 w-full max-w-7xl mx-auto">
-        {jobs.map(job => {
-          const statusLabel =
-            job.status === 'started'
-              ? { cls: 'badge-orange', text: '🔨 Devam' }
-              : job.status === 'accepted'
-              ? { cls: 'badge-green', text: '✅ Bekliyor' }
-              : job.status === 'completed'
-              ? { cls: 'badge-green', text: '✅ Tamamlandı' }
-              : job.status === 'disputed'
-              ? { cls: 'badge-orange', text: '⚠️ Uyuşmazlık' }
-              : { cls: 'badge-red', text: '✖ İptal' }
-
+      <div className="px-4 sm:px-5 py-5 space-y-5 w-full max-w-lg mx-auto">
+        {jobs.map((job) => {
+          const pill = statusPill(job)
           const customerPhone = job.profiles?.phone
           const canShowPhone =
             !!customerPhone &&
-            (job.status === 'accepted' ||
-              job.status === 'started' ||
-              job.status === 'completed')
+            (job.status === 'accepted' || job.status === 'started' || job.status === 'completed')
 
-          const showDirections =
-            job.status !== 'completed' && job.status !== 'cancelled'
+          const showDirections = job.status !== 'completed' && job.status !== 'cancelled'
 
           const price = Number(job.agreed_price) || 0
           const paytrFee = Math.round(price * 0.0399 * 100) / 100
           const platformFee = Math.round(price * 0.02 * 100) / 100
           const netAmount = Math.round((price - paytrFee - platformFee) * 100) / 100
 
-          return (
-            <div key={job.id} className="card p-2.5 animate-slide-up">
-            <div className="flex items-start gap-2 mb-2.5">
-              <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
-                {job.service_categories?.icon}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-gray-900 text-sm truncate">{job.title}</p>
-                <p className="text-[11px] text-gray-500 mt-0.5 truncate">📍 {job.address}</p>
-                <p className="text-[11px] text-gray-400">
-                  👤 {job.profiles?.full_name || 'Müşteri'}
-                </p>
-                <p className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                  {canShowPhone ? (
-                    <a
-                      href={`tel:${customerPhone}`}
-                      className="inline-flex items-center gap-1 text-green-600 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg px-2 py-1 text-xs font-medium"
-                    >
-                      📞 Beni Ara
-                    </a>
-                  ) : (
-                    <span className="text-slate-400 text-xs">🔒 Numara Gizli</span>
-                  )}
-                </p>
-              </div>
-              <div className="flex-shrink-0 text-right">
-                <p className="text-base font-black text-blue-700">₺{job.agreed_price}</p>
-                <span className={`${statusLabel.cls} text-[10px]`}>{statusLabel.text}</span>
-              </div>
-            </div>
+          const showChat =
+            job.status === 'accepted' || job.status === 'started' || job.status === 'completed'
 
-            <div className="space-y-1.5">
-              {job.status === 'accepted' && (
-                <button className="btn-primary py-2.5 text-xs w-full"
-                  onClick={() => setScanModal({ jobId: job.id, action: 'start' })}>
-                  📷 Başlangıç QR Okut
-                </button>
-              )}
-              {job.status === 'started' && (
-                <button className="btn-success py-2.5 text-xs w-full"
-                  onClick={() => setScanModal({ jobId: job.id, action: 'end' })}>
-                  🏁 Bitiş QR Okut
-                </button>
-              )}
-              {(job.status === 'accepted' || job.status === 'started') && (
-                <button
-                  className="btn-secondary py-2 text-xs w-full border-amber-300 text-amber-800"
-                  onClick={() => setDisputeModal({ jobId: job.id })}
-                >
-                  ⚠️ Sorun Bildir
-                </button>
-              )}
-              {(job.status === 'accepted' || job.status === 'started' || job.status === 'completed') && (
-                <button
-                  type="button"
-                  onClick={() => openChat(job.id)}
-                  className="btn-secondary py-2 text-xs text-center w-full"
-                >
-                  💬 Müşteriyle Mesajlaş
-                </button>
-              )}
-              {showDirections && (
-                <a href={`https://maps.google.com/?q=${job.lat},${job.lng}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="btn-secondary py-2 text-xs text-center block w-full">
-                  🗺️ Yol Tarifi Al
-                </a>
-              )}
-              {job.status === 'completed' && price > 0 && (
-                <div className="mt-2 bg-gray-100 rounded-xl px-3 py-2 text-[11px] text-gray-700 space-y-0.5">
-                  <p className="font-semibold text-gray-800">Ödeme Özeti</p>
-                  <p>İş bedeli: ₺{price.toFixed(2)}</p>
-                  <p>Platform komisyonu (%2): -₺{platformFee.toFixed(2)}</p>
-                  <p>Ödeme işlem ücreti (%3.99): -₺{paytrFee.toFixed(2)}</p>
-                  <p className="font-semibold text-gray-900">
-                    Hesabınıza geçecek: ₺{netAmount.toFixed(2)}
-                  </p>
+          return (
+            <article
+              key={job.id}
+              className="rounded-3xl border border-slate-200/70 bg-white p-5 sm:p-6 shadow-[0_2px_12px_-4px_rgba(15,23,42,0.08)] animate-slide-up"
+            >
+              {/* Üst: başlık + fiyat + rozet */}
+              <div className="flex items-start justify-between gap-3 gap-y-2">
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-lg ring-1 ring-slate-200/80">
+                    {job.service_categories?.icon || <Package className="h-5 w-5 text-slate-500" strokeWidth={2} />}
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="font-semibold text-slate-900 text-[15px] leading-snug line-clamp-2">
+                      {job.title}
+                    </h2>
+                    {job.service_categories?.name && (
+                      <p className="text-xs text-slate-500 mt-1">{job.service_categories.name}</p>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-            </div>
+                <div className="shrink-0 text-right flex flex-col items-end gap-1.5">
+                  <p className="text-lg font-semibold tracking-tight text-slate-900 tabular-nums">
+                    ₺{Number(job.agreed_price ?? 0).toLocaleString('tr-TR')}
+                  </p>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${pill.className}`}
+                  >
+                    {pill.text}
+                  </span>
+                </div>
+              </div>
+
+              {/* Müşteri / konum / telefon — derli toplu liste */}
+              <ul className="mt-5 space-y-2.5 text-sm text-slate-600">
+                <li className="flex items-start gap-2.5 min-w-0">
+                  <MapPin className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" strokeWidth={2} aria-hidden />
+                  <span className="leading-snug break-words">{job.address || 'Adres yok'}</span>
+                </li>
+                <li className="flex items-center gap-2.5 min-w-0">
+                  <User className="h-4 w-4 text-slate-400 shrink-0" strokeWidth={2} aria-hidden />
+                  <span className="truncate">{job.profiles?.full_name || 'Müşteri'}</span>
+                </li>
+                <li className="flex items-center gap-2.5 min-w-0">
+                  {canShowPhone ? (
+                    <>
+                      <Phone className="h-4 w-4 text-slate-400 shrink-0" strokeWidth={2} aria-hidden />
+                      <a
+                        href={`tel:${customerPhone}`}
+                        className="font-medium text-blue-600 hover:text-blue-700 truncate"
+                      >
+                        {customerPhone}
+                      </a>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="h-4 w-4 text-slate-300 shrink-0" strokeWidth={2} aria-hidden />
+                      <span className="text-slate-400 text-sm">Numara bu aşamada gizli</span>
+                    </>
+                  )}
+                </li>
+              </ul>
+
+              {/* Birincil: QR */}
+              <div className="mt-6 space-y-3">
+                {job.status === 'accepted' && (
+                  <button
+                    type="button"
+                    onClick={() => setScanModal({ jobId: job.id, action: 'start' })}
+                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-blue-600 py-3.5 text-[15px] font-semibold text-white shadow-md shadow-blue-600/25 transition-all hover:bg-blue-500 active:scale-[0.99]"
+                  >
+                    <QrCode className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+                    Başlangıç QR okut
+                  </button>
+                )}
+                {job.status === 'started' && (
+                  <button
+                    type="button"
+                    onClick={() => setScanModal({ jobId: job.id, action: 'end' })}
+                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-emerald-600 py-3.5 text-[15px] font-semibold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-500 active:scale-[0.99]"
+                  >
+                    <QrCode className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+                    Bitiş QR okut
+                  </button>
+                )}
+
+                {/* İkincil: mesaj + yol */}
+                {(showChat || showDirections) && (
+                  <div
+                    className={`grid gap-2.5 ${showChat && showDirections ? 'grid-cols-2' : 'grid-cols-1'}`}
+                  >
+                    {showChat && (
+                      <button
+                        type="button"
+                        onClick={() => openChat(job.id)}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/90 bg-slate-50/80 py-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:border-slate-300"
+                      >
+                        <MessageCircle className="h-4 w-4 text-slate-500 shrink-0" strokeWidth={2} />
+                        Mesaj
+                      </button>
+                    )}
+                    {showDirections && (
+                      <a
+                        href={`https://maps.google.com/?q=${job.lat},${job.lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200/90 bg-slate-50/80 py-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:border-slate-300"
+                      >
+                        <Navigation className="h-4 w-4 text-slate-500 shrink-0" strokeWidth={2} />
+                        Yol tarifi
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {job.status === 'completed' && price > 0 && (
+                  <div className="rounded-2xl border border-slate-100 bg-slate-50/90 px-4 py-3 text-xs text-slate-600 space-y-1">
+                    <p className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" strokeWidth={2} />
+                      Ödeme özeti
+                    </p>
+                    <p>İş bedeli: ₺{price.toFixed(2)}</p>
+                    <p>Platform (%2): −₺{platformFee.toFixed(2)}</p>
+                    <p>İşlem ücreti (%3,99): −₺{paytrFee.toFixed(2)}</p>
+                    <p className="font-semibold text-slate-900 pt-1 border-t border-slate-200/80 mt-2">
+                      Hesabına geçecek: ₺{netAmount.toFixed(2)}
+                    </p>
+                  </div>
+                )}
+
+                {/* Sorun bildir — en altta, sönük */}
+                {(job.status === 'accepted' || job.status === 'started') && (
+                  <button
+                    type="button"
+                    onClick={() => setDisputeModal({ jobId: job.id })}
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl border border-orange-200/70 bg-orange-50/50 py-2.5 text-xs font-medium text-orange-900/80 transition-colors hover:bg-orange-50/90 hover:border-orange-300/80"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 text-orange-600/90 shrink-0" strokeWidth={2} />
+                    Sorun bildir
+                  </button>
+                )}
+              </div>
+            </article>
           )
         })}
 
         {jobs.length === 0 && (
-          <div className="flex flex-col items-center py-10 text-center">
-            <div className="text-3xl mb-2">📭</div>
-            <p className="font-semibold text-gray-700 text-sm">Kabul edilen iş yok</p>
-            <Link href="/provider/jobs" className="btn-primary mt-3 px-6 inline-block w-auto py-2.5 text-xs">
-              İşlere Bak
+          <div className="flex flex-col items-center py-16 text-center px-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 mb-4">
+              <Hammer className="h-7 w-7" strokeWidth={1.5} aria-hidden />
+            </div>
+            <p className="font-semibold text-slate-800">Henüz kabul ettiğin iş yok</p>
+            <p className="text-sm text-slate-500 mt-1 max-w-xs">Radardan teklif vererek iş alabilirsin.</p>
+            <Link
+              href="/provider/jobs"
+              className="mt-5 inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-slate-800"
+            >
+              İşlere git
             </Link>
           </div>
         )}
