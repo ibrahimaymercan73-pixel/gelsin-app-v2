@@ -121,14 +121,12 @@ export default function JobDetailPage() {
       }
     }
 
-    const { data: msRows } = await supabase
+    const { data: milestones } = await supabase
       .from('milestones')
-      .select(
-        'id, title, description, amount, percentage, status, ai_approved, ai_report, customer_approved, order_index'
-      )
+      .select('*')
       .eq('job_id', id)
       .order('order_index', { ascending: true })
-    setMilestones(msRows || [])
+    setMilestones(milestones || [])
 
     const enrichedOffers = offersList.map((o) => {
       const providerId = o.provider_id ? String(o.provider_id) : ''
@@ -239,7 +237,6 @@ export default function JobDetailPage() {
           .from('milestones')
           .select('*')
           .eq('job_id', jobId)
-          .eq('offer_id', offerId)
           .order('order_index', { ascending: true })
 
         console.log('Milestones:', milestones)
@@ -852,63 +849,67 @@ export default function JobDetailPage() {
           )}
         </section>
 
-        {job?.is_pro && milestones.length > 0 && (
-          <section className="rounded-2xl border border-amber-200/50 bg-amber-50/30 p-5 sm:p-6 shadow-sm space-y-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-800/90">Gelsin Pro — Aşamalar</p>
-            <div className="space-y-3">
-              {milestones.map((m: any, idx: number) => {
-                const st = String(m.status || 'pending')
-                const badge =
-                  st === 'pending'
-                    ? { label: 'Bekliyor', className: 'bg-slate-100 text-slate-600' }
-                    : st === 'photos_uploaded'
-                      ? { label: 'Fotoğraf Yüklendi', className: 'bg-blue-100 text-blue-800' }
-                      : st === 'ai_approved'
-                        ? { label: 'AI Onayladı ✓', className: 'bg-emerald-100 text-emerald-800' }
-                        : st === 'customer_approved'
-                          ? { label: 'Ödendi ✓', className: 'bg-amber-100 text-amber-900 border border-amber-300/60' }
-                          : { label: st, className: 'bg-slate-100 text-slate-600' }
-                const showPay = st === 'ai_approved' && m.ai_approved === true
-                return (
-                  <div
-                    key={m.id}
-                    className="rounded-xl border border-amber-100/80 bg-white/90 p-4 shadow-[0_1px_6px_rgba(0,0,0,0.04)]"
+        {job?.status !== 'open' && milestones && milestones.length > 0 && (
+          <div className="mt-6">
+            <h3 className="font-bold text-gray-900 mb-3">
+              🏗️ Gelsin Pro — İş Aşamaları
+            </h3>
+            {milestones.map((m: any) => (
+              <div key={m.id} className="border rounded-2xl p-4 mb-3">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-bold text-gray-900">{m.title}</span>
+                  <span className="text-sm font-bold text-blue-600">
+                    ₺{Number(m.amount).toLocaleString('tr-TR')} · %{m.percentage}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mb-3">{m.description}</p>
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`text-xs font-bold px-3 py-1 rounded-full ${
+                      m.status === 'pending'
+                        ? 'bg-gray-100 text-gray-500'
+                        : m.status === 'photos_uploaded'
+                          ? 'bg-blue-100 text-blue-600'
+                          : m.status === 'ai_approved'
+                            ? 'bg-green-100 text-green-600'
+                            : m.status === 'customer_approved'
+                              ? 'bg-yellow-100 text-yellow-600'
+                              : 'bg-gray-100 text-gray-500'
+                    }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-medium text-slate-400">#{idx + 1}</p>
-                        <p className="font-semibold text-slate-900">{m.title}</p>
-                        {m.description && <p className="mt-1 text-xs text-slate-600">{m.description}</p>}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-slate-900 tabular-nums">
-                          ₺{Number(m.amount).toLocaleString('tr-TR')}
-                        </p>
-                        {m.percentage != null && (
-                          <p className="text-[11px] text-slate-500">%{m.percentage}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${badge.className}`}>
-                        {badge.label}
-                      </span>
-                    </div>
-                    {showPay && (
-                      <button
-                        type="button"
-                        className="mt-4 w-full rounded-xl bg-amber-600 py-2.5 text-sm font-semibold text-white shadow-md shadow-amber-600/20 disabled:opacity-50"
-                        disabled={milestonePaying === m.id}
-                        onClick={() => void approveMilestonePayment(m.id)}
-                      >
-                        {milestonePaying === m.id ? 'İşleniyor…' : 'Onayla & Öde'}
-                      </button>
-                    )}
+                    {m.status === 'pending'
+                      ? '⏳ Bekliyor'
+                      : m.status === 'photos_uploaded'
+                        ? '📸 Fotoğraf Yüklendi'
+                        : m.status === 'ai_approved'
+                          ? '✅ AI Onayladı'
+                          : m.status === 'customer_approved'
+                            ? '💰 Ödendi'
+                            : m.status}
+                  </span>
+                  {m.status === 'ai_approved' && (
+                    <button
+                      type="button"
+                      disabled={milestonePaying === m.id}
+                      onClick={() => void approveMilestonePayment(m.id)}
+                      className="bg-green-500 text-white text-xs font-bold px-4 py-2 rounded-xl disabled:opacity-50"
+                    >
+                      {milestonePaying === m.id
+                        ? 'İşleniyor…'
+                        : `Onayla & Öde ₺${Number(m.amount).toLocaleString('tr-TR')}`}
+                    </button>
+                  )}
+                </div>
+                {m.ai_report && (
+                  <div className="mt-3 bg-green-50 rounded-xl p-3">
+                    <p className="text-xs text-green-700 font-semibold">
+                      🤖 AI Raporu: {m.ai_report}
+                    </p>
                   </div>
-                )
-              })}
-            </div>
-          </section>
+                )}
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Teklifler / uzman kartı */}
