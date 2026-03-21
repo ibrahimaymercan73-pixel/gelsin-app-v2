@@ -16,6 +16,8 @@ CREATE INDEX IF NOT EXISTS idx_login_phone_otps_lookup
 ALTER TABLE public.login_phone_otps ENABLE ROW LEVEL SECURITY;
 
 -- Anon / authenticated okuyamaz (service role RLS'yi bypass eder)
+-- Tekrar çalıştırılabilir (policy zaten varsa önce kaldırılır)
+DROP POLICY IF EXISTS "login_phone_otps_deny_select" ON public.login_phone_otps;
 CREATE POLICY "login_phone_otps_deny_select"
   ON public.login_phone_otps
   FOR SELECT

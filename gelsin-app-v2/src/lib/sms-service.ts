@@ -47,13 +47,26 @@ function parseIletiMerkeziResponse(xml: string): { code: string; message: string
  * 6 haneli giriş kodunu İleti Merkezi üzerinden gönderir.
  */
 export async function sendLoginOtpSms(phoneInput: string, sixDigitCode: string): Promise<SmsSendResult> {
+  console.log('[sms-service / İleti Merkezi] sendLoginOtpSms çağrıldı', {
+    hamGirdi: phoneInput,
+    rakamSayisi: phoneInput.replace(/\D/g, '').length,
+  })
+
   const with90 = ensurePhoneWith90Prefix(phoneInput)
   if (!with90) {
+    console.warn('[sms-service / İleti Merkezi] Numara normalize edilemedi (90+10 hane beklenir)', {
+      hamGirdi: phoneInput,
+      sadeceRakam: phoneInput.replace(/\D/g, ''),
+    })
     return { ok: false, error: 'Geçersiz telefon numarası' }
   }
 
   const receipents = toIletiMerkeziReceipents(with90)
   if (!receipents) {
+    console.warn('[sms-service / İleti Merkezi] receipents formatı üretilemedi', {
+      with90,
+      beklenen: '90 ile 12 hane, sonraki 10 hane 5 ile başlamalı',
+    })
     return { ok: false, error: 'Numara 90 ile cep formatına çevrilemedi' }
   }
 
@@ -64,6 +77,11 @@ export async function sendLoginOtpSms(phoneInput: string, sixDigitCode: string):
   const iysList = (process.env.ILETIMERKEZI_IYS_LIST ?? 'BIREYSEL').trim()
 
   if (!key || !hash || !sender) {
+    console.warn('[sms-service / İleti Merkezi] Ortam değişkenleri eksik', {
+      ILETIMERKEZI_KEY: Boolean(key),
+      ILETIMERKEZI_HASH: Boolean(hash),
+      ILETIMERKEZI_SENDER: Boolean(sender),
+    })
     return {
       ok: false,
       error: 'İleti Merkezi yapılandırması eksik (ILETIMERKEZI_KEY, ILETIMERKEZI_HASH, ILETIMERKEZI_SENDER)',
@@ -88,19 +106,56 @@ export async function sendLoginOtpSms(phoneInput: string, sixDigitCode: string):
 
   const url = `https://api.iletimerkezi.com/v1/send-sms/get/?${params.toString()}`
 
+  // Güvenlik: key/hash URL'de loglanmaz; yalnızca yapı ve alıcı formatı
+  const logUrlSafe = `https://api.iletimerkezi.com/v1/send-sms/get/?key=***&hash=***&text=${encodeURIComponent(text)}&receipents=${receipents}&sender=${encodeURIComponent(sender)}&iys=${iys}${iys === '1' ? `&iysList=${encodeURIComponent(iysList)}` : ''}`
+
+  console.log('[sms-service / İleti Merkezi] İstek özeti', {
+    adim90: with90,
+    iletiMerkeziReceipents: receipents,
+    receipentsHane: receipents.length,
+    receipentsBaslangic5: receipents.startsWith('5'),
+    not: 'API receipents alanı 90 içermez; 5 ile başlayan 10 hane (örn. 5551234567)',
+    sender,
+    iys,
+    iysList: iys === '1' ? iysList : undefined,
+    keyTanimli: Boolean(key),
+    hashTanimli: Boolean(hash),
+    urlOrnekParametreler: logUrlSafe,
+  })
+
   try {
     const res = await fetch(url, { method: 'GET', cache: 'no-store' })
     const raw = await res.text()
 
+    console.log('[sms-service / İleti Merkezi] HTTP yanıtı', {
+      httpStatus: res.status,
+      httpStatusText: res.statusText,
+      responseBody: raw,
+      responseBodyLength: raw.length,
+    })
+
     const parsed = parseIletiMerkeziResponse(raw)
     if (parsed.code === '200') {
+      console.log('[sms-service / İleti Merkezi] Başarılı (XML code=200)', {
+        orderId: parsed.orderId,
+        apiMessage: parsed.message,
+      })
       return { ok: true, raw, orderId: parsed.orderId }
     }
 
     const hint = parsed.message || `Kod ${parsed.code || 'bilinmiyor'}`
+    console.warn('[sms-service / İleti Merkezi] API hata kodu (XML)', {
+      xmlCode: parsed.code,
+      xmlMessage: parsed.message,
+      httpStatus: res.status,
+    })
     return { ok: false, error: `SMS gönderilemedi: ${hint}`, raw }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Bilinmeyen hata'
+    console.error('[sms-service / İleti Merkezi] fetch istisnası', {
+      error: msg,
+      stack: e instanceof Error ? e.stack : undefined,
+    })
     return { ok: false, error: `İleti Merkezi isteği başarısız: ${msg}` }
   }
 }
