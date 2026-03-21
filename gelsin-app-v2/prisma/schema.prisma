@@ -1,0 +1,25 @@
+// Prisma şema referansı — Projede varsayılan ORM Supabase istemcisidir.
+// `prisma generate` kullanmak için: npm i -D prisma && npm i @prisma/client
+// DATABASE_URL = Supabase → Project Settings → Database → Connection string (Transaction / Direct)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// SMS giriş OTP kayıtları (Supabase: `login_phone_otps` — supabase-migration-login-phone-otps.sql)
+model OtpCode {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  phoneE164    String    @map("phone_e164")
+  intendedRole String    @map("intended_role")
+  codeHash     String    @map("code_hash")
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(6)
+  consumedAt   DateTime? @map("consumed_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("login_phone_otps")
+}

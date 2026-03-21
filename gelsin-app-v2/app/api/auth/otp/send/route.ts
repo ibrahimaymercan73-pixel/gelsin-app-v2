@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomInt, createHash } from 'crypto'
-import { sendNetgsmSms } from '@/lib/netgsm'
+import { sendLoginOtpSms } from '@/lib/sms-service'
 import { normalizeTrPhoneTo90 } from '@/lib/phone-tr'
 import { findProfileByPhoneAndRole, getServiceSupabase, type IntendedRole } from '@/lib/login-phone-otp-server'
 
@@ -97,15 +97,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Kod kaydedilemedi. Daha sonra tekrar deneyin.' }, { status: 500 })
   }
 
-  const sms = await sendNetgsmSms(
-    phoneE164,
-    `GELSIN giris kodunuz: ${code} (2 dakika gecerlidir)`
-  )
+  const sms = await sendLoginOtpSms(phoneRaw, code)
 
   if (!sms.ok) {
-    console.error('[otp/send] netgsm', sms.error, sms.raw)
+    console.error('[otp/send] iletimerkezi', sms.error, sms.raw)
     return NextResponse.json(
-      { error: 'SMS gönderilemedi. Netgsm ayarlarını kontrol edin veya daha sonra deneyin.' },
+      { error: 'SMS gönderilemedi. İleti Merkezi ayarlarını kontrol edin veya daha sonra deneyin.' },
       { status: 502 }
     )
   }

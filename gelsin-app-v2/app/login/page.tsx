@@ -276,27 +276,28 @@ function LoginForm() {
   const phoneOk = phoneDigits.length === 11 && phoneDigits.startsWith('0') && phoneDigits[1] === '5'
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-slate-50 font-sans lg:flex-row">
+    <div className="flex min-h-screen w-full flex-col bg-gradient-to-b from-blue-50/80 via-white to-white font-sans lg:flex-row">
       {/* SOL PANEL */}
-      <div className="relative hidden flex-col justify-center bg-gradient-to-br from-slate-900 to-slate-800 px-10 py-16 text-white lg:flex lg:w-5/12">
-        <h1 className="mb-4 text-4xl font-black leading-tight tracking-tight lg:text-5xl">
+      <div className="relative hidden flex-col justify-center bg-gradient-to-br from-blue-700 via-blue-800 to-blue-950 px-10 py-16 text-white lg:flex lg:w-5/12">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.12),transparent_50%)]" />
+        <h1 className="relative mb-4 text-4xl font-black leading-tight tracking-tight lg:text-5xl">
           Hesabına güvenle giriş yap.
         </h1>
-        <p className="max-w-md text-base font-medium leading-relaxed text-slate-200">
+        <p className="relative max-w-md text-base font-medium leading-relaxed text-blue-100">
           Müşteri veya uzman olarak kayıt olup, işlerini tek panelden yönet.
         </p>
       </div>
 
       {/* SAĞ PANEL */}
       <div className="flex flex-1 items-center justify-center p-6 lg:p-16">
-        <div className="w-full max-w-md space-y-6 rounded-3xl border border-slate-100 bg-white p-8 shadow-sm lg:p-10">
+        <div className="w-full max-w-md space-y-6 rounded-3xl border border-blue-100 bg-white p-8 shadow-lg shadow-blue-900/5 ring-1 ring-blue-50 lg:p-10">
           {/* Rol sekmesi */}
-          <div className="flex w-full rounded-2xl bg-slate-100 p-1 text-sm font-semibold">
+          <div className="flex w-full rounded-2xl bg-blue-50/80 p-1 text-sm font-semibold">
             <button
               type="button"
               onClick={() => setSelectedRole('customer')}
               className={`flex-1 rounded-xl px-3 py-2 transition-all ${
-                !isProvider ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                !isProvider ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25' : 'text-blue-900/60 hover:text-blue-900'
               }`}
             >
               Müşteri
@@ -305,7 +306,7 @@ function LoginForm() {
               type="button"
               onClick={() => setSelectedRole('provider')}
               className={`flex-1 rounded-xl px-3 py-2 transition-all ${
-                isProvider ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                isProvider ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25' : 'text-blue-900/60 hover:text-blue-900'
               }`}
             >
               Uzman
@@ -317,25 +318,27 @@ function LoginForm() {
             type="button"
             onClick={loginWithGoogle}
             disabled={loading}
-            className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white py-3.5 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-3 rounded-2xl border border-blue-100 bg-white py-3.5 text-sm font-semibold text-blue-950 shadow-sm hover:border-blue-200 hover:bg-blue-50/50 disabled:opacity-60"
           >
             <GoogleIcon />
             <span>Google ile Devam Et</span>
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-[11px] font-semibold text-slate-400">veya e-posta / telefon ile</span>
-            <div className="h-px flex-1 bg-slate-200" />
+            <div className="h-px flex-1 bg-blue-100" />
+            <span className="text-[11px] font-semibold text-blue-400">veya e-posta / telefon ile</span>
+            <div className="h-px flex-1 bg-blue-100" />
           </div>
 
           {/* Email | Telefon sekmeleri */}
-          <div className="flex w-full rounded-2xl bg-slate-100 p-1 text-sm font-semibold">
+          <div className="flex w-full rounded-2xl bg-blue-50/80 p-1 text-sm font-semibold">
             <button
               type="button"
               onClick={() => setLoginTab('email')}
               className={`flex-1 rounded-xl px-3 py-2 transition-all ${
-                loginTab === 'email' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                loginTab === 'email'
+                  ? 'bg-white text-blue-900 shadow-sm ring-1 ring-blue-100'
+                  : 'text-blue-900/60 hover:text-blue-900'
               }`}
             >
               Email
@@ -344,7 +347,9 @@ function LoginForm() {
               type="button"
               onClick={() => setLoginTab('phone')}
               className={`flex-1 rounded-xl px-3 py-2 transition-all ${
-                loginTab === 'phone' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                loginTab === 'phone'
+                  ? 'bg-white text-blue-900 shadow-sm ring-1 ring-blue-100'
+                  : 'text-blue-900/60 hover:text-blue-900'
               }`}
             >
               Telefon
@@ -354,19 +359,19 @@ function LoginForm() {
           {loginTab === 'email' ? (
             <div className="animate-slide-up space-y-4">
               <div>
-                <h2 className="text-2xl font-black text-slate-900">Email ile Giriş</h2>
-                <p className="mt-1 text-sm text-slate-400">
+                <h2 className="text-2xl font-black text-blue-950">Email ile Giriş</h2>
+                <p className="mt-1 text-sm text-blue-900/50">
                   {isProvider
                     ? 'Uzman hesabınıza giriş yapın veya yeni uzman hesabı oluşturun.'
                     : 'Müşteri hesabınıza giriş yapın veya yeni hesap oluşturun.'}
                 </p>
               </div>
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-blue-600/80">
                   Email
                 </label>
                 <input
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-base font-medium text-slate-900 outline-none placeholder:text-slate-300 focus:border-slate-800 focus:ring-2 focus:ring-slate-800"
+                  className="w-full rounded-2xl border border-blue-100 bg-blue-50/30 px-5 py-4 text-base font-medium text-blue-950 outline-none placeholder:text-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                   type="email"
                   placeholder="ornek@email.com"
                   value={email}
@@ -375,11 +380,11 @@ function LoginForm() {
                 />
               </div>
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-blue-600/80">
                   Şifre
                 </label>
                 <input
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-base font-medium text-slate-900 outline-none placeholder:text-slate-300 focus:border-slate-800 focus:ring-2 focus:ring-slate-800"
+                  className="w-full rounded-2xl border border-blue-100 bg-blue-50/30 px-5 py-4 text-base font-medium text-blue-950 outline-none placeholder:text-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                   type="password"
                   placeholder="••••••••"
                   value={password}
@@ -387,7 +392,7 @@ function LoginForm() {
                   onKeyDown={(e) => e.key === 'Enter' && loginWithEmail()}
                 />
                 <div className="mt-2 text-right">
-                  <Link href="/forgot-password" className="text-sm font-semibold text-blue-600 hover:underline">
+                  <Link href="/forgot-password" className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline">
                     Şifremi Unuttum
                   </Link>
                 </div>
@@ -401,7 +406,7 @@ function LoginForm() {
                 type="button"
                 onClick={loginWithEmail}
                 disabled={loading || !email || password.length < 6}
-                className="w-full rounded-2xl bg-slate-900 py-4 text-base font-bold text-white shadow-lg transition-all hover:bg-slate-800 disabled:opacity-50"
+                className="w-full rounded-2xl bg-blue-600 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 disabled:opacity-50"
               >
                 {loading ? 'İşleniyor...' : 'Giriş Yap →'}
               </button>
@@ -409,19 +414,19 @@ function LoginForm() {
           ) : (
             <div className="animate-slide-up space-y-4">
               <div>
-                <h2 className="text-2xl font-black text-slate-900">Telefon ile Giriş</h2>
-                <p className="mt-1 text-sm text-slate-400">
+                <h2 className="text-2xl font-black text-blue-950">Telefon ile Giriş</h2>
+                <p className="mt-1 text-sm text-blue-900/50">
                   {isProvider
                     ? 'Kayıtlı uzman cep telefonunuza SMS ile doğrulama kodu gönderilir.'
                     : 'Kayıtlı müşteri cep telefonunuza SMS ile doğrulama kodu gönderilir.'}
                 </p>
               </div>
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-blue-600/80">
                   Cep telefonu
                 </label>
                 <input
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-base font-medium tracking-wide text-slate-900 outline-none placeholder:text-slate-300 focus:border-slate-800 focus:ring-2 focus:ring-slate-800"
+                  className="w-full rounded-2xl border border-blue-100 bg-blue-50/30 px-5 py-4 text-base font-medium tracking-wide text-blue-950 outline-none placeholder:text-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                   type="tel"
                   inputMode="numeric"
                   autoComplete="tel"
@@ -434,7 +439,7 @@ function LoginForm() {
                 type="button"
                 onClick={sendPhoneOtp}
                 disabled={loading || !phoneOk || (codeSent && !canResend)}
-                className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 text-sm font-semibold text-slate-800 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                className="w-full rounded-2xl border border-blue-200 bg-white py-3.5 text-sm font-semibold text-blue-900 shadow-sm transition-all hover:border-blue-300 hover:bg-blue-50/50 disabled:opacity-50"
               >
                 {loading && !codeSent
                   ? 'Gönderiliyor...'
@@ -450,11 +455,11 @@ function LoginForm() {
               {codeSent && (
                 <>
                   <div>
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500">
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-blue-600/80">
                       6 haneli kod
                     </label>
                     <input
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-center text-2xl font-bold tracking-[0.35em] text-slate-900 outline-none placeholder:text-slate-300 focus:border-slate-800 focus:ring-2 focus:ring-slate-800"
+                      className="w-full rounded-2xl border border-blue-100 bg-blue-50/30 px-5 py-4 text-center text-2xl font-bold tracking-[0.35em] text-blue-950 outline-none placeholder:text-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
                       type="text"
                       inputMode="numeric"
                       maxLength={6}
@@ -468,7 +473,7 @@ function LoginForm() {
                     type="button"
                     onClick={loginWithPhoneOtp}
                     disabled={loading || otpCode.replace(/\D/g, '').length !== 6}
-                    className="w-full rounded-2xl bg-slate-900 py-4 text-base font-bold text-white shadow-lg transition-all hover:bg-slate-800 disabled:opacity-50"
+                    className="w-full rounded-2xl bg-blue-600 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 disabled:opacity-50"
                   >
                     {loading ? 'İşleniyor...' : 'Giriş Yap →'}
                   </button>
@@ -477,7 +482,7 @@ function LoginForm() {
                       type="button"
                       onClick={sendPhoneOtp}
                       disabled={loading || !phoneOk}
-                      className="w-full py-2 text-sm font-semibold text-blue-600 hover:underline disabled:opacity-50"
+                      className="w-full py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-50"
                     >
                       Kodu tekrar gönder
                     </button>
@@ -490,7 +495,7 @@ function LoginForm() {
           <button
             type="button"
             onClick={() => router.replace('/register')}
-            className="w-full py-2 text-center text-sm font-bold text-slate-400 transition-colors hover:text-slate-600"
+            className="w-full py-2 text-center text-sm font-bold text-blue-900/40 transition-colors hover:text-blue-700"
           >
             Hesabınız yok mu? Kayıt Ol
           </button>

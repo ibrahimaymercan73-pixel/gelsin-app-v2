@@ -21,4 +21,4 @@ CREATE POLICY "login_phone_otps_deny_select"
   FOR SELECT
   USING (false);
 
-COMMENT ON TABLE public.login_phone_otps IS 'Netgsm SMS OTP; 2 dk geçerlilik, sunucu API ile yönetilir.';
+COMMENT ON TABLE public.login_phone_otps IS 'SMS OTP (İleti Merkezi); 2 dk geçerlilik, yalnızca sunucu API (service role).';
