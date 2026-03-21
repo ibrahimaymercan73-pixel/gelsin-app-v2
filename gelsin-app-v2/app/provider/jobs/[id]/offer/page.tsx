@@ -7,6 +7,21 @@ import { createClient } from '@/lib/supabase'
 
 const PRO_THRESHOLD = 50000
 
+const formatPrice = (value: string) => {
+  const numbers = value.replace(/\D/g, '')
+  return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+}
+
+const parsePriceToNumber = (formatted: string) => {
+  const n = formatted.replace(/\D/g, '')
+  return n ? parseInt(n, 10) : 0
+}
+
+const calculatePercentage = (amount: number, total: number) => {
+  if (!total || !amount) return 0
+  return Math.round((amount / total) * 100)
+}
+
 type MilestoneDraft = {
   title: string
   description: string
@@ -35,20 +50,19 @@ export default function ProviderJobOfferPage() {
   const [milestones, setMilestones] = useState<MilestoneDraft[]>([emptyMilestone(), emptyMilestone()])
   const [existingOfferId, setExistingOfferId] = useState<string | null>(null)
 
-  const numericPrice = parseFloat(price.replace(',', '.'))
-  const isMilestone = !Number.isNaN(numericPrice) && numericPrice >= PRO_THRESHOLD
+  const numericPrice = useMemo(() => parsePriceToNumber(price), [price])
+  const isMilestone = numericPrice > 0 && numericPrice >= PRO_THRESHOLD
 
   const milestoneSum = useMemo(() => {
     let amt = 0
     let pct = 0
     for (const m of milestones) {
-      const a = parseFloat(m.amount.replace(',', '.'))
-      const p = parseFloat(m.percentage.replace(',', '.'))
-      if (!Number.isNaN(a)) amt += a
-      if (!Number.isNaN(p)) pct += p
+      const a = parsePriceToNumber(m.amount)
+      amt += a
+      pct += calculatePercentage(a, numericPrice)
     }
     return { amount: amt, percent: pct }
-  }, [milestones])
+  }, [milestones, numericPrice])
 
   useEffect(() => {
     const run = async () => {
@@ -86,7 +100,9 @@ export default function ProviderJobOfferPage() {
 
       if (existing) {
         setExistingOfferId(existing.id)
-        setPrice(existing.price != null ? String(existing.price) : '')
+        setPrice(
+          existing.price != null ? formatPrice(String(Math.round(Number(existing.price)))) : ''
+        )
         setDuration(existing.estimated_duration || '')
         setMessage(existing.message || '')
         const md = existing.milestone_data as MilestoneDraft[] | null
@@ -95,8 +111,9 @@ export default function ProviderJobOfferPage() {
             md.map((row) => ({
               title: row.title || '',
               description: row.description || '',
-              amount: row.amount != null ? String(row.amount) : '',
-              percentage: row.percentage != null ? String(row.percentage) : '',
+              amount:
+                row.amount != null ? formatPrice(String(Math.round(Number(row.amount)))) : '',
+              percentage: '',
             }))
           )
         }
@@ -108,26 +125,29 @@ export default function ProviderJobOfferPage() {
   }, [jobId, router])
 
   const applySuggestedMilestones = () => {
-    const p = parseFloat(price.replace(',', '.'))
-    if (Number.isNaN(p) || p <= 0) return
+    const p = parsePriceToNumber(price)
+    if (p <= 0) return
+    const a1 = Math.round(p * 0.2)
+    const a2 = Math.round(p * 0.4)
+    const a3 = p - a1 - a2
     setMilestones([
       {
         title: 'Ön Hazırlık',
         description: 'Malzeme ve hazırlık',
-        amount: (p * 0.2).toFixed(2),
-        percentage: '20',
+        amount: formatPrice(String(a1)),
+        percentage: '',
       },
       {
         title: 'Ana İşler',
         description: 'Asıl işin yapılması',
-        amount: (p * 0.4).toFixed(2),
-        percentage: '40',
+        amount: formatPrice(String(a2)),
+        percentage: '',
       },
       {
         title: 'Final',
         description: 'Son rötuş ve teslim',
-        amount: (p * 0.4).toFixed(2),
-        percentage: '40',
+        amount: formatPrice(String(a3)),
+        percentage: '',
       },
     ])
   }
@@ -150,15 +170,16 @@ export default function ProviderJobOfferPage() {
     if (milestones.length < 2) return 'En az 2 aşama gerekli.'
     for (const m of milestones) {
       if (!m.title.trim()) return 'Her aşamanın başlığı olmalı.'
-      const a = parseFloat(m.amount.replace(',', '.'))
-      const p = parseFloat(m.percentage.replace(',', '.'))
-      if (Number.isNaN(a) || a <= 0) return 'Aşama tutarları geçerli olmalı.'
-      if (Number.isNaN(p) || p <= 0) return 'Yüzdeler geçerli olmalı.'
+      const a = parsePriceToNumber(m.amount)
+      if (a <= 0) return 'Aşama tutarları geçerli olmalı.'
     }
-    const totalAmt = milestones.reduce((s, m) => s + parseFloat(m.amount.replace(',', '.')), 0)
-    const totalPct = milestones.reduce((s, m) => s + parseFloat(m.percentage.replace(',', '.')), 0)
+    const totalAmt = milestones.reduce((s, m) => s + parsePriceToNumber(m.amount), 0)
+    const totalPct = milestones.reduce(
+      (s, m) => s + calculatePercentage(parsePriceToNumber(m.amount), numericPrice),
+      0
+    )
     if (Math.abs(totalAmt - numericPrice) > 0.01) return 'Aşama tutarlarının toplamı, teklif tutarına eşit olmalı.'
-    if (Math.abs(totalPct - 100) > 0.01) return 'Yüzdelerin toplamı 100 olmalı.'
+    if (Math.abs(totalPct - 100) > 2) return 'Aşama tutarlarını gözden geçirin (yuvarlama nedeniyle yüzde toplamı kayabilir).'
     return null
   }
 
@@ -172,8 +193,8 @@ export default function ProviderJobOfferPage() {
       return
     }
 
-    const newPrice = parseFloat(price.replace(',', '.'))
-    if (Number.isNaN(newPrice) || newPrice <= 0) {
+    const newPrice = parsePriceToNumber(price)
+    if (newPrice <= 0) {
       alert('Lütfen geçerli bir fiyat girin.')
       return
     }
@@ -189,8 +210,8 @@ export default function ProviderJobOfferPage() {
       milestonePayload = milestones.map((m, i) => ({
         title: m.title.trim(),
         description: m.description.trim(),
-        amount: parseFloat(m.amount.replace(',', '.')),
-        percentage: parseFloat(m.percentage.replace(',', '.')),
+        amount: parsePriceToNumber(m.amount),
+        percentage: calculatePercentage(parsePriceToNumber(m.amount), newPrice),
         sort_order: i,
       }))
     }
@@ -335,10 +356,11 @@ export default function ProviderJobOfferPage() {
             <label className="text-xs font-bold text-slate-700">Fiyat (₺) *</label>
             <input
               className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
-              type="number"
-              inputMode="decimal"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => setPrice(formatPrice(e.target.value))}
             />
           </div>
 
@@ -383,8 +405,8 @@ export default function ProviderJobOfferPage() {
                 </button>
               </div>
               <p className="text-[11px] text-slate-500">
-                Tutar toplamı: {milestoneSum.amount.toFixed(2)} ₺ (hedef: {numericPrice.toFixed(2)} ₺) · Yüzde toplamı:{' '}
-                {milestoneSum.percent.toFixed(1)} %
+                Tutar toplamı: {formatPrice(String(milestoneSum.amount))} ₺ (hedef: {formatPrice(String(numericPrice))}{' '}
+                ₺) · Yüzde toplamı: {milestoneSum.percent} %
               </p>
               {milestones.map((m, i) => (
                 <div key={i} className="rounded-xl border border-slate-200 p-3 space-y-2">
@@ -411,18 +433,16 @@ export default function ProviderJobOfferPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <input
                       className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+                      type="text"
                       placeholder="Tutar (₺)"
-                      inputMode="decimal"
+                      inputMode="numeric"
+                      autoComplete="off"
                       value={m.amount}
-                      onChange={(e) => updateStage(i, { amount: e.target.value })}
+                      onChange={(e) => updateStage(i, { amount: formatPrice(e.target.value) })}
                     />
-                    <input
-                      className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-                      placeholder="Yüzde %"
-                      inputMode="decimal"
-                      value={m.percentage}
-                      onChange={(e) => updateStage(i, { percentage: e.target.value })}
-                    />
+                    <div className="bg-gray-100 rounded-lg px-3 py-2 text-sm font-bold text-gray-700">
+                      %{calculatePercentage(parsePriceToNumber(m.amount), numericPrice)}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -431,7 +451,7 @@ export default function ProviderJobOfferPage() {
 
           <button
             type="button"
-            disabled={submitting || !price}
+            disabled={submitting || parsePriceToNumber(price) <= 0}
             className="w-full rounded-2xl bg-slate-900 py-3 text-sm font-semibold text-white disabled:opacity-50"
             onClick={() => void submit()}
           >

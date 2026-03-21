@@ -83,13 +83,15 @@ function ProviderJobsPageContent() {
   const [myOfferMeta, setMyOfferMeta] = useState<Record<string, { offerId: string; is_bargain_requested: boolean }>>({})
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLng, setUserLng] = useState<number | null>(null)
-  const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
   const [skills, setSkills] = useState<string[]>([])
   const [filter, setFilter] = useState<string>('all')
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const router = useRouter()
   const bargainHandledRef = useRef(false)
+
+  const handleOfferClick = (jobId: string) => {
+    router.push('/provider/jobs/' + jobId + '/offer')
+  }
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(p => {
@@ -214,26 +216,6 @@ function ProviderJobsPageContent() {
     })
     .sort((a, b) => (a.dist ?? 99) - (b.dist ?? 99))
 
-  const selectedJob = selectedJobId ? filtered.find((j) => j.id === selectedJobId) || withDist.find((j) => j.id === selectedJobId) : null
-  const selectedMedia: string[] = selectedJob
-    ? Array.isArray(selectedJob.media_urls)
-      ? (selectedJob.media_urls as string[])
-      : Array.isArray(selectedJob.images)
-      ? (selectedJob.images as string[])
-      : []
-    : []
-
-  const whenLabel = (job: any) => {
-    if (job?.job_type === 'urgent') return '⏱ Hemen'
-    if (job?.scheduled_at) {
-      const d = new Date(job.scheduled_at)
-      if (!Number.isNaN(d.getTime())) {
-        return `📅 ${d.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}`
-      }
-    }
-    return null
-  }
-
   /** Kart alt satırı için (emoji yok, ikon ayrı) */
   const timeMetaForCard = (job: any): { kind: 'urgent' | 'date'; text: string } | null => {
     if (job?.job_type === 'urgent') return { kind: 'urgent', text: 'Hemen' }
@@ -303,9 +285,9 @@ function ProviderJobsPageContent() {
                 key={job.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => setSelectedJobId(job.id)}
+                onClick={() => handleOfferClick(job.id)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') setSelectedJobId(job.id)
+                  if (e.key === 'Enter' || e.key === ' ') handleOfferClick(job.id)
                 }}
                 className="group bg-white rounded-3xl border border-slate-200/90 shadow-sm hover:shadow-xl hover:shadow-slate-900/[0.07] hover:-translate-y-1 hover:border-violet-200/70 transition-all duration-300 cursor-pointer overflow-hidden animate-slide-up w-full max-w-full"
                 style={{ animationDelay: `${Math.min(i, 8) * 0.04}s` }}
@@ -401,147 +383,6 @@ function ProviderJobsPageContent() {
           </div>
         )}
       </div>
-
-      {/* Job Detail / Offer Modal */}
-      {selectedJob && (
-        <div className="fixed inset-0 z-[120] bg-black/70 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white border border-gray-200 rounded-3xl p-4 max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/20">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex items-center gap-3 min-w-0">
-                {(() => {
-                  const v = categoryVisualFromJob(selectedJob)
-                  const VIcon = v.Icon
-                  return (
-                    <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ring-2 ${v.box}`}
-                    >
-                      <VIcon className={`h-6 w-6 ${v.iconColor}`} strokeWidth={2} aria-hidden />
-                    </div>
-                  )
-                })()}
-                <div className="min-w-0">
-                  <p className="font-black text-slate-900 text-base truncate">{selectedJob.title}</p>
-                  <p className="text-xs text-slate-600 truncate">{selectedJob.service_categories?.name}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedJobId(null)}
-                className="text-slate-400 text-2xl leading-none"
-              >
-                ✕
-              </button>
-            </div>
-
-            {selectedJob.description && (
-              <p className="text-sm text-slate-700 bg-gray-50 border border-gray-200 rounded-2xl p-3 leading-relaxed">
-                {selectedJob.description}
-              </p>
-            )}
-
-            <div className="mt-3 space-y-1">
-              {whenLabel(selectedJob) && (
-                <p className="text-xs text-slate-600">{whenLabel(selectedJob)}</p>
-              )}
-              <p className="text-xs text-slate-600">📍 {selectedJob.address}</p>
-            </div>
-
-            {selectedMedia.length > 0 && (
-              <div className="mt-4 space-y-1.5">
-                <p className="text-xs font-bold text-slate-800">Ekler / Görseller</p>
-                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-                  {selectedMedia.map((url: string) => {
-                    const isVideo = /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url)
-                    return (
-                      <button
-                        key={url}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setLightbox({ url, type: isVideo ? 'video' : 'image' })
-                        }}
-                        className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 flex-shrink-0"
-                      >
-                        {isVideo ? (
-                          <video src={url} className="w-full h-full object-cover" muted playsInline />
-                        ) : (
-                          <img src={url} alt="Ek görsel" className="w-full h-full object-cover" />
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-3">
-              <p className="text-xs font-bold text-slate-900 mb-2">
-                {myOffers.has(selectedJob.id) ? 'Teklifin' : 'Teklif Ver'}
-              </p>
-
-              {myOffers.has(selectedJob.id) && myOfferMeta[selectedJob.id]?.is_bargain_requested !== true ? (
-                <div className="badge-green w-full justify-center py-2 text-sm">✅ Teklif Verildi</div>
-              ) : myOffers.has(selectedJob.id) && myOfferMeta[selectedJob.id]?.is_bargain_requested === true ? (
-                <div className="space-y-2">
-                  <div className="badge-green w-full justify-center py-2 text-sm">✅ Teklif Verildi</div>
-                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5">
-                    Müşteri indirim bekliyor
-                  </p>
-                  <button
-                    type="button"
-                    className="btn-secondary py-2 text-xs w-full"
-                    onClick={() => {
-                      router.push('/provider/jobs/' + selectedJob.id + '/offer')
-                      setSelectedJobId(null)
-                    }}
-                  >
-                    📉 Müşteri İndirim Bekliyor - Teklifi Güncelle
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="btn-primary w-full py-3 text-sm"
-                  onClick={() => {
-                    router.push('/provider/jobs/' + selectedJob.id + '/offer')
-                    setSelectedJobId(null)
-                  }}
-                >
-                  Teklif Ver
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {lightbox && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="relative max-w-3xl w-full">
-            <button
-              type="button"
-              onClick={() => setLightbox(null)}
-              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-black/80 text-white flex items-center justify-center text-lg"
-            >
-              ✕
-            </button>
-            {lightbox.type === 'video' ? (
-              <video
-                src={lightbox.url}
-                className="w-full max-h-[80vh] rounded-2xl"
-                controls
-                autoPlay
-              />
-            ) : (
-              <img
-                src={lightbox.url}
-                alt="Ek görsel"
-                className="w-full max-h-[80vh] rounded-2xl object-contain bg-black"
-              />
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
