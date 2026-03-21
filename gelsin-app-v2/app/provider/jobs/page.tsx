@@ -1,6 +1,6 @@
 'use client'
 import { Suspense, useEffect, useState, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { LucideIcon } from 'lucide-react'
 import {
   Briefcase,
@@ -81,8 +81,6 @@ function ProviderJobsPageContent() {
   const [jobs, setJobs] = useState<any[]>([])
   const [myOffers, setMyOffers] = useState<Set<string>>(new Set())
   const [myOfferMeta, setMyOfferMeta] = useState<Record<string, { offerId: string; is_bargain_requested: boolean }>>({})
-  const [offering, setOffering] = useState<Record<string, { price: string; duration: string; message: string }>>({})
-  const [submitting, setSubmitting] = useState('')
   const [userLat, setUserLat] = useState<number | null>(null)
   const [userLng, setUserLng] = useState<number | null>(null)
   const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
@@ -90,6 +88,7 @@ function ProviderJobsPageContent() {
   const [filter, setFilter] = useState<string>('all')
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
   const searchParams = useSearchParams()
+  const router = useRouter()
   const bargainHandledRef = useRef(false)
 
   useEffect(() => {
@@ -107,18 +106,17 @@ function ProviderJobsPageContent() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
-  // KURAL 3: Bildirimden "pazarlık" ile gelindiğinde iş modalını + teklif güncelleme formunu aç
+  // KURAL 3: Bildirimden "pazarlık" ile gelindiğinde teklif güncelleme sayfasına git
   useEffect(() => {
     const bargainJobId = searchParams.get('bargain')
     if (!bargainJobId || bargainHandledRef.current) return
     bargainHandledRef.current = true
-    setSelectedJobId(bargainJobId)
     const t = setTimeout(() => {
-      openEditOffer(bargainJobId)
+      router.push('/provider/jobs/' + bargainJobId + '/offer')
       window.history.replaceState({}, '', '/provider/jobs')
     }, 500)
     return () => clearTimeout(t)
-  }, [searchParams])
+  }, [searchParams, router])
 
   const load = async () => {
     const supabase = createClient()
@@ -178,134 +176,6 @@ function ProviderJobsPageContent() {
     const R = 6371, dLat = (la2-la1)*Math.PI/180, dLon = (lo2-lo1)*Math.PI/180
     const a = Math.sin(dLat/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLon/2)**2
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
-  }
-
-  const submitOffer = async (jobId: string) => {
-    const o = offering[jobId]
-    if (!o?.price) return
-    setSubmitting(jobId)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      alert('Teklif verebilmek için tekrar giriş yapın.')
-      setSubmitting('')
-      return
-    }
-
-    const newPrice = parseFloat(o.price)
-    if (Number.isNaN(newPrice) || newPrice <= 0) {
-      alert('Lütfen geçerli bir fiyat girin.')
-      setSubmitting('')
-      return
-    }
-
-    // KURAL 4: Mevcut teklif varsa sadece UPDATE (asla ikinci satır INSERT etme)
-    const { data: existing } = await supabase
-      .from('offers')
-      .select('id, price')
-      .eq('job_id', jobId)
-      .eq('provider_id', user.id)
-
-    if (existing && existing.length > 0) {
-      const current = existing[0]
-      const currentPrice = Number(current.price || 0)
-      if (newPrice >= currentPrice) {
-        alert('Pazarlık için yeni fiyat mevcut fiyattan daha düşük olmalı.')
-        setSubmitting('')
-        return
-      }
-
-      const { error: updateError } = await supabase
-        .from('offers')
-        .update({
-          price: newPrice,
-          estimated_duration: o.duration,
-          message: o.message,
-          is_bargain_requested: false,
-        })
-        .eq('id', current.id)
-
-      if (updateError) {
-        alert('Teklif güncellenirken bir hata oluştu: ' + updateError.message)
-        setSubmitting('')
-        return
-      }
-    } else {
-      // İlk kez teklif veriliyorsa insert
-      const { error } = await supabase.from('offers').insert({
-        job_id: jobId,
-        provider_id: user.id,
-        price: newPrice,
-        estimated_duration: o.duration,
-        message: o.message,
-      })
-
-      if (error) {
-        if ((error as any).code === '23505') {
-          alert('Bu işe zaten teklif verdiniz.')
-        } else {
-          alert('Teklif kaydedilirken bir hata oluştu: ' + error.message)
-        }
-        setSubmitting('')
-        return
-      }
-
-      // Yeni teklif için bildirim gönder
-      const job = jobs.find(j => j.id === jobId)
-      await supabase.from('notifications').insert({
-        user_id: job?.customer_id,
-        title: '💬 Yeni Teklif!',
-        body: `"${job?.title}" işine yeni teklif geldi.`,
-        type: 'new_offer',
-        related_job_id: jobId
-      })
-
-      // Müşteriye mail bildirimi (fire-and-forget)
-      const origin = typeof window !== 'undefined' ? window.location.origin : ''
-      fetch(`${origin}/api/send-email/new-offer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_id: jobId, provider_id: user.id, price: newPrice }),
-      }).catch(() => {})
-
-      const next = new Set(Array.from(myOffers))
-      next.add(jobId)
-      setMyOffers(next)
-    }
-
-    setMyOfferMeta((prev) => {
-      const next = { ...prev }
-      if (next[jobId]) next[jobId] = { ...next[jobId], is_bargain_requested: false }
-      return next
-    })
-    setOffering(p => { const n = {...p}; delete n[jobId]; return n })
-    setSubmitting('')
-  }
-
-  const openEditOffer = async (jobId: string) => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data, error } = await supabase
-      .from('offers')
-      .select('price, estimated_duration, message')
-      .eq('job_id', jobId)
-      .eq('provider_id', user!.id)
-      .single()
-
-    if (error || !data) {
-      alert('Mevcut teklif bulunamadı.')
-      return
-    }
-
-    setOffering(p => ({
-      ...p,
-      [jobId]: {
-        price: data.price != null ? String(data.price) : '',
-        duration: data.estimated_duration || '',
-        message: data.message || '',
-      },
-    }))
   }
 
   const chips: {
@@ -556,14 +426,7 @@ function ProviderJobsPageContent() {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedJobId(null)
-                  setOffering((p) => {
-                    const n = { ...p }
-                    if (selectedJobId) delete n[selectedJobId]
-                    return n
-                  })
-                }}
+                onClick={() => setSelectedJobId(null)}
                 className="text-slate-400 text-2xl leading-none"
               >
                 ✕
@@ -616,95 +479,36 @@ function ProviderJobsPageContent() {
                 {myOffers.has(selectedJob.id) ? 'Teklifin' : 'Teklif Ver'}
               </p>
 
-              {myOffers.has(selectedJob.id) && !offering[selectedJob.id] ? (
+              {myOffers.has(selectedJob.id) && myOfferMeta[selectedJob.id]?.is_bargain_requested !== true ? (
+                <div className="badge-green w-full justify-center py-2 text-sm">✅ Teklif Verildi</div>
+              ) : myOffers.has(selectedJob.id) && myOfferMeta[selectedJob.id]?.is_bargain_requested === true ? (
                 <div className="space-y-2">
                   <div className="badge-green w-full justify-center py-2 text-sm">✅ Teklif Verildi</div>
-                  {myOfferMeta[selectedJob.id]?.is_bargain_requested === true && (
-                    <>
-                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5">
-                        Müşteri indirim bekliyor
-                      </p>
-                      <button
-                        className="btn-secondary py-2 text-xs w-full"
-                        onClick={() => openEditOffer(selectedJob.id)}
-                      >
-                        📉 Müşteri İndirim Bekliyor - Teklifi Güncelle
-                      </button>
-                    </>
-                  )}
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5">
+                    Müşteri indirim bekliyor
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-secondary py-2 text-xs w-full"
+                    onClick={() => {
+                      router.push('/provider/jobs/' + selectedJob.id + '/offer')
+                      setSelectedJobId(null)
+                    }}
+                  >
+                    📉 Müşteri İndirim Bekliyor - Teklifi Güncelle
+                  </button>
                 </div>
               ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 mb-1 block">Fiyat (₺) *</label>
-                      <input
-                        className="input text-sm py-2 bg-gray-50 border border-gray-200"
-                        type="number"
-                        placeholder="250"
-                        value={offering[selectedJob.id]?.price || ''}
-                        onChange={(e) =>
-                          setOffering((p) => ({
-                            ...p,
-                            [selectedJob.id]: { ...(p[selectedJob.id] || { price: '', duration: '', message: '' }), price: e.target.value },
-                          }))
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 mb-1 block">Süre</label>
-                      <input
-                        className="input text-sm py-2 bg-gray-50 border border-gray-200"
-                        placeholder="2 saat"
-                        value={offering[selectedJob.id]?.duration || ''}
-                        onChange={(e) =>
-                          setOffering((p) => ({
-                            ...p,
-                            [selectedJob.id]: { ...(p[selectedJob.id] || { price: '', duration: '', message: '' }), duration: e.target.value },
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-                  <textarea
-                    className="input text-sm py-2 mt-2 resize-none bg-gray-50 border border-gray-200"
-                    rows={2}
-                    placeholder="Müşteriye not..."
-                    value={offering[selectedJob.id]?.message || ''}
-                    onChange={(e) =>
-                      setOffering((p) => ({
-                        ...p,
-                        [selectedJob.id]: { ...(p[selectedJob.id] || { price: '', duration: '', message: '' }), message: e.target.value },
-                      }))
-                    }
-                  />
-                  <p className="mt-2 text-[10px] text-slate-500">
-                    Not: Platform %{2} + işlem %{3.99} komisyon uygulanır.
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <button
-                      type="button"
-                      className="btn-secondary py-2 text-xs"
-                      onClick={() => {
-                        setOffering((p) => {
-                          const n = { ...p }
-                          delete n[selectedJob.id]
-                          return n
-                        })
-                        setSelectedJobId(null)
-                      }}
-                    >
-                      İptal
-                    </button>
-                    <button
-                      className="btn-primary py-2 text-xs"
-                      onClick={() => submitOffer(selectedJob.id)}
-                      disabled={submitting === selectedJob.id || !offering[selectedJob.id]?.price}
-                    >
-                      {submitting === selectedJob.id ? '⏳ Gönderiliyor...' : '📤 Gönder'}
-                    </button>
-                  </div>
-                </>
+                <button
+                  type="button"
+                  className="btn-primary w-full py-3 text-sm"
+                  onClick={() => {
+                    router.push('/provider/jobs/' + selectedJob.id + '/offer')
+                    setSelectedJobId(null)
+                  }}
+                >
+                  Teklif Ver
+                </button>
               )}
             </div>
           </div>
