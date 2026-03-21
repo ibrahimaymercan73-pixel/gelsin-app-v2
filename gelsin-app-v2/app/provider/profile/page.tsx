@@ -1,36 +1,55 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
+import {
+  ChevronRight,
+  Star,
+  ShieldCheck,
+  Clock,
+  Ban,
+  LogOut,
+  Mail,
+  User,
+  Phone,
+  MapPin,
+  FileText,
+  Briefcase,
+  Settings2,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase'
 import { useProviderAuth } from '../ProviderLayoutClient'
 import { SERVICE_CATEGORIES, CITIES } from '@/lib/constants'
 
 function ProviderProfileSkeleton() {
   return (
-    <div>
-      <div className="bg-gradient-to-br from-blue-700 to-blue-900 px-5 pt-14 pb-8">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-white/20 rounded-2xl animate-pulse" />
-          <div className="space-y-2">
-            <div className="h-5 w-32 bg-white/30 rounded animate-pulse" />
-            <div className="h-5 w-24 bg-white/20 rounded animate-pulse" />
+    <div className="max-w-2xl mx-auto px-5 py-8 pb-28 animate-pulse">
+      <div className="h-4 w-24 bg-slate-200 rounded-full mb-2" />
+      <div className="h-8 w-48 bg-slate-200 rounded-lg mb-8" />
+      <div className="rounded-3xl bg-white border border-slate-100 shadow-sm p-6 mb-6">
+        <div className="flex gap-4">
+          <div className="h-20 w-20 rounded-2xl bg-slate-100" />
+          <div className="flex-1 space-y-3">
+            <div className="h-6 w-40 bg-slate-100 rounded-lg" />
+            <div className="h-8 w-28 bg-slate-100 rounded-full" />
+            <div className="h-4 w-full max-w-xs bg-slate-100 rounded" />
           </div>
         </div>
       </div>
-      <div className="px-4 py-5 space-y-4">
-        <div className="card p-5 space-y-4">
-          <div className="h-4 w-28 bg-slate-200 rounded animate-pulse" />
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-12 bg-slate-100 rounded-xl animate-pulse" />
-          ))}
-        </div>
+      <div className="rounded-3xl bg-white border border-slate-100 shadow-sm p-6 space-y-4">
+        <div className="h-4 w-32 bg-slate-100 rounded" />
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-12 bg-slate-50 rounded-xl" />
+        ))}
       </div>
     </div>
   )
 }
+
+const inputClass =
+  'w-full rounded-xl border border-slate-200/90 bg-white px-4 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 shadow-sm transition-all focus:border-slate-300 focus:outline-none focus:ring-4 focus:ring-slate-900/[0.06]'
 
 export default function ProviderProfile() {
   const router = useRouter()
@@ -38,7 +57,9 @@ export default function ProviderProfile() {
   const [name, setName] = useState(ctxProfile?.full_name ?? '')
   const [bio, setBio] = useState((pp as { bio?: string } | null)?.bio ?? '')
   const [cats, setCats] = useState<string[]>((pp as { service_categories?: string[] } | null)?.service_categories ?? [])
-  const [mainCategory, setMainCategory] = useState<string | null>((pp as { main_category?: string | null } | null)?.main_category ?? null)
+  const [mainCategory, setMainCategory] = useState<string | null>(
+    (pp as { main_category?: string | null } | null)?.main_category ?? null
+  )
   const [phone, setPhone] = useState(ctxProfile?.phone ?? '')
   const [city, setCity] = useState(ctxProfile?.city ?? '')
   const [hidePhone, setHidePhone] = useState(ctxProfile?.hide_phone ?? false)
@@ -60,6 +81,13 @@ export default function ProviderProfile() {
       setMainCategory(p.main_category ?? null)
     }
   }, [ctxProfile, pp])
+
+  const initials = useMemo(() => {
+    const n = (name || 'U').trim()
+    const parts = n.split(/\s+/).filter(Boolean)
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+    return n.slice(0, 2).toUpperCase()
+  }, [name])
 
   if (!ctxProfile) {
     return <ProviderProfileSkeleton />
@@ -101,145 +129,242 @@ export default function ProviderProfile() {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  const mainCategoryInfo = SERVICE_CATEGORIES.find(c => c.id === mainCategory)
+  const mainCategoryInfo = SERVICE_CATEGORIES.find((c) => c.id === mainCategory)
 
   const toggleHidePhone = async () => {
     const next = !hidePhone
     setHidePhone(next)
     const supabase = createClient()
-    await supabase
-      .from('profiles')
-      .update({ hide_phone: next })
-      .eq('id', ctxProfile.id)
+    await supabase.from('profiles').update({ hide_phone: next }).eq('id', ctxProfile.id)
   }
 
-  const statusColors: Record<string, string> = {
-    pending: 'badge-orange',
-    approved: 'badge-green',
-    suspended: 'badge-red',
+  const statusMeta: Record<
+    string,
+    { label: string; Icon: typeof ShieldCheck; className: string }
+  > = {
+    pending: {
+      label: 'Onay bekliyor',
+      Icon: Clock,
+      className: 'bg-amber-50 text-amber-800 ring-amber-200/80 border-amber-100',
+    },
+    approved: {
+      label: 'Onaylı uzman',
+      Icon: ShieldCheck,
+      className: 'bg-emerald-50 text-emerald-800 ring-emerald-200/70 border-emerald-100',
+    },
+    suspended: {
+      label: 'Askıya alındı',
+      Icon: Ban,
+      className: 'bg-red-50 text-red-800 ring-red-200/70 border-red-100',
+    },
   }
-  const statusLabels: Record<string, string> = {
-    pending: '⏳ Onay Bekliyor',
-    approved: '✅ Onaylı',
-    suspended: '🚫 Askıya Alındı',
-  }
+
   const ppStatus = (pp as { status?: string } | null)?.status
   const faceVerified = ctxProfile?.face_verified
   const displayStatus = faceVerified && ppStatus === 'pending' ? 'approved' : ppStatus
-  const displayLabel = displayStatus ? statusLabels[displayStatus] : (faceVerified ? '✅ Onaylı' : '—')
+  const statusKey = displayStatus && statusMeta[displayStatus] ? displayStatus : faceVerified ? 'approved' : null
+  const status = statusKey ? statusMeta[statusKey] : null
+
   const ppRating = (pp as { rating?: number } | null)?.rating
   const ppTotalReviews = (pp as { total_reviews?: number } | null)?.total_reviews
 
-  return (
-    <div>
-      {!ctxProfile.city && (
-        <div className="mx-4 mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium">
-          Şehrinizi güncelleyin. İlanlarınız doğru bölgede listelenecek.
-        </div>
-      )}
-      <div className="bg-gradient-to-br from-blue-700 to-blue-900 px-5 pt-14 pb-8 text-white">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl">🔧</div>
-          <div>
-            <p className="font-black text-lg">{name || 'Uzman'}</p>
-            <span className={displayStatus ? statusColors[displayStatus] : 'badge-gray'}>
-              {displayLabel}
-            </span>
-            {typeof ppRating === 'number' && (
-              <div className="mt-1 flex items-center gap-2 text-xs text-blue-100">
-                <span className="text-yellow-300">★</span>
-                <span className="font-semibold">
-                  {ppRating.toFixed(1)} / 5
-                </span>
-                <span className="text-blue-200">
-                  ({(ppTotalReviews ?? 0)} değerlendirme)
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+  const cardWrap = 'rounded-3xl border border-slate-200/60 bg-white p-6 sm:p-7 shadow-[0_1px_3px_rgba(15,23,42,0.06)]'
 
-      <div className="px-4 py-5 space-y-4">
-        <div className="card p-5 space-y-4">
-          <p className="font-bold text-gray-800">Profil Bilgileri</p>
+  return (
+    <div className="min-h-screen font-sans text-slate-900">
+      <div className="max-w-2xl mx-auto px-5 sm:px-6 py-8 sm:py-10 pb-32">
+        {!ctxProfile.city && (
+          <div className="mb-6 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3.5 text-sm text-amber-900 leading-relaxed">
+            Şehrinizi güncelleyin; ilanlarınız doğru bölgede listelenir.
+          </div>
+        )}
+
+        {/* Başlık — kaba mavi blok yok */}
+        <header className="mb-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Hesap</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900 mt-1">Profil</h1>
+          <p className="text-slate-500 text-sm mt-2 max-w-md leading-relaxed">
+            Bilgilerinizi güncel tutun; müşteriler size daha güvenle ulaşsın.
+          </p>
+        </header>
+
+        {/* Özet kartı: avatar, rozet, yıldızlar */}
+        <section className={`${cardWrap} mb-6`}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl ring-1 ring-slate-200/80 shadow-md">
+              {ctxProfile.avatar_url ? (
+                <Image
+                  src={ctxProfile.avatar_url}
+                  alt=""
+                  width={80}
+                  height={80}
+                  className="h-full w-full object-cover"
+                  unoptimized
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-700 to-slate-900 text-xl font-semibold text-white">
+                  {initials}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl font-semibold text-slate-900 truncate">{name || 'Uzman'}</h2>
+              {email && (
+                <p className="text-sm text-slate-500 truncate mt-0.5">{email}</p>
+              )}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {status && (
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ring-1 ${status.className}`}
+                  >
+                    <status.Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+                    {status.label}
+                  </span>
+                )}
+                {!status && !faceVerified && (
+                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                    Doğrulama bekleniyor
+                  </span>
+                )}
+              </div>
+              {typeof ppRating === 'number' && (
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-0.5" aria-label={`Puan ${ppRating} üzerinden 5`}>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i <= Math.round(ppRating)
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'fill-slate-100 text-slate-200'
+                        }`}
+                        strokeWidth={i <= Math.round(ppRating) ? 0 : 1.5}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm text-slate-600 tabular-nums">
+                    <span className="font-semibold text-slate-900">{ppRating.toFixed(1)}</span>
+                    <span className="text-slate-400 mx-1">·</span>
+                    {(ppTotalReviews ?? 0)} değerlendirme
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Profil bilgileri kartı */}
+        <section className={`${cardWrap} mb-5 space-y-5`}>
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+            <User className="h-5 w-5 text-slate-400" strokeWidth={1.75} />
+            <h3 className="text-base font-semibold text-slate-900">Profil bilgileri</h3>
+          </div>
+
           {email && (
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">E-posta (giriş / kayıt)</label>
-              <p className="text-sm font-medium text-slate-700 bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">{email}</p>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-2">
+                <Mail className="h-3.5 w-3.5" strokeWidth={2} />
+                E-posta
+              </label>
+              <p className="rounded-xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm text-slate-700">
+                {email}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1.5">Giriş için kullanılan adres; buradan değiştirilemez.</p>
             </div>
           )}
+
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Ad Soyad</label>
-            <input className="input" placeholder="Adınızı girin" value={name} onChange={e => setName(e.target.value)} />
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-2">
+              <User className="h-3.5 w-3.5" strokeWidth={2} />
+              Ad soyad
+            </label>
+            <input className={inputClass} placeholder="Adınız ve soyadınız" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
+
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Telefon</label>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-2">
+              <Phone className="h-3.5 w-3.5" strokeWidth={2} />
+              Telefon
+            </label>
             <input
-              className="input"
+              className={inputClass}
               placeholder="05xx xxx xx xx"
               value={phone}
-              onChange={e => setPhone(e.target.value)}
+              onChange={(e) => setPhone(e.target.value)}
             />
-            <div className="mt-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={toggleHidePhone}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    hidePhone ? 'bg-slate-900' : 'bg-slate-300'
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                    hidePhone ? 'bg-slate-900' : 'bg-slate-200'
                   }`}
+                  aria-pressed={hidePhone}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                      hidePhone ? 'translate-x-4' : 'translate-x-1'
+                      hidePhone ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
                 </button>
-                <span className="text-xs font-medium text-slate-600">
-                  Telefon Numaramı Gizle
-                </span>
+                <span className="text-sm text-slate-600">Numaramı gizle</span>
               </div>
-              <span className="text-[10px] text-slate-400">
-                Sadece kabul edilen işlerde numaranız görünür.
-              </span>
+              <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+                Sadece kabul ettiğiniz işlerde numaranız görünür.
+              </p>
             </div>
           </div>
+
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Şehir</label>
-            <select
-              className="input"
-              value={city}
-              onChange={e => setCity(e.target.value)}
-            >
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-2">
+              <MapPin className="h-3.5 w-3.5" strokeWidth={2} />
+              Şehir
+            </label>
+            <select className={inputClass} value={city} onChange={(e) => setCity(e.target.value)}>
               <option value="">Şehir seçin</option>
               {CITIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>
+                  {c}
+              </option>
               ))}
             </select>
           </div>
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5 block">Hakkında</label>
-            <textarea className="input resize-none" rows={3} placeholder="Kendinizi tanıtın..."
-              value={bio} onChange={e => setBio(e.target.value)} />
-          </div>
-        </div>
 
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-bold text-gray-800">Uzmanlık Alanları</p>
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-2">
+              <FileText className="h-3.5 w-3.5" strokeWidth={2} />
+              Hakkında
+            </label>
+            <textarea
+              className={`${inputClass} resize-none min-h-[100px]`}
+              rows={4}
+              placeholder="Kendinizi kısaca tanıtın…"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+            />
+          </div>
+        </section>
+
+        {/* Uzmanlık kartı */}
+        <section className={`${cardWrap} mb-5`}>
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4 mb-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <Briefcase className="h-5 w-5 text-slate-400 shrink-0" strokeWidth={1.75} />
+              <h3 className="text-base font-semibold text-slate-900 truncate">Uzmanlık alanları</h3>
+            </div>
             <Link
               href="/choose-role"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 shrink-0"
             >
-              ✏️ Düzenle
+              Düzenle
             </Link>
           </div>
 
           {mainCategoryInfo && (
-            <div className="flex items-center gap-2 mb-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
-              <mainCategoryInfo.icon className="w-5 h-5 text-blue-600" />
-              <span className="font-semibold text-blue-900 text-sm">{mainCategoryInfo.name}</span>
+            <div className="flex items-center gap-3 mb-4 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+              <mainCategoryInfo.icon className="h-5 w-5 text-slate-700 shrink-0" />
+              <span className="font-medium text-slate-800 text-sm">{mainCategoryInfo.name}</span>
             </div>
           )}
 
@@ -248,28 +373,29 @@ export default function ProviderProfile() {
               {cats.map((service, idx) => (
                 <span
                   key={idx}
-                  className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium border border-blue-100"
+                  className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-sm"
                 >
                   {service}
                 </span>
               ))}
             </div>
           ) : (
-            <div className="text-center py-6 bg-gray-50 rounded-xl">
-              <p className="text-sm text-gray-500 mb-2">Henüz uzmanlık alanı seçilmedi</p>
-              <Link
-                href="/choose-role"
-                className="text-sm font-semibold text-blue-600"
-              >
-                Hizmet kategorilerini seç →
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-10 text-center">
+              <p className="text-sm text-slate-500 mb-3">Henüz uzmanlık alanı seçilmedi</p>
+              <Link href="/choose-role" className="text-sm font-semibold text-slate-900 underline underline-offset-4">
+                Kategorileri seç
               </Link>
             </div>
           )}
-        </div>
+        </section>
 
-        <div className="card p-5">
-          <p className="font-bold text-gray-800 mb-4">Hesap Yönetimi</p>
-          <div className="space-y-1">
+        {/* Hesap yönetimi */}
+        <section className={`${cardWrap} mb-8`}>
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-4 mb-1">
+            <Settings2 className="h-5 w-5 text-slate-400" strokeWidth={1.75} />
+            <h3 className="text-base font-semibold text-slate-900">Hesap</h3>
+          </div>
+          <div className="divide-y divide-slate-100">
             {[
               { href: '/provider/services', label: 'İlanlarım' },
               { href: '/provider/wallet', label: 'Cüzdan' },
@@ -278,33 +404,43 @@ export default function ProviderProfile() {
               <Link
                 key={href}
                 href={href}
-                className="flex items-center justify-between py-3.5 px-2 rounded-xl hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between py-4 first:pt-2 group"
               >
-                <span className="font-medium text-gray-800">{label}</span>
-                <ChevronRight className="w-5 h-5 text-gray-400 shrink-0" />
+                <span className="text-[15px] font-medium text-slate-800 group-hover:text-slate-950">{label}</span>
+                <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-slate-400 transition-colors" />
               </Link>
             ))}
           </div>
-        </div>
+        </section>
 
         {saveError && (
-          <p className="text-red-600 text-sm font-medium bg-red-50 p-4 rounded-xl border border-red-100">
+          <div className="mb-4 rounded-2xl border border-red-100 bg-red-50/90 px-4 py-3 text-sm text-red-800">
             {saveError}
-          </p>
+          </div>
         )}
-        <button className="btn-primary py-4" onClick={save} disabled={saving}>
-          {saved ? '✅ Kaydedildi!' : saving ? 'Kaydediliyor...' : 'Kaydet'}
-        </button>
 
-        <button
-          className="btn-secondary py-4 text-red-500 border-red-100"
-          onClick={async () => {
-            await createClient().auth.signOut()
-            router.replace('/')
-          }}
-        >
-          🚪 Çıkış Yap
-        </button>
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="w-full rounded-xl bg-slate-900 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-slate-900/20 transition-all hover:bg-slate-800 active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none"
+          >
+            {saved ? 'Kaydedildi' : saving ? 'Kaydediliyor…' : 'Değişiklikleri kaydet'}
+          </button>
+
+          <button
+            type="button"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-transparent py-3.5 text-[15px] font-medium text-slate-500 transition-colors hover:bg-slate-100/80 hover:text-slate-700"
+            onClick={async () => {
+              await createClient().auth.signOut()
+              router.replace('/')
+            }}
+          >
+            <LogOut className="h-4 w-4" strokeWidth={2} />
+            Çıkış yap
+          </button>
+        </div>
       </div>
     </div>
   )
