@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase'
 import { Suspense } from 'react'
 
 function GoogleIcon() {
   return (
-    <span className="inline-flex h-5 w-5 items-center justify-center rounded-sm bg-white">
-      <svg viewBox="0 0 24 24" className="h-4 w-4">
+    <span className="inline-flex h-[18px] w-[18px] items-center justify-center">
+      <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]">
         <path
           d="M21.35 11.1H12v2.9h5.35c-.24 1.5-.98 2.77-2.09 3.62v3h3.38c1.98-1.83 3.11-4.53 3.11-7.72 0-.74-.07-1.45-.2-2.13Z"
           fill="#4285F4"
@@ -37,6 +38,78 @@ function formatPhoneInputDisplay(raw: string): string {
   if (d.length <= 7) return `${d.slice(0, 4)} ${d.slice(4)}`
   if (d.length <= 9) return `${d.slice(0, 4)} ${d.slice(4, 7)} ${d.slice(7)}`
   return `${d.slice(0, 4)} ${d.slice(4, 7)} ${d.slice(7, 9)} ${d.slice(9)}`
+}
+
+/** 6 kutu — yapıştırma ve otomatik odak */
+function OtpPinInput({
+  value,
+  onChange,
+  disabled,
+  onComplete,
+}: {
+  value: string
+  onChange: (v: string) => void
+  disabled?: boolean
+  /** 6 hane dolunca tam kod string ile çağrılır */
+  onComplete?: (fullCode: string) => void
+}) {
+  const refs = useRef<(HTMLInputElement | null)[]>([])
+  const digits = value.padEnd(6, ' ').slice(0, 6).split('')
+
+  const setAt = (i: number, d: string) => {
+    const cur = value.replace(/\D/g, '').slice(0, 6)
+    const arr = cur.split('')
+    while (arr.length < 6) arr.push('')
+    if (d === '') arr[i] = ''
+    else arr[i] = d.slice(-1)
+    const next = arr.join('').replace(/\D/g, '').slice(0, 6)
+    onChange(next)
+    if (d && i < 5) refs.current[i + 1]?.focus()
+    if (next.length === 6) onComplete?.(next)
+  }
+
+  const onKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !digits[i]?.trim() && i > 0) {
+      refs.current[i - 1]?.focus()
+    }
+    if (e.key === 'ArrowLeft' && i > 0) refs.current[i - 1]?.focus()
+    if (e.key === 'ArrowRight' && i < 5) refs.current[i + 1]?.focus()
+  }
+
+  const onPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const t = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    onChange(t)
+    const focusI = Math.min(t.length, 5)
+    refs.current[focusI]?.focus()
+    if (t.length === 6) onComplete?.(t)
+  }
+
+  return (
+    <div className="flex justify-center gap-2 sm:gap-2.5" onPaste={onPaste}>
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <input
+          key={i}
+          ref={(el) => {
+            refs.current[i] = el
+          }}
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={1}
+          disabled={disabled}
+          value={digits[i]?.trim() ? digits[i] : ''}
+          onChange={(e) => {
+            const v = e.target.value.replace(/\D/g, '')
+            setAt(i, v)
+          }}
+          onKeyDown={(e) => onKeyDown(i, e)}
+          className="h-11 w-10 rounded-xl border border-slate-200/90 bg-white text-center text-lg font-semibold tabular-nums text-slate-900 outline-none transition-[border-color,box-shadow] placeholder:text-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-50 sm:h-12 sm:w-11 sm:text-xl"
+          aria-label={`Kod ${i + 1}. hane`}
+        />
+      ))}
+    </div>
+  )
 }
 
 function LoginForm() {
@@ -199,9 +272,9 @@ function LoginForm() {
     setLoading(false)
   }
 
-  const loginWithPhoneOtp = async () => {
+  const loginWithPhoneOtp = async (codeOverride?: string) => {
     setError('')
-    const clean = otpCode.replace(/\D/g, '')
+    const clean = (codeOverride ?? otpCode).replace(/\D/g, '')
     if (clean.length !== 6) {
       setError('6 haneli doğrulama kodunu girin.')
       return
@@ -219,11 +292,11 @@ function LoginForm() {
         setLoading(false)
         return
       }
-      const email = data.email as string
+      const emailVal = data.email as string
       const token = data.token as string
       const supabase = createClient()
       const { error: vErr } = await supabase.auth.verifyOtp({
-        email,
+        email: emailVal,
         token,
         type: 'magiclink',
       })
@@ -275,29 +348,80 @@ function LoginForm() {
   const phoneDigits = phoneDisplay.replace(/\D/g, '')
   const phoneOk = phoneDigits.length === 11 && phoneDigits.startsWith('0') && phoneDigits[1] === '5'
 
+  const sendCodeLabel =
+    loading && !codeSent
+      ? '…'
+      : codeSent && resendSecondsLeft > 0
+        ? `${resendSecondsLeft}s`
+        : codeSent
+          ? 'Tekrar'
+          : 'Kod gönder'
+
+  const sendDisabled = loading || !phoneOk || (codeSent && !canResend)
+
   return (
-    <div className="flex min-h-screen w-full flex-col bg-gradient-to-b from-blue-50/80 via-white to-white font-sans lg:flex-row">
-      {/* SOL PANEL */}
-      <div className="relative hidden flex-col justify-center bg-gradient-to-br from-blue-700 via-blue-800 to-blue-950 px-10 py-16 text-white lg:flex lg:w-5/12">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.12),transparent_50%)]" />
-        <h1 className="relative mb-4 text-4xl font-black leading-tight tracking-tight lg:text-5xl">
-          Hesabına güvenle giriş yap.
-        </h1>
-        <p className="relative max-w-md text-base font-medium leading-relaxed text-blue-100">
-          Müşteri veya uzman olarak kayıt olup, işlerini tek panelden yönet.
-        </p>
+    <div className="flex min-h-screen w-full flex-col bg-[#fafbfc] font-sans antialiased lg:flex-row">
+      {/* —— SOL: koyu, premium —— */}
+      <div className="relative hidden min-h-0 flex-col justify-center overflow-hidden px-12 py-14 text-white lg:flex lg:w-[46%] xl:w-[44%]">
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-[#0c1929]"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -left-24 top-1/4 h-96 w-96 rounded-full bg-blue-500/20 blur-[100px]"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -bottom-32 right-0 h-80 w-80 rounded-full bg-indigo-500/15 blur-[90px]"
+          aria-hidden
+        />
+
+        <div className="relative z-[1] max-w-md">
+          <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.2em] text-white/40">Gelsin</p>
+          <h1 className="text-balance font-['Inter',system-ui,sans-serif] text-4xl font-semibold leading-[1.12] tracking-[-0.03em] text-white xl:text-[2.65rem]">
+            Hesabına güvenle giriş yap.
+          </h1>
+          <p className="mt-5 max-w-sm text-[15px] font-normal leading-relaxed text-white/55">
+            Müşteri veya uzman olarak tek panelden işlerini yönet; güvenli oturum, net deneyim.
+          </p>
+        </div>
       </div>
 
-      {/* SAĞ PANEL */}
-      <div className="flex flex-1 items-center justify-center p-6 lg:p-16">
-        <div className="w-full max-w-md space-y-6 rounded-3xl border border-blue-100 bg-white p-8 shadow-lg shadow-blue-900/5 ring-1 ring-blue-50 lg:p-10">
-          {/* Rol sekmesi */}
-          <div className="flex w-full rounded-2xl bg-blue-50/80 p-1 text-sm font-semibold">
+      {/* Mobil üst şerit */}
+      <div className="flex items-center justify-center border-b border-slate-200/80 bg-slate-950 px-4 py-4 lg:hidden">
+        <p className="text-center text-sm font-medium text-white/90">Giriş yap</p>
+      </div>
+
+      {/* —— SAĞ: form —— */}
+      <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6 lg:py-12 lg:pl-8 lg:pr-12">
+        <div className="w-full max-w-[400px]">
+          <div className="mb-8 lg:mb-9">
+            <h2 className="font-['Inter',system-ui,sans-serif] text-2xl font-semibold tracking-tight text-slate-900">
+              Hoş geldin
+            </h2>
+            <p className="mt-1.5 text-sm text-slate-500">Devam etmek için yöntemini seç.</p>
+          </div>
+
+          {/* Rol: segmented control + kaydırmalı pill */}
+          <div className="relative mb-6 flex h-11 rounded-full bg-slate-200/80 p-1 ring-1 ring-slate-200/60">
+            <motion.div
+              className="absolute inset-y-1 left-1 z-0 w-[calc(50%-4px)] rounded-full bg-white shadow-[0_1px_2px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04]"
+              initial={false}
+              animate={{ x: isProvider ? 'calc(100% + 4px)' : 0 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+            />
             <button
               type="button"
               onClick={() => setSelectedRole('customer')}
-              className={`flex-1 rounded-xl px-3 py-2 transition-all ${
-                !isProvider ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25' : 'text-blue-900/60 hover:text-blue-900'
+              className={`relative z-[1] flex-1 rounded-full py-2 text-[13px] font-medium transition-colors ${
+                !isProvider ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               Müşteri
@@ -305,51 +429,50 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => setSelectedRole('provider')}
-              className={`flex-1 rounded-xl px-3 py-2 transition-all ${
-                isProvider ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25' : 'text-blue-900/60 hover:text-blue-900'
+              className={`relative z-[1] flex-1 rounded-full py-2 text-[13px] font-medium transition-colors ${
+                isProvider ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               Uzman
             </button>
           </div>
 
-          {/* Google ile giriş */}
           <button
             type="button"
             onClick={loginWithGoogle}
             disabled={loading}
-            className="flex w-full items-center justify-center gap-3 rounded-2xl border border-blue-100 bg-white py-3.5 text-sm font-semibold text-blue-950 shadow-sm hover:border-blue-200 hover:bg-blue-50/50 disabled:opacity-60"
+            className="mb-6 flex h-10 w-full items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white text-[13px] font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50/80 disabled:opacity-50"
           >
             <GoogleIcon />
-            <span>Google ile Devam Et</span>
+            Google ile devam et
           </button>
 
-          <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-blue-100" />
-            <span className="text-[11px] font-semibold text-blue-400">veya e-posta / telefon ile</span>
-            <div className="h-px flex-1 bg-blue-100" />
+          <div className="mb-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="shrink-0 text-[11px] font-medium uppercase tracking-wider text-slate-400">veya</span>
+            <div className="h-px flex-1 bg-slate-200" />
           </div>
 
-          {/* Email | Telefon sekmeleri */}
-          <div className="flex w-full rounded-2xl bg-blue-50/80 p-1 text-sm font-semibold">
+          {/* Email / Telefon — kompakt pill */}
+          <div className="mb-5 inline-flex rounded-full border border-slate-200/90 bg-white p-0.5 shadow-sm shadow-slate-900/[0.02]">
             <button
               type="button"
               onClick={() => setLoginTab('email')}
-              className={`flex-1 rounded-xl px-3 py-2 transition-all ${
+              className={`rounded-full px-4 py-1.5 text-[12px] font-medium transition-all ${
                 loginTab === 'email'
-                  ? 'bg-white text-blue-900 shadow-sm ring-1 ring-blue-100'
-                  : 'text-blue-900/60 hover:text-blue-900'
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/20'
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              Email
+              E-posta
             </button>
             <button
               type="button"
               onClick={() => setLoginTab('phone')}
-              className={`flex-1 rounded-xl px-3 py-2 transition-all ${
+              className={`rounded-full px-4 py-1.5 text-[12px] font-medium transition-all ${
                 loginTab === 'phone'
-                  ? 'bg-white text-blue-900 shadow-sm ring-1 ring-blue-100'
-                  : 'text-blue-900/60 hover:text-blue-900'
+                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/20'
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Telefon
@@ -357,76 +480,56 @@ function LoginForm() {
           </div>
 
           {loginTab === 'email' ? (
-            <div className="animate-slide-up space-y-4">
+            <div className="space-y-3.5">
+              <input
+                className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[15px] text-slate-900 outline-none transition-[border-color,box-shadow] placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/15"
+                type="email"
+                placeholder="E-posta adresiniz"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
               <div>
-                <h2 className="text-2xl font-black text-blue-950">Email ile Giriş</h2>
-                <p className="mt-1 text-sm text-blue-900/50">
-                  {isProvider
-                    ? 'Uzman hesabınıza giriş yapın veya yeni uzman hesabı oluşturun.'
-                    : 'Müşteri hesabınıza giriş yapın veya yeni hesap oluşturun.'}
-                </p>
-              </div>
-              <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-blue-600/80">
-                  Email
-                </label>
                 <input
-                  className="w-full rounded-2xl border border-blue-100 bg-blue-50/30 px-5 py-4 text-base font-medium text-blue-950 outline-none placeholder:text-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
-                  type="email"
-                  placeholder="ornek@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-blue-600/80">
-                  Şifre
-                </label>
-                <input
-                  className="w-full rounded-2xl border border-blue-100 bg-blue-50/30 px-5 py-4 text-base font-medium text-blue-950 outline-none placeholder:text-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-[15px] text-slate-900 outline-none transition-[border-color,box-shadow] placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/15"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Şifreniz"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && loginWithEmail()}
+                  autoComplete="current-password"
                 />
                 <div className="mt-2 text-right">
-                  <Link href="/forgot-password" className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline">
-                    Şifremi Unuttum
+                  <Link
+                    href="/forgot-password"
+                    className="text-[12px] font-medium text-blue-600/90 hover:text-blue-700"
+                  >
+                    Şifremi unuttum
                   </Link>
                 </div>
               </div>
+
               {error && loginTab === 'email' && (
-                <p className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-medium text-red-600">
+                <p className="rounded-lg border border-red-100 bg-red-50/80 px-3 py-2.5 text-[13px] text-red-700">
                   {error}
                 </p>
               )}
+
               <button
                 type="button"
                 onClick={loginWithEmail}
                 disabled={loading || !email || password.length < 6}
-                className="w-full rounded-2xl bg-blue-600 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 disabled:opacity-50"
+                className="mt-1 h-11 w-full rounded-xl bg-blue-600 text-[14px] font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-45"
               >
-                {loading ? 'İşleniyor...' : 'Giriş Yap →'}
+                {loading ? 'Giriş yapılıyor…' : 'Giriş yap'}
               </button>
             </div>
           ) : (
-            <div className="animate-slide-up space-y-4">
-              <div>
-                <h2 className="text-2xl font-black text-blue-950">Telefon ile Giriş</h2>
-                <p className="mt-1 text-sm text-blue-900/50">
-                  {isProvider
-                    ? 'Kayıtlı uzman cep telefonunuza SMS ile doğrulama kodu gönderilir.'
-                    : 'Kayıtlı müşteri cep telefonunuza SMS ile doğrulama kodu gönderilir.'}
-                </p>
-              </div>
-              <div>
-                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-blue-600/80">
-                  Cep telefonu
-                </label>
+            <div className="space-y-4">
+              {/* Telefon + kod gönder aynı satır */}
+              <div className="flex items-stretch gap-2 rounded-xl border border-slate-200 bg-white pl-3.5 ring-0 transition-[border-color,box-shadow] focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/15">
                 <input
-                  className="w-full rounded-2xl border border-blue-100 bg-blue-50/30 px-5 py-4 text-base font-medium tracking-wide text-blue-950 outline-none placeholder:text-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                  className="min-w-0 flex-1 border-0 bg-transparent py-2.5 text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
                   type="tel"
                   inputMode="numeric"
                   autoComplete="tel"
@@ -434,71 +537,71 @@ function LoginForm() {
                   value={phoneDisplay}
                   onChange={(e) => setPhoneDisplay(formatPhoneInputDisplay(e.target.value))}
                 />
+                <div className="flex shrink-0 items-center border-l border-slate-100 pr-1">
+                  <button
+                    type="button"
+                    onClick={sendPhoneOtp}
+                    disabled={sendDisabled}
+                    className="rounded-lg px-2.5 py-2 text-[12px] font-semibold text-blue-600 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                  >
+                    {sendCodeLabel}
+                  </button>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={sendPhoneOtp}
-                disabled={loading || !phoneOk || (codeSent && !canResend)}
-                className="w-full rounded-2xl border border-blue-200 bg-white py-3.5 text-sm font-semibold text-blue-900 shadow-sm transition-all hover:border-blue-300 hover:bg-blue-50/50 disabled:opacity-50"
-              >
-                {loading && !codeSent
-                  ? 'Gönderiliyor...'
-                  : codeSent && resendSecondsLeft > 0
-                    ? `Kod gönderildi (${resendSecondsLeft}s)`
-                    : 'Kod Gönder'}
-              </button>
+
               {error && loginTab === 'phone' && (
-                <p className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-medium text-red-600">
+                <p className="rounded-lg border border-red-100 bg-red-50/80 px-3 py-2.5 text-[13px] text-red-700">
                   {error}
                 </p>
               )}
+
               {codeSent && (
-                <>
-                  <div>
-                    <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-blue-600/80">
-                      6 haneli kod
-                    </label>
-                    <input
-                      className="w-full rounded-2xl border border-blue-100 bg-blue-50/30 px-5 py-4 text-center text-2xl font-bold tracking-[0.35em] text-blue-950 outline-none placeholder:text-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={6}
-                      placeholder="••••••"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      onKeyDown={(e) => e.key === 'Enter' && otpCode.replace(/\D/g, '').length === 6 && loginWithPhoneOtp()}
-                    />
-                  </div>
+                <div className="space-y-4 pt-1">
+                  <p className="text-center text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                    SMS ile gelen kod
+                  </p>
+                  <OtpPinInput
+                    value={otpCode}
+                    onChange={setOtpCode}
+                    disabled={loading}
+                    onComplete={(full) => void loginWithPhoneOtp(full)}
+                  />
                   <button
                     type="button"
-                    onClick={loginWithPhoneOtp}
+                    onClick={() => void loginWithPhoneOtp()}
                     disabled={loading || otpCode.replace(/\D/g, '').length !== 6}
-                    className="w-full rounded-2xl bg-blue-600 py-4 text-base font-bold text-white shadow-lg shadow-blue-600/25 transition-all hover:bg-blue-700 disabled:opacity-50"
+                    className="h-11 w-full rounded-xl bg-blue-600 text-[14px] font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-45"
                   >
-                    {loading ? 'İşleniyor...' : 'Giriş Yap →'}
+                    {loading ? 'Doğrulanıyor…' : 'Giriş yap'}
                   </button>
-                  {codeSent && canResend && (
-                    <button
-                      type="button"
-                      onClick={sendPhoneOtp}
-                      disabled={loading || !phoneOk}
-                      className="w-full py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-50"
-                    >
-                      Kodu tekrar gönder
-                    </button>
+                  {canResend && codeSent && (
+                    <p className="text-center text-[12px] text-slate-500">
+                      Kod gelmedi mi?{' '}
+                      <button
+                        type="button"
+                        onClick={sendPhoneOtp}
+                        disabled={loading || !phoneOk}
+                        className="font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-40"
+                      >
+                        Yeniden gönder
+                      </button>
+                    </p>
                   )}
-                </>
+                </div>
               )}
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => router.replace('/register')}
-            className="w-full py-2 text-center text-sm font-bold text-blue-900/40 transition-colors hover:text-blue-700"
-          >
-            Hesabınız yok mu? Kayıt Ol
-          </button>
+          <p className="mt-8 text-center text-[13px] text-slate-500">
+            Hesabın yok mu?{' '}
+            <button
+              type="button"
+              onClick={() => router.replace('/register')}
+              className="font-semibold text-blue-600 hover:text-blue-700"
+            >
+              Kayıt ol
+            </button>
+          </p>
         </div>
       </div>
     </div>
