@@ -5,32 +5,16 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useCustomerAuth } from './CustomerLayoutClient'
-import {
-  Sparkles,
-  MessageCircle,
-  Search,
-  ArrowRight,
-  Droplet,
-  Paintbrush,
-  Wrench,
-  Car,
-  Zap,
-  Scissors,
-  Star,
-  BadgeCheck,
-} from 'lucide-react'
+import { Sparkles, MessageCircle, Search, ArrowRight, Droplet, Paintbrush, Wrench, Car, Zap, Scissors } from 'lucide-react'
 
 const POPULAR_SERVICES = [
-  { name: 'Temizlik', cat: 'ev_yasam', Icon: Droplet, circle: 'bg-amber-50', iconClass: 'text-amber-600' },
-  { name: 'Boya & Badana', cat: 'ev_yasam', Icon: Paintbrush, circle: 'bg-violet-50', iconClass: 'text-violet-600' },
-  { name: 'Tesisat', cat: 'ev_yasam', Icon: Wrench, circle: 'bg-sky-50', iconClass: 'text-sky-600' },
-  { name: 'Araç Yardım', cat: 'arac_yol', Icon: Car, circle: 'bg-orange-50', iconClass: 'text-orange-600' },
-  { name: 'Elektrik', cat: 'ev_yasam', Icon: Zap, circle: 'bg-yellow-50', iconClass: 'text-yellow-600' },
-  { name: 'Güzellik', cat: 'guzellik', Icon: Scissors, circle: 'bg-pink-50', iconClass: 'text-pink-600' },
+  { name: 'Temizlik', cat: 'ev_yasam', Icon: Droplet },
+  { name: 'Boya & Badana', cat: 'ev_yasam', Icon: Paintbrush },
+  { name: 'Tesisat', cat: 'ev_yasam', Icon: Wrench },
+  { name: 'Araç Yardım', cat: 'arac_yol', Icon: Car },
+  { name: 'Elektrik', cat: 'ev_yasam', Icon: Zap },
+  { name: 'Güzellik', cat: 'guzellik', Icon: Scissors },
 ]
-
-const actionCardShell =
-  'group flex min-h-[188px] flex-col justify-between rounded-lg border border-slate-200/80 bg-white p-5 shadow-sm transition-shadow hover:shadow-sm sm:min-h-[200px] sm:p-6'
 
 type VitrinService = {
   id: string
@@ -141,61 +125,55 @@ export default function CustomerHome() {
 
   return (
     <>
-    <div className="w-full bg-white">
-    <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 sm:pb-20">
-      <div className="flex flex-col gap-12 md:gap-14">
+    <div className="max-w-7xl mx-auto px-6 pb-12">
+      <div className="flex flex-col gap-10">
         {/* Header – hero + arama */}
-        <header className="flex flex-col justify-between gap-8 pt-2 md:flex-row md:items-end md:gap-10">
-          <div className="min-w-0 max-w-xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">
               Bugün neyi <span className="text-blue-600">çözüyoruz</span>
               {displayName ? <> {displayName}</> : null}?
             </h2>
-            <p className="mt-3 text-sm text-slate-500 sm:text-base">
-              Onaylı uzmanlardan teklif al.
+            <p className="text-slate-500 mt-3 text-lg">
+              Binlerce onaylı uzman, teklif vermek için seni bekliyor.
             </p>
           </div>
-          <div className="relative w-full shrink-0 md:max-w-md md:ml-auto">
-            <div className="relative flex items-center rounded-lg border border-slate-200 bg-white py-1 pl-3 pr-1 shadow-sm focus-within:border-blue-300 focus-within:ring-1 focus-within:ring-blue-100">
-              <Search className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={2} aria-hidden />
-              <input
-                type="text"
-                className="min-w-0 flex-1 border-0 bg-transparent py-2 pl-2 pr-2 text-sm text-slate-900 outline-none placeholder:text-slate-400"
-                placeholder="Hizmet veya usta ara"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                aria-label="Hizmet veya usta ara"
-              />
-              <button
-                type="button"
-                onClick={handleSearch}
-                className="shrink-0 rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-              >
-                Bul
-              </button>
-            </div>
+          <div className="relative w-full md:w-[450px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              className="w-full bg-white border border-slate-200 shadow-sm text-slate-900 text-lg rounded-2xl pl-12 pr-32 py-4 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              placeholder="Hizmet veya usta ara..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <button
+              type="button"
+              onClick={handleSearch}
+              className="absolute inset-y-2 right-2 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl px-6 transition-colors shadow-md"
+            >
+              Bul
+            </button>
           </div>
         </header>
 
-        {/* Aksiyon kartları — beyaz, shadow-sm; sadece talep kartı koyu */}
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+        {/* 3 kart: Özel İş Talebi, Aktif Süreç, Yeni Teklif */}
+        <section className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
           <Link
             href="/customer/new-job"
-            className={`${actionCardShell} border-slate-800 bg-slate-950 text-white md:col-span-2 lg:col-span-2`}
+            className="md:col-span-2 lg:col-span-2 bg-slate-900 rounded-[2rem] p-8 flex flex-col justify-between relative overflow-hidden group cursor-pointer shadow-xl hover:-translate-y-1 transition-transform min-h-[220px]"
           >
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-white/10">
-              <Sparkles className="h-5 w-5 text-white" strokeWidth={2} />
+            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white mb-8">
+              <Sparkles className="w-8 h-8" />
             </div>
-            <div className="flex flex-1 flex-col">
-              <h3 className="text-lg font-semibold tracking-tight text-white sm:text-xl">
-                Hizmet talebi oluştur
-              </h3>
-              <p className="mt-2 max-w-md text-sm leading-relaxed text-white/75">
-                İhtiyacını yaz, uzmanlardan teklif al.
+            <div className="relative z-10">
+              <h3 className="text-3xl font-bold text-white mb-2">Hizmet Talebi Oluştur</h3>
+              <p className="text-slate-300 text-lg max-w-sm">
+                İhtiyacını detaylıca yaz, uzmanlardan anında fiyat teklifi al.
               </p>
-              <div className="mt-4 flex items-center gap-1 text-sm font-medium text-white">
-                Başla <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              <div className="mt-6 flex items-center gap-2 text-sm font-bold text-white/80 group-hover:text-white transition-colors">
+                Hemen Başla <ArrowRight className="w-4 h-4" />
               </div>
             </div>
           </Link>
@@ -203,78 +181,86 @@ export default function CustomerHome() {
           <button
             type="button"
             onClick={() => router.push('/customer/live-support')}
-            className={`group text-left ${actionCardShell} border-orange-100/60 bg-orange-50/40 md:col-span-1 lg:col-span-1`}
+            className="group md:col-span-1 lg:col-span-1 rounded-[2rem] p-7 flex flex-col justify-between relative overflow-hidden cursor-pointer shadow-xl hover:-translate-y-1 transition-transform min-h-[220px] text-left bg-gradient-to-br from-[#F97316] to-[#EF4444]"
           >
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-slate-500">Video görüşme</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-slate-200">
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
-                Canlı
+            <div className="absolute top-6 right-6">
+              <span className="inline-flex items-center gap-2 rounded-full bg-green-500/20 px-3 py-1 text-xs font-bold text-green-50 ring-1 ring-green-400/40 backdrop-blur">
+                <span className="text-green-300">●</span> Canlı
               </span>
             </div>
-            <div className="flex flex-1 flex-col">
-              <h3 className="text-lg font-semibold text-slate-900">Canlı uzman desteği</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                Uzman bağlantısı, 150₺ danışmanlık.
+
+            <div className="relative z-10">
+              <h3 className="text-2xl font-extrabold text-white mb-2">Canlı Uzman Desteği</h3>
+              <p className="text-white/90 text-sm leading-relaxed max-w-sm">
+                Anında video bağlantısı. Uzman teşhis koyar, 150₺ danışmanlık ücreti.
               </p>
             </div>
-            <span className="mt-4 inline-flex w-fit items-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors group-hover:bg-orange-600">
-              Bağlan
-            </span>
+
+            <div className="relative z-10 mt-6">
+              <span className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-slate-900 shadow-sm group-hover:bg-white/95 transition-colors">
+                Hemen Bağlan →
+              </span>
+            </div>
           </button>
 
-          <Link href="/customer/jobs" className={`group ${actionCardShell} md:col-span-1 lg:col-span-1`}>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <span className="text-xs font-medium text-slate-500">Aktif</span>
+          <Link
+            href="/customer/jobs"
+            className="group md:col-span-1 lg:col-span-1 bg-white rounded-[2rem] p-7 border border-slate-100 shadow-sm flex flex-col justify-between cursor-pointer hover:shadow-md transition-shadow min-h-[220px]"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-xs font-bold text-green-500 uppercase">Aktif Süreç</span>
+              </div>
             </div>
-            <h4 className="text-lg font-semibold text-slate-900">
-              {activeJob?.title || 'İşlerim'}
-            </h4>
-            <p className="mt-2 text-sm text-slate-500">
-              {activeJob?.provider ? `${activeJob.provider} yolda.` : 'Devam eden işler.'}
-            </p>
-            <div className="mt-4 flex items-center gap-1 text-sm font-medium text-blue-600">
-              Aç <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            <div>
+              <h4 className="font-bold text-slate-900 text-xl">
+                {activeJob?.title || 'Aktif işlerim'}
+              </h4>
+              <p className="text-sm text-slate-500 mt-1">
+                {activeJob?.provider ? `${activeJob.provider} yolda.` : 'Devam eden işlerini görüntüle.'}
+              </p>
+              <div className="mt-4 text-sm font-bold text-blue-600 flex items-center gap-1 group-hover:gap-2 transition-all">
+                İncele <ArrowRight className="w-4 h-4" />
+              </div>
             </div>
           </Link>
 
-          <Link href="/customer/jobs" className={`group ${actionCardShell} md:col-span-3 lg:col-span-1`}>
-            <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50">
-              <MessageCircle className="h-4 w-4 text-blue-600" strokeWidth={2} />
+          <Link
+            href="/customer/jobs"
+            className="group md:col-span-3 lg:col-span-1 bg-blue-50 rounded-[2rem] p-7 border border-blue-100 flex flex-col justify-between cursor-pointer hover:bg-blue-100 transition-colors min-h-[220px]"
+          >
+            <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-blue-600 mb-4">
+              <MessageCircle className="w-7 h-7" />
             </div>
-            <h4 className="text-lg font-semibold text-slate-900">
-              {offerCount > 0 ? `${offerCount} yeni teklif` : 'Teklifler'}
-            </h4>
-            <p className="mt-2 text-sm text-slate-500">
-              {offerCount > 0 ? 'Yeni fiyatları gör.' : 'Gelen teklifler.'}
-            </p>
-            <div className="mt-4 flex items-center gap-1 text-sm font-medium text-blue-600">
-              Aç <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            <div>
+              <h4 className="font-bold text-slate-900 text-xl">
+                {offerCount > 0 ? `${offerCount} Yeni Teklif` : 'Teklifler'}
+              </h4>
+              <p className="text-sm text-blue-800 mt-2">
+                {offerCount > 0 ? 'Talebin için yeni fiyatlar geldi.' : 'Gelen teklifleri incele.'}
+              </p>
+              <div className="mt-4 text-sm font-bold text-blue-600 flex items-center gap-1 group-hover:gap-2 transition-all">
+                İncele <ArrowRight className="w-4 h-4" />
+              </div>
             </div>
           </Link>
         </section>
 
         {/* Popüler Hizmetler */}
         <section>
-          <h3 className="mb-6 text-lg font-semibold text-slate-900">Popüler hizmetler</h3>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6 sm:gap-3">
+          <h3 className="text-2xl font-bold text-slate-900 tracking-tight mb-6">Popüler Hizmetler</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {POPULAR_SERVICES.map((item) => {
               const Icon = item.Icon
               return (
                 <Link
                   key={item.name}
                   href={`/customer/new-job?cat=${item.cat}`}
-                  className="flex flex-col items-center gap-2 rounded-lg border border-slate-100 bg-white py-3 shadow-sm transition-colors hover:border-slate-200"
+                  className="bg-white p-6 rounded-2xl border border-slate-100 flex flex-col items-center justify-center gap-3 hover:border-blue-300 hover:shadow-md cursor-pointer transition-all group"
                 >
-                  <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-full ${item.circle}`}
-                  >
-                    <Icon className={`h-4 w-4 ${item.iconClass}`} strokeWidth={2.25} />
-                  </div>
-                  <span className="px-1 text-center text-[11px] font-medium leading-tight text-slate-700 sm:text-xs">
-                    {item.name}
-                  </span>
+                  <Icon className="w-8 h-8 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                  <span className="font-semibold text-slate-700 text-sm">{item.name}</span>
                 </Link>
               )
             })}
@@ -284,46 +270,47 @@ export default function CustomerHome() {
         {/* Uzman İlanları */}
         <section>
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900">Uzman ilanları</h3>
-            <p className="mt-1 text-sm text-slate-500">Fiyatı net, hemen talep edebileceğin hizmetler.</p>
+            <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">Uzman İlanları</h3>
+            <p className="text-slate-500 mt-2 text-lg">Hemen çağırabileceğin, fiyatı belli hazır hizmetler.</p>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {vitrinList.map((s) => (
               <Link
                 key={s.id}
                 href={`/customer/services/${s.id}`}
-                className="group flex flex-col rounded-lg border border-slate-200/80 bg-white p-5 shadow-sm transition-shadow hover:shadow-sm"
+                className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col gap-4"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <span className="text-xs font-medium text-slate-400">Hizmet</span>
-                  <p className="text-right text-lg font-semibold tabular-nums text-slate-900">
-                    ₺{Number(s.price).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
-                  </p>
-                </div>
-                <h4 className="mt-3 text-base font-semibold leading-snug text-slate-900">{s.title}</h4>
-                <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-                  <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" aria-hidden />
-                  <span className="tabular-nums font-medium">
-                    {s.provider_rating != null ? s.provider_rating.toFixed(1) : '—'}
+                <div className="flex justify-between items-start">
+                  <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wide">
+                    Hizmet
                   </span>
                 </div>
-                <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-4">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-base">
+                <div>
+                  <h4 className="font-bold text-2xl text-slate-900 leading-tight mb-2">{s.title}</h4>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-bold text-slate-700">
+                      {s.provider_rating != null ? s.provider_rating.toFixed(1) : '—'}
+                    </span>
+                    <span className="text-slate-400">(Yorum)</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 mt-2 bg-slate-50 p-3 rounded-2xl">
+                  <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center text-xl">
                     👨‍🔧
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-800">{s.provider_name}</p>
-                    {s.provider_face_verified && (
-                      <p className="mt-0.5 flex items-center gap-1 text-xs text-blue-600">
-                        <BadgeCheck className="h-3 w-3 shrink-0" strokeWidth={2.5} aria-hidden />
-                        Onaylı uzman
-                      </p>
-                    )}
+                    <p className="font-semibold text-slate-800 text-sm flex items-center gap-1.5">
+                      {s.provider_name}
+                      {s.provider_face_verified && (
+                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-600 text-white text-[10px]" title="Onaylı Uzman">✓</span>
+                      )}
+                    </p>
                   </div>
                 </div>
-                <div className="mt-4 flex justify-end">
-                  <span className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white group-hover:bg-blue-700">
-                    Hemen çağır
+                <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
+                  <span className="font-black text-3xl text-slate-900">₺{Number(s.price).toFixed(0)}</span>
+                  <span className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors">
+                    Hemen Çağır
                   </span>
                 </div>
               </Link>
@@ -332,64 +319,28 @@ export default function CustomerHome() {
         </section>
       </div>
     </div>
-    </div>
 
-    <footer className="mt-0 w-full border-t border-slate-200 bg-white py-10 sm:py-12">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-x-8 gap-y-8 px-4 sm:px-6 md:grid-cols-4">
-        <div className="col-span-2 md:col-span-1">
-          <p className="text-base font-semibold text-slate-900">
-            GELSİN<span className="text-blue-600">.</span>
-          </p>
-          <p className="mt-2 max-w-xs text-sm text-slate-500">Güvenilir hizmet platformu.</p>
+    {/* Footer – tam genişlik koyu */}
+    <footer className="w-full bg-[#0F172A] text-slate-300 py-12 mt-16 border-t border-slate-800">
+      <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div>
+          <h2 className="text-2xl font-black text-white mb-4">
+            GELSİN<span className="text-blue-500">.</span>
+          </h2>
+          <p className="text-sm text-slate-400">Türkiye&apos;nin en güvenilir hizmet platformu.</p>
         </div>
         <div>
-          <p className="text-xs font-medium text-slate-400">Keşfet</p>
-          <ul className="mt-3 space-y-2 text-sm text-slate-600">
-            <li>
-              <Link href="/customer" className="hover:text-slate-900">
-                Ana sayfa
-              </Link>
-            </li>
-            <li>
-              <Link href="/customer/providers" className="hover:text-slate-900">
-                Uzmanlar
-              </Link>
-            </li>
-            <li>
-              <Link href="/customer/new-job" className="hover:text-slate-900">
-                İş talebi
-              </Link>
-            </li>
+          <h4 className="text-white font-bold mb-4">Gelsin</h4>
+          <ul className="space-y-2 text-sm text-slate-400">
+            <li><Link href="/customer" className="hover:text-white transition-colors">Hakkımızda</Link></li>
+            <li><Link href="/customer" className="hover:text-white transition-colors">Nasıl Çalışır?</Link></li>
           </ul>
         </div>
         <div>
-          <p className="text-xs font-medium text-slate-400">Gelsin</p>
-          <ul className="mt-3 space-y-2 text-sm text-slate-600">
-            <li>
-              <Link href="/customer" className="hover:text-slate-900">
-                Hakkımızda
-              </Link>
-            </li>
-            <li>
-              <Link href="/customer" className="hover:text-slate-900">
-                Nasıl çalışır?
-              </Link>
-            </li>
-          </ul>
-        </div>
-        <div>
-          <p className="text-xs font-medium text-slate-400">Destek</p>
-          <ul className="mt-3 space-y-2 text-sm text-slate-600">
-            <li>
-              <Link href="/customer/support" className="hover:text-slate-900">
-                Yardım
-              </Link>
-            </li>
-            <li>
-              <Link href="/customer/support" className="hover:text-slate-900">
-                İletişim
-              </Link>
-            </li>
+          <h4 className="text-white font-bold mb-4">Destek</h4>
+          <ul className="space-y-2 text-sm text-slate-400">
+            <li><Link href="/customer/support" className="hover:text-white transition-colors">Yardım Merkezi</Link></li>
+            <li><Link href="/customer/support" className="hover:text-white transition-colors">İletişim</Link></li>
           </ul>
         </div>
       </div>
