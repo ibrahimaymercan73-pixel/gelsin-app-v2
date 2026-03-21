@@ -1,8 +1,8 @@
 'use client'
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Plus, MapPin, Calendar, MessageCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
-import Link from 'next/link'
 
 type TabKey = 'open' | 'offers' | 'progress' | 'done'
 
@@ -40,43 +40,62 @@ const tabConfig: Record<TabKey, { label: string; description: string }> = {
 
 const statusBadge: Record<
   string,
-  { label: string; bg: string; color: string }
+  { label: string; bg: string; color: string; ring: string }
 > = {
   open: {
     label: 'Teklif Bekleniyor',
-    bg: 'bg-blue-50',
-    color: 'text-blue-700',
+    bg: 'bg-blue-50/95',
+    color: 'text-blue-800',
+    ring: 'ring-blue-100/80',
   },
   offered: {
     label: 'Teklif Geldi',
-    bg: 'bg-orange-50',
-    color: 'text-orange-700',
+    bg: 'bg-amber-50/95',
+    color: 'text-amber-900',
+    ring: 'ring-amber-100/80',
   },
   accepted: {
     label: 'Uzman Yolda',
-    bg: 'bg-emerald-50',
-    color: 'text-emerald-700',
+    bg: 'bg-emerald-50/95',
+    color: 'text-emerald-900',
+    ring: 'ring-emerald-100/80',
   },
   started: {
     label: 'İş Devam Ediyor',
-    bg: 'bg-orange-50',
-    color: 'text-orange-700',
+    bg: 'bg-orange-50/95',
+    color: 'text-orange-900',
+    ring: 'ring-orange-100/80',
   },
   completed: {
     label: 'Tamamlandı',
-    bg: 'bg-gray-50',
-    color: 'text-gray-600',
+    bg: 'bg-slate-100/95',
+    color: 'text-slate-700',
+    ring: 'ring-slate-200/80',
   },
   cancelled: {
     label: 'İptal Edildi',
-    bg: 'bg-red-50',
-    color: 'text-red-700',
+    bg: 'bg-red-50/95',
+    color: 'text-red-800',
+    ring: 'ring-red-100/80',
   },
   disputed: {
-    label: 'Uyuşmazlık Açıldı',
-    bg: 'bg-amber-50',
-    color: 'text-amber-700',
+    label: 'Uyuşmazlık',
+    bg: 'bg-amber-50/95',
+    color: 'text-amber-900',
+    ring: 'ring-amber-100/80',
   },
+}
+
+function categoryIconBox(slug?: string | null) {
+  const s = String(slug || '').toLowerCase()
+  let grad = 'from-indigo-500 via-violet-500 to-purple-600'
+  if (/plumb|tesisat|su|sıhhi/.test(s)) grad = 'from-sky-500 to-blue-600'
+  else if (/clean|temiz/.test(s)) grad = 'from-violet-500 to-fuchsia-600'
+  else if (/paint|boya|badana/.test(s)) grad = 'from-rose-500 to-pink-600'
+  else if (/electric|elektrik/.test(s)) grad = 'from-amber-500 to-orange-600'
+  else if (/carpent|marangoz|ahşap|ahsap/.test(s)) grad = 'from-amber-700 to-yellow-700'
+  else if (/repair|tamir|montaj|assembl/.test(s)) grad = 'from-slate-600 to-slate-800'
+  return `bg-gradient-to-br ${grad}`
 }
 
 function deriveBucket(job: JobWithMeta): TabKey {
@@ -144,8 +163,7 @@ function CustomerJobsPageContent() {
     const rows = (jobRows || []) as any[]
     const jobIds = rows.map((j) => j.id as string)
 
-    let offersByJob: Record<string, { total: number; hasAccepted: boolean }> =
-      {}
+    let offersByJob: Record<string, { total: number; hasAccepted: boolean }> = {}
 
     if (jobIds.length > 0) {
       const { data: offers } = await supabase
@@ -223,139 +241,191 @@ function CustomerJobsPageContent() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-dvh bg-[#F4F7FA]">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-slate-100 to-slate-50 font-sans">
+        <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F7FA] w-full max-w-[100vw] overflow-x-hidden">
-      <header className="w-full max-w-[100vw] px-4 sm:px-6 lg:px-10 py-6 flex items-center justify-between sticky top-0 bg-[#F4F7FA]/80 backdrop-blur-md z-40 border-b border-slate-200/50 box-border">
-        <div>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
-            Müşteri Paneli
-          </p>
-          <h1 className="text-xl lg:text-2xl font-black text-slate-800 mt-0.5">
-            İşlerim
-          </h1>
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-gradient-to-b from-slate-100/90 via-slate-50 to-slate-100/70 font-sans antialiased">
+      <header className="sticky top-0 z-40 w-full border-b border-slate-200/60 bg-slate-50/85 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[1000px] items-center justify-between px-4 py-5 sm:px-6">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+              Müşteri paneli
+            </p>
+            <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900">İşlerim</h1>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push('/customer/new-job')}
+            className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-transform hover:scale-[1.03] hover:shadow-xl hover:shadow-blue-600/30 active:scale-[0.98] md:px-5"
+          >
+            <Plus className="h-4 w-4 stroke-[2.5]" aria-hidden />
+            <span className="hidden sm:inline">Yeni iş talebi</span>
+            <span className="sm:hidden">Yeni</span>
+          </button>
         </div>
-        <button
-          onClick={() => router.push('/customer/new-job')}
-          className="hidden md:inline-flex bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-2xl text-sm font-bold shadow-sm shadow-blue-600/30"
-        >
-          + Yeni İş Talebi
-        </button>
       </header>
 
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-6 min-w-0 box-border">
-        <div className="w-full min-w-0 max-w-full flex overflow-x-auto hide-scrollbar gap-2 pb-2 mb-6 bg-white rounded-3xl p-2 border border-slate-200 shadow-sm">
-          {(Object.keys(tabConfig) as TabKey[]).map((key) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`flex-shrink-0 whitespace-nowrap px-3 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all ${
-                activeTab === key
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'text-slate-500 hover:bg-slate-50'
-              }`}
-            >
-              <span>{tabConfig[key].label}</span>
-              {counts[key] > 0 && (
+      <div className="mx-auto w-full max-w-[1000px] px-4 py-6 sm:px-6">
+        {/* Pills tabs */}
+        <div className="mb-8 flex flex-wrap gap-2">
+          {(Object.keys(tabConfig) as TabKey[]).map((key) => {
+            const selected = activeTab === key
+            const n = counts[key]
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setActiveTab(key)}
+                className={`inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-semibold transition-all sm:px-4 sm:py-2.5 sm:text-[13px] ${
+                  selected
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25 ring-2 ring-blue-500/20'
+                    : 'bg-white/90 text-slate-600 shadow-sm shadow-slate-900/[0.04] ring-1 ring-slate-200/80 hover:bg-white hover:ring-slate-300/90'
+                }`}
+              >
+                <span>{tabConfig[key].label}</span>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-black flex-shrink-0 ${
-                    activeTab === key
-                      ? 'bg-white/15 text-white'
-                      : 'bg-slate-100 text-slate-700'
+                  className={`flex min-h-[1.375rem] min-w-[1.375rem] items-center justify-center rounded-full px-1.5 text-[11px] font-bold tabular-nums ${
+                    selected
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-200/90 text-slate-800 ring-1 ring-slate-300/50'
                   }`}
                 >
-                  {counts[key]}
+                  {n}
                 </span>
-              )}
-            </button>
-          ))}
+              </button>
+            )
+          })}
         </div>
 
         {activeJobs.length === 0 ? (
-          <div className="w-full min-w-0 max-w-full bg-white rounded-3xl p-10 px-4 text-center border border-dashed border-slate-200 whitespace-normal box-border">
-            <div className="text-5xl mb-3">
+          <div className="rounded-2xl border border-dashed border-slate-200/90 bg-white/80 p-10 text-center shadow-[0_2px_20px_-8px_rgba(15,23,42,0.08)]">
+            <div className="text-4xl mb-3 opacity-90">
               {activeTab === 'open'
                 ? '📭'
                 : activeTab === 'offers'
-                ? '⏳'
-                : activeTab === 'progress'
-                ? '🚗'
-                : '📁'}
+                  ? '⏳'
+                  : activeTab === 'progress'
+                    ? '🚗'
+                    : '📁'}
             </div>
-            <p className="font-bold text-slate-700 mb-1 break-words">
-              Bu kategoride iş bulunmuyor
-            </p>
-            <p className="text-xs text-slate-400 mb-4 break-words">
-              {tabConfig[activeTab].description}
-            </p>
+            <p className="font-semibold text-slate-800">Bu sekmede iş yok</p>
+            <p className="mt-1 text-sm text-slate-500">{tabConfig[activeTab].description}</p>
             <button
+              type="button"
               onClick={() => router.push('/customer/new-job')}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-2xl text-xs font-bold"
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-transform hover:scale-[1.02]"
             >
-              Yeni İş Talebi Oluştur
+              <Plus className="h-4 w-4" strokeWidth={2.5} />
+              Yeni iş talebi
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <ul className="flex flex-col gap-4">
             {activeJobs.map((job) => {
               const statusKey = deriveStatusKey(job)
               const badge = statusBadge[statusKey] || statusBadge.open
+              const slug = job.service_categories?.slug
+              const iconGrad = categoryIconBox(slug)
+              const dateStr = new Date(job.created_at).toLocaleDateString('tr-TR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })
 
               return (
-                <button
-                  key={job.id}
-                  onClick={() => router.push(`/customer/jobs/${job.id}`)}
-                  className="w-full bg-white rounded-3xl p-4 lg:p-5 border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all text-left flex items-start gap-4"
-                >
-                  <div className="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center text-xl flex-shrink-0">
-                    {job.service_categories?.icon || '🛠️'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <p className="font-bold text-slate-900 text-sm truncate">
-                        {job.title}
-                      </p>
-                      {job.agreed_price && (
-                        <p className="text-sm font-black text-blue-700 whitespace-nowrap">
-                          ₺{job.agreed_price}
+                <li key={job.id}>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/customer/jobs/${job.id}`)}
+                    className="group flex w-full gap-4 rounded-2xl border border-slate-200/70 bg-white p-4 text-left shadow-[0_2px_16px_-6px_rgba(15,23,42,0.08)] transition-all hover:border-slate-300/80 hover:shadow-[0_12px_40px_-12px_rgba(15,23,42,0.12)] sm:gap-5 sm:p-5"
+                  >
+                    <div
+                      className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl text-white shadow-md ring-2 ring-white/30 ${iconGrad}`}
+                    >
+                      <span className="drop-shadow-sm">{job.service_categories?.icon || '🛠️'}</span>
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="text-base font-bold leading-snug text-slate-900 sm:text-lg">
+                              {job.title}
+                            </h2>
+                            {job.job_type === 'urgent' && (
+                              <span className="relative inline-flex shrink-0">
+                                <span
+                                  className="absolute inset-0 rounded-full bg-red-500/35 blur-sm animate-pulse"
+                                  aria-hidden
+                                />
+                                <span className="relative rounded-full bg-gradient-to-r from-red-500 to-rose-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm ring-1 ring-red-400/40">
+                                  Acil
+                                </span>
+                              </span>
+                            )}
+                            {job.job_type === 'scheduled' && (
+                              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-800 ring-1 ring-violet-200/80">
+                                Randevulu
+                              </span>
+                            )}
+                          </div>
+                          {job.service_categories?.name && (
+                            <p className="mt-1.5 text-sm font-medium text-slate-500">
+                              {job.service_categories.name}
+                            </p>
+                          )}
+                        </div>
+
+                        <div
+                          className={`shrink-0 self-start rounded-xl px-3 py-2 text-center ring-1 sm:min-w-[8.5rem] ${badge.bg} ${badge.color} ${badge.ring}`}
+                        >
+                          <p className="text-[10px] font-semibold uppercase tracking-wide opacity-80">
+                            Durum
+                          </p>
+                          <p className="mt-0.5 text-xs font-bold leading-tight">{badge.label}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2">
+                        <span className="inline-flex items-start gap-2.5 text-sm text-slate-600">
+                          <MapPin
+                            className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
+                            strokeWidth={2}
+                            aria-hidden
+                          />
+                          <span className="line-clamp-2 leading-snug">{job.address}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-2.5 text-sm text-slate-500">
+                          <Calendar className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={2} aria-hidden />
+                          {dateStr}
+                        </span>
+                        <span className="inline-flex items-center gap-2.5 text-sm text-slate-500">
+                          <MessageCircle className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={2} aria-hidden />
+                          {job.offerCount > 0 ? (
+                            <span>
+                              <span className="font-semibold text-slate-700">{job.offerCount}</span> teklif
+                            </span>
+                          ) : (
+                            <span>Henüz teklif yok</span>
+                          )}
+                        </span>
+                      </div>
+
+                      {job.agreed_price != null && Number(job.agreed_price) > 0 && (
+                        <p className="mt-3 text-right text-lg font-bold tabular-nums text-blue-700">
+                          ₺{Number(job.agreed_price).toLocaleString('tr-TR')}
                         </p>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 mb-1">
-                      {job.service_categories?.name}{' '}
-                      {job.job_type === 'urgent'
-                        ? '• ⚡ Acil'
-                        : job.job_type === 'scheduled'
-                        ? '• 📅 Randevulu'
-                        : ''}
-                    </p>
-                    <p className="text-xs text-slate-500 line-clamp-1">
-                      📍 {job.address}
-                    </p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${badge.bg} ${badge.color}`}
-                      >
-                        {badge.label}
-                      </span>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                        <span>
-                          {job.offerCount > 0
-                            ? `💬 ${job.offerCount} teklif`
-                            : 'Henüz teklif yok'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </button>
+                  </button>
+                </li>
               )
             })}
-          </div>
+          </ul>
         )}
       </div>
     </div>
@@ -364,11 +434,13 @@ function CustomerJobsPageContent() {
 
 export default function CustomerJobsPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-dvh flex items-center justify-center bg-slate-50">
-        <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-700 rounded-full animate-spin" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-dvh items-center justify-center bg-slate-50 font-sans">
+          <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
+        </div>
+      }
+    >
       <CustomerJobsPageContent />
     </Suspense>
   )
