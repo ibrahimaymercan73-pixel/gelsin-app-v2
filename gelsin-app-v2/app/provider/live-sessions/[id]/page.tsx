@@ -22,7 +22,7 @@ function ProviderLiveSessionRoomInner() {
   const [sessionLoading, setSessionLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [providerDisplayName, setProviderDisplayName] = useState<string | null>(null)
-  const [jitsiConnecting, setJitsiConnecting] = useState(true)
+  const [jitsiOverlayPhase, setJitsiOverlayPhase] = useState<'waiting' | 'unavailable' | 'none'>('waiting')
   const [jitsiVideoVisible, setJitsiVideoVisible] = useState(false)
 
   const jitsiParentRef = useRef<HTMLDivElement>(null)
@@ -133,7 +133,7 @@ function ProviderLiveSessionRoomInner() {
 
     let cancelled = false
     let disposeJitsiListeners = () => {}
-    setJitsiConnecting(true)
+    setJitsiOverlayPhase('waiting')
     setJitsiVideoVisible(false)
 
     ;(async () => {
@@ -161,26 +161,38 @@ function ProviderLiveSessionRoomInner() {
           displayNameForCommand,
           isCancelled: () => cancelled,
           onRevealUI: () => {
-            setJitsiConnecting(false)
+            setJitsiOverlayPhase('none')
             requestAnimationFrame(() => {
               if (!cancelled) setJitsiVideoVisible(true)
             })
           },
+          onRemoteLeft: () => {
+            if (!cancelled) {
+              setJitsiVideoVisible(false)
+              setJitsiOverlayPhase('waiting')
+            }
+          },
+          onWaitTimeout: () => {
+            if (!cancelled) {
+              setJitsiVideoVisible(false)
+              setJitsiOverlayPhase('unavailable')
+            }
+          },
           onPasswordRequired: () => {
             if (!cancelled) {
-              setJitsiConnecting(true)
+              setJitsiOverlayPhase('waiting')
               setJitsiVideoVisible(false)
             }
           },
           onReadyToClose: () => navigateAfterHangup(),
           onVideoConferenceLeft: () => navigateAfterHangup(),
-          loneFallbackSeconds: 90,
+          waitForRemoteSeconds: 30,
         })
         disposeJitsiListeners = dispose
         api.addEventListeners(listeners)
       } catch (e) {
         console.error('Jitsi başlatılamadı:', e)
-        if (!cancelled) setJitsiConnecting(false)
+        if (!cancelled) setJitsiOverlayPhase('unavailable')
       }
     })()
 
@@ -225,22 +237,41 @@ function ProviderLiveSessionRoomInner() {
       <div className="relative flex h-[100dvh] w-full max-w-[1200px] flex-1 overflow-hidden bg-black shadow-xl sm:h-[min(92dvh,calc(100dvh-2rem))] sm:rounded-2xl sm:ring-1 sm:ring-white/10">
         <div
           className={`absolute inset-0 z-30 flex flex-col items-center justify-center bg-slate-950 px-6 text-center transition-opacity duration-700 ease-in-out ${
-            jitsiConnecting ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+            jitsiOverlayPhase !== 'none'
+              ? 'pointer-events-auto opacity-100'
+              : 'pointer-events-none opacity-0'
           }`}
           aria-live="polite"
-          aria-busy={jitsiConnecting}
-          aria-hidden={!jitsiConnecting}
+          aria-busy={jitsiOverlayPhase === 'waiting'}
+          aria-hidden={jitsiOverlayPhase === 'none'}
         >
           <p className="text-2xl font-bold tracking-tight text-white">
             GELSİN<span className="text-blue-400">.</span>
           </p>
-          <p className="mt-5 max-w-xs text-base font-medium text-slate-300">
-            Müşteriye bağlanıyorsunuz...
-          </p>
-          <div
-            className="mt-10 h-9 w-9 animate-spin rounded-full border-2 border-slate-600 border-t-blue-500"
-            aria-hidden
-          />
+          {jitsiOverlayPhase === 'unavailable' ? (
+            <>
+              <p className="mt-5 max-w-sm text-base font-medium text-slate-300">
+                Müşteri şu an görüşmeye bağlanamadı. Lütfen daha sonra tekrar deneyin.
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push(AFTER_PROVIDER_HANGUP)}
+                className="mt-8 rounded-xl bg-blue-500 px-6 py-3 text-sm font-bold text-white hover:bg-blue-600"
+              >
+                Geri Dön
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="mt-5 max-w-xs text-base font-medium text-slate-300">
+                Müşteriye bağlanıyorsunuz...
+              </p>
+              <div
+                className="mt-10 h-9 w-9 animate-spin rounded-full border-2 border-slate-600 border-t-blue-500"
+                aria-hidden
+              />
+            </>
+          )}
         </div>
         <div
           ref={jitsiParentRef}

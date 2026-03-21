@@ -14,6 +14,9 @@ export type JitsiApi = {
   addEventListeners: (listeners: Record<string, (...args: unknown[]) => void>) => void
   executeCommand?: (command: string, ...args: unknown[]) => void
   getNumberOfParticipants?: () => number
+  /** Bazı sürümlerde dizi veya Promise döner; dokümanda event ile de kullanılmış */
+  getParticipantsInfo?: () => void | unknown[] | Promise<unknown[]>
+  getRoomsInfo?: () => Promise<unknown>
 }
 
 declare global {
@@ -151,9 +154,7 @@ export function getJitsiMeetEmbedOptions(displayName: string) {
 }
 
 const DISPLAY_NAME_REAPPLY_MS = [0, 50, 200, 800, 2000] as const
-/** Karşıdaki katılımcının videosu için bekleme (ms) */
-const REVEAL_AFTER_REMOTE_MS = 750
-const PARTICIPANT_POLL_MS = 350
+const REVEAL_UI_DELAY_MS = 280
 
 function safeParticipantCount(api: JitsiApi): number {
   try {
@@ -164,22 +165,42 @@ function safeParticipantCount(api: JitsiApi): number {
   }
 }
 
+function countParticipantsFromRoomsInfo(data: unknown): number {
+  const d = data as {
+    rooms?: Array<{ participants?: unknown[]; isMainRoom?: boolean }>
+  }
+  if (!d?.rooms?.length) return 0
+  const main = d.rooms.find((r) => r.isMainRoom) || d.rooms[0]
+  return main?.participants?.length ?? 0
+}
+
+function tryConsumeParticipantsInfoResult(raw: unknown, tryReveal: () => void) {
+  if (Array.isArray(raw) && raw.length >= 2) tryReveal()
+  else if (raw && typeof (raw as Promise<unknown[]>).then === 'function') {
+    ;(raw as Promise<unknown[]>)
+      .then((list) => {
+        if (Array.isArray(list) && list.length >= 2) tryReveal()
+      })
+      .catch(() => {})
+  }
+}
+
 export type JitsiMeetingListenerOptions = {
   displayNameForCommand: string
   isCancelled: () => boolean
-  /** En az 2 kişi (veya force) + gecikme sonrası — overlay kapanır, iframe görünür */
   onRevealUI: () => void
+  onRemoteLeft?: () => void
   onPasswordRequired?: () => void
   onReadyToClose: () => void
   onVideoConferenceLeft: () => void
-  /** Karşı taraf hiç gelmezse kaç sn sonra yine de UI açılsın (takılı kalmayı önler) */
-  loneFallbackSeconds?: number
+  onWaitTimeout?: () => void
+  waitForRemoteSeconds?: number
 }
 
 /**
- * - videoConferenceJoined: isim komutları; iframe görünmez kalır
- * - Karşı taraf: participantJoined (id ≠ yerel) veya getNumberOfParticipants() ≥ 2
- * - O zaman onRevealUI (fade + iframe göster)
+ * Overlay videoConferenceJoined ile kapanmaz.
+ * Karşı taraf: participantJoined veya odaya girişte zaten ≥2 kişi (getNumberOfParticipants / getParticipantsInfo / getRoomsInfo).
+ * participantLeft (uzak): tekrar bekleme + zamanlayıcı yenilenir.
  */
 export function createJitsiMeetingListeners(
   api: JitsiApi,
@@ -190,15 +211,24 @@ export function createJitsiMeetingListeners(
 } {
   let localId: string | null = null
   let revealed = false
-  /** DOM timer id (Node @types ile ReturnType<typeof setInterval> çakışmasın diye number) */
-  let pollId: number | null = null
+  let waitTimerId: number | null = null
   const timeoutIds: number[] = []
 
-  const clearPoll = () => {
-    if (pollId != null) {
-      clearInterval(pollId)
-      pollId = null
+  const clearRemoteWaitTimer = () => {
+    if (waitTimerId != null) {
+      clearTimeout(waitTimerId)
+      waitTimerId = null
     }
+  }
+
+  const startRemoteWaitTimer = () => {
+    clearRemoteWaitTimer()
+    const sec = options.waitForRemoteSeconds ?? 30
+    waitTimerId = window.setTimeout(() => {
+      waitTimerId = null
+      if (revealed || options.isCancelled()) return
+      options.onWaitTimeout?.()
+    }, sec * 1000)
   }
 
   const applyDisplayName = () => {
@@ -210,18 +240,49 @@ export function createJitsiMeetingListeners(
     }
   }
 
-  const doReveal = (force: boolean) => {
+  const reveal = () => {
     if (revealed || options.isCancelled()) return
-    if (!force && safeParticipantCount(api) < 2) return
     revealed = true
-    clearPoll()
+    clearRemoteWaitTimer()
     const t = window.setTimeout(() => {
       if (!options.isCancelled()) options.onRevealUI()
-    }, REVEAL_AFTER_REMOTE_MS)
+    }, REVEAL_UI_DELAY_MS)
     timeoutIds.push(t)
   }
 
-  const loneSec = options.loneFallbackSeconds ?? 90
+  const hideForRemoteLeft = () => {
+    if (!revealed || options.isCancelled()) return
+    revealed = false
+    options.onRemoteLeft?.()
+    startRemoteWaitTimer()
+  }
+
+  const tryRevealIfOthersAlreadyInRoom = () => {
+    if (revealed || options.isCancelled()) return
+    try {
+      if (safeParticipantCount(api) >= 2) {
+        reveal()
+        return
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
+      const raw = api.getParticipantsInfo?.()
+      tryConsumeParticipantsInfoResult(raw, reveal)
+    } catch {
+      /* ignore */
+    }
+    const gr = api.getRoomsInfo
+    if (typeof gr === 'function') {
+      Promise.resolve(gr.call(api))
+        .then((data: unknown) => {
+          if (revealed || options.isCancelled()) return
+          if (countParticipantsFromRoomsInfo(data) >= 2) reveal()
+        })
+        .catch(() => {})
+    }
+  }
 
   const listeners: Record<string, (...args: unknown[]) => void> = {
     videoConferenceJoined: (payload: unknown) => {
@@ -233,27 +294,34 @@ export function createJitsiMeetingListeners(
         timeoutIds.push(tid)
       })
 
-      if (safeParticipantCount(api) >= 2) {
-        doReveal(false)
-      } else {
-        pollId = window.setInterval(() => {
-          if (options.isCancelled()) return
-          if (safeParticipantCount(api) >= 2) doReveal(false)
-        }, PARTICIPANT_POLL_MS)
-      }
+      startRemoteWaitTimer()
+      tryRevealIfOthersAlreadyInRoom()
+      ;[120, 400, 900, 1600].forEach((ms) => {
+        timeoutIds.push(window.setTimeout(() => tryRevealIfOthersAlreadyInRoom(), ms))
+      })
+    },
 
-      const lone = window.setTimeout(() => {
-        if (options.isCancelled() || revealed) return
-        doReveal(true)
-      }, loneSec * 1000)
-      timeoutIds.push(lone)
+    participantsInfo: (info: unknown) => {
+      if (revealed || options.isCancelled()) return
+      const list = info as unknown[]
+      if (Array.isArray(list) && list.length >= 2) reveal()
     },
 
     participantJoined: (participant: unknown) => {
       const p = participant as { id?: string }
-      if (localId && p?.id && p.id !== localId) {
-        doReveal(true)
+      if (!p?.id) return
+      if (localId && p.id === localId) return
+      if (!localId) {
+        tryRevealIfOthersAlreadyInRoom()
+        return
       }
+      reveal()
+    },
+
+    participantLeft: (payload: unknown) => {
+      const p = payload as { id?: string }
+      if (!p?.id || !localId || p.id === localId) return
+      hideForRemoteLeft()
     },
 
     passwordRequired: () => {
@@ -265,7 +333,7 @@ export function createJitsiMeetingListeners(
   }
 
   const dispose = () => {
-    clearPoll()
+    clearRemoteWaitTimer()
     timeoutIds.forEach((id) => clearTimeout(id))
     timeoutIds.length = 0
   }
