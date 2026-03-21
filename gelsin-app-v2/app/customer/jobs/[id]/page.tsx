@@ -51,6 +51,8 @@ export default function JobDetailPage() {
   const [mounted, setMounted] = useState(false)
   const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
   const [paymentModal, setPaymentModal] = useState<{ token: string; merchantOid: string } | null>(null)
+  const [milestones, setMilestones] = useState<any[]>([])
+  const [milestonePaying, setMilestonePaying] = useState<string | null>(null)
 
   const load = async () => {
     const supabase = createClient()
@@ -61,11 +63,11 @@ export default function JobDetailPage() {
       .eq('id', id)
       .single()
 
-    setJob(j)
+    let jobRow = j
 
     const { data: offerRows } = await supabase
       .from('offers')
-      .select('id, job_id, provider_id, price, estimated_duration, message, status')
+      .select('id, job_id, provider_id, price, estimated_duration, message, status, is_milestone, milestone_data')
       .eq('job_id', id)
       .order('price', { ascending: true })
 
@@ -112,11 +114,28 @@ export default function JobDetailPage() {
       ? (counterpartRow[0] as { phone: string | null; full_name: string | null })
       : null
 
+    if (jobRow && !(jobRow as { is_pro?: boolean }).is_pro) {
+      const acc = offersList.find((o: any) => o.status === 'accepted' && o.is_milestone === true)
+      if (acc) {
+        await supabase.from('jobs').update({ is_pro: true }).eq('id', id)
+        jobRow = { ...jobRow, is_pro: true }
+      }
+    }
+
+    const { data: msRows } = await supabase
+      .from('milestones')
+      .select(
+        'id, title, description, amount, percentage, status, ai_approved, sort_order, job_id'
+      )
+      .eq('job_id', id)
+      .order('sort_order', { ascending: true })
+    setMilestones(msRows || [])
+
     const enrichedOffers = offersList.map((o) => {
       const providerId = o.provider_id ? String(o.provider_id) : ''
       const nid = normId(providerId)
       const baseProfiles = nid ? (profilesById[nid] ?? null) : null
-      const isAccepted = j && o.provider_id === j.provider_id
+      const isAccepted = jobRow && o.provider_id === jobRow.provider_id
       const profiles = isAccepted && counterpart
         ? { full_name: counterpart.full_name, phone: counterpart.phone, hide_phone: !counterpart.phone }
         : baseProfiles
@@ -128,6 +147,7 @@ export default function JobDetailPage() {
     })
 
     setOffers(enrichedOffers)
+    setJob(jobRow)
 
     // Varsa mevcut değerlendirmeyi çek
     const { data: reviewRows } = await supabase
@@ -172,6 +192,29 @@ export default function JobDetailPage() {
   }, [id])
 
   const { openChat } = useChatOverlay()
+
+  const approveMilestonePayment = async (milestoneId: string) => {
+    setMilestonePaying(milestoneId)
+    try {
+      const res = await fetch('/api/milestones/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ milestone_id: milestoneId }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error((data as { error?: string }).error || 'Ödeme onaylanamadı')
+        return
+      }
+      toast.success('Aşama ödemesi ustaya aktarıldı.')
+      await load()
+    } catch (e) {
+      console.error(e)
+      toast.error('Bir hata oluştu')
+    } finally {
+      setMilestonePaying(null)
+    }
+  }
 
   const startPaymentForOffer = async (offer: any) => {
     if (!job?.id) return
@@ -463,11 +506,18 @@ export default function JobDetailPage() {
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="font-semibold text-slate-900 text-[15px] leading-snug line-clamp-2">{job?.title}</h1>
-            <span
-              className={`mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${sc.bg} ${sc.color}`}
-            >
-              {sc.label}
-            </span>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${sc.bg} ${sc.color}`}
+              >
+                {sc.label}
+              </span>
+              {job?.is_pro && (
+                <span className="inline-flex items-center rounded-full border border-amber-400/60 bg-gradient-to-r from-amber-100 to-amber-50 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-amber-900">
+                  Gelsin Pro İş
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -738,6 +788,65 @@ export default function JobDetailPage() {
             </div>
           )}
         </section>
+
+        {job?.is_pro && milestones.length > 0 && (
+          <section className="rounded-2xl border border-amber-200/50 bg-amber-50/30 p-5 sm:p-6 shadow-sm space-y-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-800/90">Gelsin Pro — Aşamalar</p>
+            <div className="space-y-3">
+              {milestones.map((m: any, idx: number) => {
+                const st = String(m.status || 'pending')
+                const badge =
+                  st === 'pending'
+                    ? { label: 'Bekliyor', className: 'bg-slate-100 text-slate-600' }
+                    : st === 'photos_uploaded'
+                      ? { label: 'Fotoğraf Yüklendi', className: 'bg-blue-100 text-blue-800' }
+                      : st === 'ai_approved'
+                        ? { label: 'AI Onayladı ✓', className: 'bg-emerald-100 text-emerald-800' }
+                        : st === 'customer_approved'
+                          ? { label: 'Ödendi ✓', className: 'bg-amber-100 text-amber-900 border border-amber-300/60' }
+                          : { label: st, className: 'bg-slate-100 text-slate-600' }
+                const showPay = st === 'ai_approved' && m.ai_approved === true
+                return (
+                  <div
+                    key={m.id}
+                    className="rounded-xl border border-amber-100/80 bg-white/90 p-4 shadow-[0_1px_6px_rgba(0,0,0,0.04)]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-medium text-slate-400">#{idx + 1}</p>
+                        <p className="font-semibold text-slate-900">{m.title}</p>
+                        {m.description && <p className="mt-1 text-xs text-slate-600">{m.description}</p>}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-slate-900 tabular-nums">
+                          ₺{Number(m.amount).toLocaleString('tr-TR')}
+                        </p>
+                        {m.percentage != null && (
+                          <p className="text-[11px] text-slate-500">%{m.percentage}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                    </div>
+                    {showPay && (
+                      <button
+                        type="button"
+                        className="mt-4 w-full rounded-xl bg-amber-600 py-2.5 text-sm font-semibold text-white shadow-md shadow-amber-600/20 disabled:opacity-50"
+                        disabled={milestonePaying === m.id}
+                        onClick={() => void approveMilestonePayment(m.id)}
+                      >
+                        {milestonePaying === m.id ? 'İşleniyor…' : 'Onayla & Öde'}
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Teklifler / uzman kartı */}
         {offers.length > 0 && (
