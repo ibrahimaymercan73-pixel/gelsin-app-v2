@@ -223,7 +223,7 @@ export default function JobDetailPage() {
 
       const { data: offer, error: offerError } = await supabase
         .from('offers')
-        .select('*, milestones(*)')
+        .select('*')
         .eq('id', offerId)
         .single()
 
@@ -232,22 +232,35 @@ export default function JobDetailPage() {
       console.log('Offer:', offer)
       console.log('is_milestone:', (offer as { is_milestone?: boolean }).is_milestone)
 
-      if ((offer as { is_milestone?: boolean }).is_milestone) {
-        const raw = (offer as { milestones?: any[] }).milestones
-        const firstMilestone = raw
-          ? [...raw].sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))[0]
-          : undefined
+      const jobId = job.id
 
-        console.log('First milestone:', firstMilestone)
+      if ((offer as { is_milestone?: boolean }).is_milestone) {
+        const { data: milestones } = await supabase
+          .from('milestones')
+          .select('*')
+          .eq('job_id', jobId)
+          .eq('offer_id', offerId)
+          .order('order_index', { ascending: true })
+
+        console.log('Milestones:', milestones)
+
+        const firstMilestone = milestones?.[0]
+
+        if (!firstMilestone) {
+          alert('Aşama bilgisi bulunamadı!')
+          return
+        }
+
+        console.log('İlk aşama tutarı:', firstMilestone.amount)
 
         const res = await fetch('/api/paytr/create-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            job_id: job.id,
+            job_id: jobId,
             offer_id: offerId,
-            amount: firstMilestone?.amount ?? (offer as { price?: number }).price,
-            milestone_id: firstMilestone?.id,
+            amount: firstMilestone.amount,
+            milestone_id: firstMilestone.id,
           }),
         })
 
