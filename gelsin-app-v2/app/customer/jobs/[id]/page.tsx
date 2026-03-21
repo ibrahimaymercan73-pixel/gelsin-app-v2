@@ -125,10 +125,10 @@ export default function JobDetailPage() {
     const { data: msRows } = await supabase
       .from('milestones')
       .select(
-        'id, title, description, amount, percentage, status, ai_approved, sort_order, job_id'
+        'id, title, description, amount, percentage, status, ai_approved, ai_report, customer_approved, order_index'
       )
       .eq('job_id', id)
-      .order('sort_order', { ascending: true })
+      .order('order_index', { ascending: true })
     setMilestones(msRows || [])
 
     const enrichedOffers = offersList.map((o) => {
