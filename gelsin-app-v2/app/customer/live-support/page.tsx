@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
+
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -9,7 +10,54 @@ type CategoryItem = {
   icon: string
 }
 
-export default function LiveSupportPage() {
+/** Görüşme bitince: Keşfet = /customer | Gelen teklifler = /customer/jobs?tab=offers */
+const AFTER_HANGUP_HREF = '/customer/jobs?tab=offers'
+
+const JITSI_DOMAIN = 'meet.jit.si'
+const JITSI_SCRIPT = `https://${JITSI_DOMAIN}/external_api.js`
+
+type JitsiApi = {
+  dispose: () => void
+  addEventListeners: (listeners: Record<string, (...args: unknown[]) => void>) => void
+}
+
+declare global {
+  interface Window {
+    JitsiMeetExternalAPI?: new (domain: string, options: Record<string, unknown>) => JitsiApi
+  }
+}
+
+function parseJitsiRoomName(roomUrl: string): string | null {
+  try {
+    const u = new URL(roomUrl)
+    if (!u.hostname.replace(/^www\./, '').includes('jit.si')) return null
+    const seg = u.pathname.replace(/^\//, '').split('/').filter(Boolean)[0]
+    return seg ? decodeURIComponent(seg) : null
+  } catch {
+    return null
+  }
+}
+
+function loadJitsiScript(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve()
+  if (window.JitsiMeetExternalAPI) return Promise.resolve()
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${JITSI_SCRIPT}"]`)
+    if (existing) {
+      existing.addEventListener('load', () => resolve())
+      existing.addEventListener('error', () => reject(new Error('Jitsi script')))
+      return
+    }
+    const s = document.createElement('script')
+    s.src = JITSI_SCRIPT
+    s.async = true
+    s.onload = () => resolve()
+    s.onerror = () => reject(new Error('Jitsi script yüklenemedi'))
+    document.body.appendChild(s)
+  })
+}
+
+function LiveSupportPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const initialSessionId = searchParams.get('session_id') || ''
@@ -22,11 +70,93 @@ export default function LiveSupportPage() {
   const [sessionId, setSessionId] = useState(initialSessionId)
   const [roomUrl, setRoomUrl] = useState('')
   const [customerCity, setCustomerCity] = useState('')
+  const [customerDisplayName, setCustomerDisplayName] = useState('Müşteri')
   const [loading, setLoading] = useState(false)
   const [paymentModal, setPaymentModal] = useState<{ token: string; merchantOid: string } | null>(
     null
   )
   const [handledPaytrSuccess, setHandledPaytrSuccess] = useState(false)
+  const [jitsiConnecting, setJitsiConnecting] = useState(true)
+
+  const jitsiParentRef = useRef<HTMLDivElement>(null)
+  const jitsiApiRef = useRef<JitsiApi | null>(null)
+  const hangupNavigatedRef = useRef(false)
+
+  const navigateAfterHangup = useCallback(() => {
+    if (hangupNavigatedRef.current) return
+    hangupNavigatedRef.current = true
+    try {
+      jitsiApiRef.current?.dispose()
+    } catch {
+      /* ignore */
+    }
+    jitsiApiRef.current = null
+    router.push(AFTER_HANGUP_HREF)
+  }, [router])
+
+  const finalizePaidSession = useCallback(async () => {
+    setLoading(true)
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
+    if (!sessionId) {
+      setLoading(false)
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('live_sessions')
+      .update({
+        fee_paid: true,
+        status: 'waiting_provider',
+      })
+      .eq('id', sessionId)
+      .eq('customer_id', user.id)
+      .select()
+      .single()
+
+    if (error || !data) {
+      setLoading(false)
+      return
+    }
+
+    try {
+      localStorage.setItem('live_support_session_id', sessionId)
+    } catch {
+      /* ignore */
+    }
+
+    const label =
+      categories.find((c) => c.id === selectedCategoryId)?.label || selectedCategoryId || '-'
+
+    const { data: providers } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'provider')
+      .eq('is_online', true)
+
+    if (providers && providers.length > 0) {
+      const notifications = providers.map((p: { id: string }) => ({
+        user_id: p.id,
+        type: 'live_session_request',
+        title: '🔴 Canlı Destek Talebi!',
+        message: `${label} kategorisinde müşteri video görüşmesi bekliyor. 150₺ danışmanlık ücreti garantili.`,
+        data: { session_id: sessionId },
+        read: false,
+        created_at: new Date().toISOString(),
+      }))
+      await supabase.from('notifications').insert(notifications)
+    }
+
+    setStep('waiting')
+    setLoading(false)
+  }, [sessionId, selectedCategoryId, categories])
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -34,7 +164,7 @@ export default function LiveSupportPage() {
         if (handledPaytrSuccess) return
         setHandledPaytrSuccess(true)
         setPaymentModal(null)
-        finalizePaidSession()
+        void finalizePaidSession()
       }
       if (e.data?.type === 'paytr-live-support-fail') {
         setPaymentModal(null)
@@ -42,7 +172,11 @@ export default function LiveSupportPage() {
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [handledPaytrSuccess])
+  }, [handledPaytrSuccess, finalizePaidSession])
+
+  useEffect(() => {
+    if (step === 'video') hangupNavigatedRef.current = false
+  }, [step])
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -65,16 +199,35 @@ export default function LiveSupportPage() {
   }, [])
 
   useEffect(() => {
-    const loadCustomerCity = async () => {
+    const loadProfile = async () => {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) return
-
       const { data: profile } = await supabase
         .from('profiles')
-        .select('city')
+        .select('full_name, city')
         .eq('id', user.id)
         .single()
+      const raw = (profile as { full_name?: string } | null)?.full_name?.trim()
+      if (raw) {
+        const first = raw.split(/\s+/)[0]
+        setCustomerDisplayName(first || raw)
+      }
+    }
+    loadProfile()
+  }, [])
+
+  useEffect(() => {
+    const loadCustomerCity = async () => {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: profile } = await supabase.from('profiles').select('city').eq('id', user.id).single()
 
       if ((profile as any)?.city) {
         setCustomerCity((profile as any).city as string)
@@ -96,10 +249,7 @@ export default function LiveSupportPage() {
 
             if (city) {
               setCustomerCity(city)
-              await supabase
-                .from('profiles')
-                .update({ city: city })
-                .eq('id', user.id)
+              await supabase.from('profiles').update({ city: city }).eq('id', user.id)
             }
           },
           (err) => {
@@ -114,15 +264,15 @@ export default function LiveSupportPage() {
   useEffect(() => {
     try {
       const sid =
-        searchParams.get('session_id') ||
-        localStorage.getItem('live_support_session_id') ||
-        ''
+        searchParams.get('session_id') || localStorage.getItem('live_support_session_id') || ''
       if (sid) {
         localStorage.setItem('live_support_session_id', sid)
         setSessionId(sid)
         setStep('waiting')
       }
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   }, [searchParams])
 
   useEffect(() => {
@@ -130,7 +280,6 @@ export default function LiveSupportPage() {
 
     const supabase = createClient()
 
-    // Önce mevcut durumu kontrol et (usta zaten bağlandıysa kaçırma)
     supabase
       .from('live_sessions')
       .select('status, room_url')
@@ -143,7 +292,6 @@ export default function LiveSupportPage() {
         }
       })
 
-    // Realtime dinle
     const channel = supabase
       .channel('session_' + sessionId)
       .on(
@@ -155,24 +303,116 @@ export default function LiveSupportPage() {
           filter: 'id=eq.' + sessionId,
         },
         (payload) => {
-          console.log('Session güncellendi:', payload.new)
-          if (
-            payload.new.status === 'provider_joined' &&
-            payload.new.room_url
-          ) {
-            setRoomUrl(payload.new.room_url)
+          if (payload.new.status === 'provider_joined' && payload.new.room_url) {
+            setRoomUrl(payload.new.room_url as string)
             setStep('video')
           }
         }
       )
-      .subscribe((status) => {
-        console.log('Realtime status:', status)
-      })
+      .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
   }, [step, sessionId])
+
+  /** Jitsi: prejoin yok, isim otomatik, minimal araç çubuğu */
+  useEffect(() => {
+    if (step !== 'video' || !roomUrl) return
+
+    const roomName = parseJitsiRoomName(roomUrl)
+    if (!roomName || !jitsiParentRef.current) {
+      console.error('Jitsi oda adı çözülemedi:', roomUrl)
+      return
+    }
+
+    let cancelled = false
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null
+    setJitsiConnecting(true)
+
+    const toolbarMinimal = ['microphone', 'camera', 'hangup']
+
+    ;(async () => {
+      try {
+        await loadJitsiScript()
+        if (cancelled || !jitsiParentRef.current) return
+        const API = window.JitsiMeetExternalAPI
+        if (!API) throw new Error('JitsiMeetExternalAPI yok')
+
+        jitsiParentRef.current.innerHTML = ''
+
+        const api = new API(JITSI_DOMAIN, {
+          roomName,
+          parentNode: jitsiParentRef.current,
+          userInfo: {
+            displayName: customerDisplayName,
+          },
+          configOverwrite: {
+            prejoinPageEnabled: false,
+            disableDeepLinking: true,
+            startWithAudioMuted: false,
+            startWithVideoMuted: false,
+            toolbarButtons: toolbarMinimal,
+            subject: '',
+            hideConferenceSubject: true,
+            hideConferenceTimer: true,
+            disablePolls: true,
+            disableReactions: true,
+            disablePrivateMessages: true,
+            disableChat: true,
+            disableProfile: true,
+            disableSelfViewSettings: true,
+            notifications: [],
+            disableInviteFunctions: true,
+          },
+          interfaceConfigOverwrite: {
+            TOOLBAR_BUTTONS: toolbarMinimal,
+            SHOW_JITSI_WATERMARK: false,
+            SHOW_WATERMARK_FOR_GUESTS: false,
+            SHOW_BRAND_WATERMARK: false,
+            SHOW_PROMOTIONAL_CLOSE_PAGE: false,
+            SHOW_CHROME_EXTENSION_BANNER: false,
+            MOBILE_APP_PROMO: false,
+            HIDE_INVITE_MORE_HEADER: true,
+            DISPLAY_WELCOME_PAGE_CONTENT: false,
+            TOOLBAR_ALWAYS_VISIBLE: true,
+            DEFAULT_BACKGROUND: '#0f172a',
+          },
+        })
+
+        jitsiApiRef.current = api
+
+        const onJoined = () => {
+          if (!cancelled) setJitsiConnecting(false)
+        }
+
+        api.addEventListeners({
+          videoConferenceJoined: onJoined,
+          readyToClose: () => navigateAfterHangup(),
+          videoConferenceLeft: () => navigateAfterHangup(),
+        })
+
+        fallbackTimer = setTimeout(() => {
+          if (!cancelled) setJitsiConnecting(false)
+        }, 20000)
+      } catch (e) {
+        console.error('Jitsi başlatılamadı:', e)
+        if (!cancelled) setJitsiConnecting(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      if (fallbackTimer) clearTimeout(fallbackTimer)
+      try {
+        jitsiApiRef.current?.dispose()
+      } catch {
+        /* ignore */
+      }
+      jitsiApiRef.current = null
+      if (jitsiParentRef.current) jitsiParentRef.current.innerHTML = ''
+    }
+  }, [step, roomUrl, customerDisplayName, navigateAfterHangup])
 
   const selectedCategoryLabel =
     categories.find((c) => c.id === selectedCategoryId)?.label || selectedCategoryId || '-'
@@ -186,7 +426,9 @@ export default function LiveSupportPage() {
     setLoading(true)
     const supabase = createClient()
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       if (!user) {
         setLoading(false)
         return
@@ -221,7 +463,9 @@ export default function LiveSupportPage() {
       setSessionId(data.id)
       try {
         localStorage.setItem('live_support_session_id', data.id as string)
-      } catch {}
+      } catch {
+        /* ignore */
+      }
 
       const res = await fetch('/api/paytr/create-live-support-token', {
         method: 'POST',
@@ -251,249 +495,213 @@ export default function LiveSupportPage() {
     }
   }
 
-  const finalizePaidSession = async () => {
-    setLoading(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setLoading(false)
-      return
-    }
-
-    if (!sessionId) {
-      setLoading(false)
-      return
-    }
-
-    const { data, error } = await supabase
-      .from('live_sessions')
-      .update({
-        fee_paid: true,
-        status: 'waiting_provider',
-      })
-      .eq('id', sessionId)
-      .eq('customer_id', user.id)
-      .select()
-      .single()
-
-    if (error || !data) {
-      setLoading(false)
-      return
-    }
-
-    try {
-      localStorage.setItem('live_support_session_id', sessionId)
-    } catch {}
-
-    const { data: providers } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('role', 'provider')
-      .eq('is_online', true)
-
-    if (providers && providers.length > 0) {
-      const notifications = providers.map((p: { id: string }) => ({
-        user_id: p.id,
-        type: 'live_session_request',
-        title: '🔴 Canlı Destek Talebi!',
-        message: `${selectedCategoryLabel} kategorisinde müşteri video görüşmesi bekliyor. 150₺ danışmanlık ücreti garantili.`,
-        data: { session_id: sessionId },
-        read: false,
-        created_at: new Date().toISOString(),
-      }))
-      await supabase.from('notifications').insert(notifications)
-    }
-
-    setStep('waiting')
-    setLoading(false)
-  }
-
   return (
-    <div className="min-h-screen bg-white max-w-lg mx-auto px-6">
-      <div className="flex items-center justify-between pt-14 pb-6">
-        <button
-          onClick={() => router.back()}
-          className="text-blue-600 font-semibold text-sm flex items-center gap-2"
-        >
-          ← Geri
-        </button>
-        <span className="flex items-center gap-2 text-xs font-bold text-green-600">
-          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          Canlı Destek
-        </span>
-      </div>
+    <>
+      {step === 'video' && roomUrl ? (
+        <div className="fixed inset-0 z-[100] flex items-stretch justify-center bg-slate-950 sm:bg-slate-900 sm:p-4 md:p-6">
+          <div
+            className="relative flex h-[100dvh] w-full max-w-[1200px] flex-1 overflow-hidden bg-black shadow-xl sm:h-[min(92dvh,calc(100dvh-2rem))] sm:rounded-2xl sm:ring-1 sm:ring-white/10"
+          >
+            {jitsiConnecting && (
+              <div
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950 px-6 text-center"
+                aria-live="polite"
+                aria-busy="true"
+              >
+                <p className="text-2xl font-bold tracking-tight text-white">
+                  GELSİN<span className="text-blue-400">.</span>
+                </p>
+                <p className="mt-5 max-w-xs text-base font-medium text-slate-300">
+                  Uzmanımıza bağlanıyorsunuz...
+                </p>
+                <div
+                  className="mt-10 h-9 w-9 rounded-full border-2 border-slate-600 border-t-blue-500 animate-spin"
+                  aria-hidden
+                />
+              </div>
+            )}
+            <div ref={jitsiParentRef} className="absolute inset-0 h-full w-full" />
+          </div>
+        </div>
+      ) : (
+        <div className="mx-auto min-h-screen max-w-lg bg-white px-6">
+          <div className="flex items-center justify-between pb-6 pt-14">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-sm font-semibold text-blue-600"
+            >
+              ← Geri
+            </button>
+            <span className="flex items-center gap-2 text-xs font-bold text-green-600">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+              Canlı Destek
+            </span>
+          </div>
 
-      {step === 'category' && (
-        <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
-            Ne hakkında
-            <br />
-            yardım lazım?
-          </h1>
-          <p className="text-sm text-gray-400 mb-8">
-            Bir uzmanla anında video görüşmesi başlat.
-          </p>
-          {!customerCity && step === 'category' && (
-            <div className="flex items-center gap-2 text-xs text-gray-400 mb-4">
-              <div className="w-3 h-3 border border-gray-300 border-t-transparent rounded-full animate-spin" />
-              Konumunuz alınıyor...
+          {step === 'category' && (
+            <div>
+              <h1 className="mb-2 text-3xl font-black tracking-tight text-gray-900">
+                Ne hakkında
+                <br />
+                yardım lazım?
+              </h1>
+              <p className="mb-8 text-sm text-gray-400">Bir uzmanla anında video görüşmesi başlat.</p>
+              {!customerCity && (
+                <div className="mb-4 flex items-center gap-2 text-xs text-gray-400">
+                  <div className="h-3 w-3 animate-spin rounded-full border border-gray-300 border-t-transparent" />
+                  Konumunuz alınıyor...
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => handleCategorySelect(cat.id)}
+                    className="rounded-2xl border-2 border-gray-100 p-5 text-left transition-all hover:border-orange-400 hover:bg-orange-50 active:scale-95"
+                  >
+                    <span className="mb-3 block text-3xl">{cat.icon}</span>
+                    <span className="text-sm font-bold text-gray-900">{cat.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => handleCategorySelect(cat.id)}
-                className="border-2 border-gray-100 rounded-2xl p-5 text-left hover:border-orange-400 hover:bg-orange-50 transition-all active:scale-95"
-              >
-                <span className="text-3xl mb-3 block">{cat.icon}</span>
-                <span className="text-sm font-bold text-gray-900">{cat.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {step === 'payment' && (
-        <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
-            Danışmanlık
-            <br />
-            ücreti
-          </h1>
-          <p className="text-sm text-gray-400 mb-8">
-            Uzman seni dinleyecek, sorunu teşhis edecek.
-          </p>
+          {step === 'payment' && (
+            <div>
+              <h1 className="mb-2 text-3xl font-black tracking-tight text-gray-900">
+                Danışmanlık
+                <br />
+                ücreti
+              </h1>
+              <p className="mb-8 text-sm text-gray-400">Uzman seni dinleyecek, sorunu teşhis edecek.</p>
 
-          <div className="bg-gray-50 rounded-2xl p-6 mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-sm text-gray-500">Seçilen kategori</span>
-              <span className="text-sm font-bold text-gray-900 capitalize">
-                {selectedCategoryLabel}
-              </span>
-            </div>
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-sm text-gray-500">Danışmanlık ücreti</span>
-              <span className="text-2xl font-black text-gray-900">₺150</span>
-            </div>
-            <div className="h-px bg-gray-200 my-4" />
-            <div className="bg-blue-50 rounded-xl p-4">
-              <p className="text-xs text-blue-700 font-semibold">
-                💡 Bu ücreti aynı uzmanla işi gerçekleştirirsen toplam fiyattan düşeceğiz.
-              </p>
-            </div>
-          </div>
+              <div className="mb-6 rounded-2xl bg-gray-50 p-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Seçilen kategori</span>
+                  <span className="text-sm font-bold capitalize text-gray-900">{selectedCategoryLabel}</span>
+                </div>
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Danışmanlık ücreti</span>
+                  <span className="text-2xl font-black text-gray-900">₺150</span>
+                </div>
+                <div className="my-4 h-px bg-gray-200" />
+                <div className="rounded-xl bg-blue-50 p-4">
+                  <p className="text-xs font-semibold text-blue-700">
+                    💡 Bu ücreti aynı uzmanla işi gerçekleştirirsen toplam fiyattan düşeceğiz.
+                  </p>
+                </div>
+              </div>
 
-          <div className="space-y-3 mb-8">
-            <div className="flex items-center gap-3 text-sm text-gray-600">
-              <span className="text-green-500 font-bold">✓</span>
-              Anında uzman bağlantısı
-            </div>
-            <div className="flex items-center gap-3 text-sm text-gray-600">
-              <span className="text-green-500 font-bold">✓</span>
-              Video ile yerinde teşhis
-            </div>
-            <div className="flex items-center gap-3 text-sm text-gray-600">
-              <span className="text-green-500 font-bold">✓</span>
-              Bağlantı kurulamazsa tam iade
-            </div>
-          </div>
+              <div className="mb-8 space-y-3">
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <span className="font-bold text-green-500">✓</span>
+                  Anında uzman bağlantısı
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <span className="font-bold text-green-500">✓</span>
+                  Video ile yerinde teşhis
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <span className="font-bold text-green-500">✓</span>
+                  Bağlantı kurulamazsa tam iade
+                </div>
+              </div>
 
-          <button
-            onClick={handlePayment}
-            disabled={loading}
-            className="w-full bg-orange-500 text-white rounded-2xl py-5 text-base font-bold disabled:opacity-50"
-          >
-            {loading ? 'İşleniyor...' : '₺150 Öde & Uzman Ara →'}
-          </button>
-
-          <button
-            onClick={() => setStep('category')}
-            className="w-full mt-3 text-gray-400 text-sm py-3"
-          >
-            Geri dön
-          </button>
-        </div>
-      )}
-
-      {step === 'waiting' && (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-          <div className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mb-6 animate-pulse">
-            <span className="text-4xl">🔍</span>
-          </div>
-          <h2 className="text-2xl font-black text-gray-900 mb-3">Uzman Aranıyor</h2>
-          <p className="text-sm text-gray-400 mb-8 max-w-xs">
-            Online uzmanlar bildirim aldı. Biri kabul ettiğinde video görüşmesi otomatik başlayacak.
-          </p>
-          <div className="flex gap-2 mb-8">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
-                style={{ animationDelay: `${i * 0.2}s` }}
-              />
-            ))}
-          </div>
-          <div className="bg-gray-50 rounded-2xl p-5 w-full max-w-sm text-left">
-            <p className="text-xs text-gray-400 mb-1">Session ID</p>
-            <p className="text-xs font-mono text-gray-600 truncate">{sessionId}</p>
-          </div>
-        </div>
-      )}
-
-      {step === 'video' && roomUrl && (
-        <div>
-          <h2 className="text-xl font-black text-gray-900 mb-4">
-            Uzman Bağlandı! 🎉
-          </h2>
-          <div
-            className="rounded-2xl overflow-hidden border border-gray-200 mb-4"
-            style={{ height: '500px' }}
-          >
-            <iframe
-              src={roomUrl}
-              allow="camera *; microphone *; fullscreen *; speaker *; display-capture *"
-              style={{ width: '100%', height: '100%', border: 'none' }}
-            />
-          </div>
-          <p className="text-xs text-gray-400 text-center">
-            Görüşme bittikten sonra uzman sana teklif gönderecek.
-          </p>
-        </div>
-      )}
-
-      {paymentModal && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4"
-          onClick={() => !loading && setPaymentModal(null)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-              <p className="font-semibold text-slate-900 text-sm">Güvenli Ödeme – PayTR</p>
               <button
                 type="button"
-                onClick={() => setPaymentModal(null)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100"
-                aria-label="Kapat"
+                onClick={handlePayment}
                 disabled={loading}
+                className="w-full rounded-2xl bg-orange-500 py-5 text-base font-bold text-white disabled:opacity-50"
               >
-                ✕
+                {loading ? 'İşleniyor...' : '₺150 Öde & Uzman Ara →'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStep('category')}
+                className="mt-3 w-full py-3 text-sm text-gray-400"
+              >
+                Geri dön
               </button>
             </div>
-            <div className="flex-1 overflow-hidden">
-              <iframe
-                src={`https://www.paytr.com/odeme/guvenli/${paymentModal.token}`}
-                className="w-full h-[600px] border-0"
-                allow="payment"
-              />
+          )}
+
+          {step === 'waiting' && (
+            <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+              <div className="mb-6 flex h-20 w-20 animate-pulse items-center justify-center rounded-full bg-orange-100">
+                <span className="text-4xl">🔍</span>
+              </div>
+              <h2 className="mb-3 text-2xl font-black text-gray-900">Uzman Aranıyor</h2>
+              <p className="mb-8 max-w-xs text-sm text-gray-400">
+                Online uzmanlar bildirim aldı. Biri kabul ettiğinde video görüşmesi otomatik başlayacak.
+              </p>
+              <div className="mb-8 flex gap-2">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-2 w-2 animate-bounce rounded-full bg-orange-400"
+                    style={{ animationDelay: `${i * 0.2}s` }}
+                  />
+                ))}
+              </div>
+              <div className="w-full max-w-sm rounded-2xl bg-gray-50 p-5 text-left">
+                <p className="mb-1 text-xs text-gray-400">Session ID</p>
+                <p className="truncate font-mono text-xs text-gray-600">{sessionId}</p>
+              </div>
             </div>
-          </div>
+          )}
+
+          {paymentModal && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+              onClick={() => !loading && setPaymentModal(null)}
+            >
+              <div
+                className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                  <p className="text-sm font-semibold text-slate-900">Güvenli Ödeme – PayTR</p>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentModal(null)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+                    aria-label="Kapat"
+                    disabled={loading}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <iframe
+                    src={`https://www.paytr.com/odeme/guvenli/${paymentModal.token}`}
+                    className="h-[600px] w-full border-0"
+                    allow="payment"
+                    title="PayTR ödeme"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </>
   )
 }
 
+export default function LiveSupportPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-white">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-blue-600" />
+        </div>
+      }
+    >
+      <LiveSupportPageInner />
+    </Suspense>
+  )
+}
