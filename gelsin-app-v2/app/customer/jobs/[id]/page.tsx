@@ -868,24 +868,28 @@ export default function JobDetailPage() {
                     className={`text-xs font-bold px-3 py-1 rounded-full ${
                       m.status === 'pending'
                         ? 'bg-gray-100 text-gray-500'
-                        : m.status === 'photos_uploaded'
-                          ? 'bg-blue-100 text-blue-600'
-                          : m.status === 'ai_approved'
-                            ? 'bg-green-100 text-green-600'
-                            : m.status === 'customer_approved'
-                              ? 'bg-yellow-100 text-yellow-600'
-                              : 'bg-gray-100 text-gray-500'
+                        : m.status === 'active'
+                          ? 'bg-orange-100 text-orange-600'
+                          : m.status === 'photos_uploaded'
+                            ? 'bg-blue-100 text-blue-600'
+                            : m.status === 'ai_approved'
+                              ? 'bg-green-100 text-green-600'
+                              : m.status === 'customer_approved'
+                                ? 'bg-yellow-100 text-yellow-600'
+                                : 'bg-gray-100 text-gray-500'
                     }`}
                   >
                     {m.status === 'pending'
                       ? '⏳ Bekliyor'
-                      : m.status === 'photos_uploaded'
-                        ? '📸 Fotoğraf Yüklendi'
-                        : m.status === 'ai_approved'
-                          ? '✅ AI Onayladı'
-                          : m.status === 'customer_approved'
-                            ? '💰 Ödendi'
-                            : m.status}
+                      : m.status === 'active'
+                        ? '🔨 Devam Ediyor'
+                        : m.status === 'photos_uploaded'
+                          ? '📸 Fotoğraf Yüklendi'
+                          : m.status === 'ai_approved'
+                            ? '✅ AI Onayladı'
+                            : m.status === 'customer_approved'
+                              ? '💰 Ödendi'
+                              : m.status}
                   </span>
                   {m.status === 'ai_approved' && (
                     <button

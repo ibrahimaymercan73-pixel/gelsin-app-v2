@@ -75,6 +75,23 @@ export async function POST(req: NextRequest) {
         .update({ status: 'started', qr_scanned_at: new Date().toISOString() })
         .eq('id', jobId)
 
+      // İlk milestone'u aktif yap
+      const { data: firstMilestone } = await supabase
+        .from('milestones')
+        .select('id')
+        .eq('job_id', jobId)
+        .eq('status', 'pending')
+        .order('order_index', { ascending: true })
+        .limit(1)
+        .single()
+
+      if (firstMilestone) {
+        await supabase
+          .from('milestones')
+          .update({ status: 'active' })
+          .eq('id', firstMilestone.id)
+      }
+
       await supabase.from('notifications').insert({
         user_id: job.customer_id,
         title: '🔨 Uzman İşe Başladı!',
