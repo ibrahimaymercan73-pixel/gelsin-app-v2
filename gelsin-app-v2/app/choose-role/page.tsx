@@ -31,6 +31,8 @@ export default function ChooseRolePage() {
   const [city, setCity] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<ServiceCategory | null>(null)
   const [selectedServices, setSelectedServices] = useState<string[]>([])
+  const [tags, setTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [faceError, setFaceError] = useState('')
@@ -165,6 +167,7 @@ export default function ChooseRolePage() {
   const canProceedStep1 = () => role !== null
   const canProceedStep2 = () =>
     fullName.trim().length >= 2 && isValidPhone(phone) && city.trim().length > 0
+  const selectedSubCategory = selectedCategory != null && selectedServices.length > 0
 
   const goNext = async () => {
     const supabase = createClient()
@@ -223,6 +226,14 @@ export default function ChooseRolePage() {
         { id: user.id, main_category: selectedCategory.id, service_categories: selectedServices, is_onboarded: true },
         { onConflict: 'id' }
       )
+      if (tags.length > 0 && user) {
+        await supabase.from('expertise_tags').insert(
+          tags.map(tag => ({
+            provider_id: user.id,
+            tag: tag.toLowerCase().trim(),
+          }))
+        )
+      }
       setSaving(false)
       setDirection(1)
       setStep(4)
@@ -554,6 +565,67 @@ export default function ChooseRolePage() {
                       )
                     })}
                   </div>
+                  {selectedSubCategory && (
+                    <div className="mt-6">
+                      <p className="text-sm font-bold text-gray-700 mb-2">Uzmanlık etiketlerin</p>
+                      <p className="text-xs text-gray-400 mb-3">
+                        Özel uzmanlık alanlarını yaz. Örn: İtalyan Boya, Alçıpan, Su Tesisatı
+                      </p>
+
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {tags.map((tag, i) => (
+                          <span
+                            key={i}
+                            className="flex items-center gap-1 bg-blue-100 text-blue-700 text-sm font-semibold px-3 py-1.5 rounded-full"
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => setTags(tags.filter((_, j) => j !== i))}
+                              className="text-blue-400 hover:text-blue-700 ml-1"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={tagInput}
+                          onChange={e => setTagInput(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' || e.key === ',') {
+                              e.preventDefault()
+                              const newTag = tagInput.trim().replace(',', '')
+                              if (newTag && !tags.includes(newTag)) {
+                                setTags([...tags, newTag])
+                              }
+                              setTagInput('')
+                            }
+                          }}
+                          placeholder="Etiket yaz, Enter'a bas..."
+                          className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-400"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newTag = tagInput.trim()
+                            if (newTag && !tags.includes(newTag)) {
+                              setTags([...tags, newTag])
+                            }
+                            setTagInput('')
+                          }}
+                          className="bg-blue-600 text-white px-4 py-3 rounded-xl text-sm font-bold"
+                        >
+                          Ekle
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-300 mt-2">Enter veya virgülle ayırabilirsiniz</p>
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={goNext}
