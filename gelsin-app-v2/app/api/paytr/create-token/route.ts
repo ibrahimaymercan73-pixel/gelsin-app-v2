@@ -34,12 +34,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}))
-    const { job_id, offer_id, amount: amountFromBody, milestone_id } = body as {
+    const { job_id, offer_id, milestone_id: rawMilestoneId } = body as {
       job_id?: string
       offer_id?: string
-      amount?: unknown
       milestone_id?: string
     }
+    const milestoneId =
+      typeof rawMilestoneId === 'string' && rawMilestoneId.length >= 32 ? rawMilestoneId : null
 
     console.log('create-token body:', body)
 
@@ -90,15 +91,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Bu işlem için yetkiniz yok.' }, { status: 403 })
     }
 
-    const amount =
-      milestone_id != null &&
-      amountFromBody != null &&
-      Number.isFinite(Number(amountFromBody)) &&
-      Number(amountFromBody) > 0
-        ? Number(amountFromBody)
-        : Number(offer.price)
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return NextResponse.json({ error: 'Geçersiz teklif tutarı.' }, { status: 400 })
+    let amount: number
+    let milestoneBasketLabel: string | null = null
+    if (milestoneId) {
+      const { data: ms, error: msErr } = await supabase
+        .from('milestones')
+        .select('id, job_id, amount, status, ai_approved, title')
+        .eq('id', milestoneId)
+        .single()
+      if (msErr || !ms) {
+        return NextResponse.json({ error: 'Aşama bulunamadı.' }, { status: 404 })
+      }
+      if (ms.job_id !== jobId) {
+        return NextResponse.json({ error: 'Aşama bu işe ait değil.' }, { status: 400 })
+      }
+      if (!ms.ai_approved || ms.status !== 'ai_approved') {
+        return NextResponse.json(
+          { error: 'Bu aşama için ödeme: önce AI onayı ve “AI Onayladı” durumu gerekir.' },
+          { status: 400 }
+        )
+      }
+      amount = Number(ms.amount)
+      milestoneBasketLabel = (ms.title as string)?.trim() || 'Pro aşaması'
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return NextResponse.json({ error: 'Aşama tutarı geçersiz.' }, { status: 400 })
+      }
+    } else {
+      amount = Number(offer.price)
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return NextResponse.json({ error: 'Geçersiz teklif tutarı.' }, { status: 400 })
+      }
     }
 
     const paytr_fee = Math.round(amount * 0.0399 * 100) / 100
@@ -121,7 +143,8 @@ export async function POST(req: NextRequest) {
       (customerProfile?.phone && customerProfile.phone.trim()) || '05000000000'
     const userAddress = 'Türkiye'
 
-    const idempotencyKey = `${user.id}_${offerId}`
+    /** Her Pro aşaması ayrı PayTR ödemesi: teklif bazlı tek anahtar ikinci aşamayı blokluyordu */
+    const idempotencyKey = milestoneId ? `mspay_${milestoneId}` : `${user.id}_${offerId}`
 
     const { data: existingPayment } = await supabase
       .from('payments')
@@ -131,7 +154,12 @@ export async function POST(req: NextRequest) {
 
     if (existingPayment && ['paid', 'in_escrow', 'released'].includes(existingPayment.status as string)) {
       return NextResponse.json(
-        { error: 'Bu teklif için ödeme zaten alınmış.', code: 'already_paid' },
+        {
+          error: milestoneId
+            ? 'Bu aşama için ödeme zaten alınmış.'
+            : 'Bu teklif için ödeme zaten alınmış.',
+          code: 'already_paid',
+        },
         { status: 409 }
       )
     }
@@ -147,8 +175,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const baseMerchantOid = milestone_id
-      ? 'gelsinmilestone' + String(milestone_id).replace(/-/g, '').slice(0, 16)
+    const baseMerchantOid = milestoneId
+      ? 'gelsinmilestone' + String(milestoneId).replace(/-/g, '')
       : 'gelsin' + String(jobId).replace(/-/g, '').slice(0, 16) + String(offerId).replace(/-/g, '').slice(0, 8)
 
     const merchant_oid = existingPayment?.paytr_merchant_oid ?? baseMerchantOid
@@ -162,7 +190,9 @@ export async function POST(req: NextRequest) {
     const ipHeader = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || ''
     const user_ip = ipHeader.split(',')[0]?.trim() || '127.0.0.1'
 
-    const basketTitle = (job.title as string) || 'Gelsin Hizmeti'
+    const basketTitle = milestoneBasketLabel
+      ? `${(job.title as string) || 'Gelsin'} — ${milestoneBasketLabel}`
+      : (job.title as string) || 'Gelsin Hizmeti'
     const user_basket = Buffer.from(JSON.stringify([[basketTitle, amount, 1]])).toString('base64')
 
     const hashStr =

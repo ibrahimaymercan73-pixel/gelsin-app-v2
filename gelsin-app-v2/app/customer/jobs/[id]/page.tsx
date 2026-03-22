@@ -207,20 +207,43 @@ export default function JobDetailPage() {
   const { openChat } = useChatOverlay()
 
   const approveMilestonePayment = async (milestoneId: string) => {
+    if (!job?.id) return
+    const accOffer = offers.find(
+      (o) => o.status === 'accepted' && job.provider_id && o.provider_id === job.provider_id
+    )
+    if (!accOffer?.id) {
+      toast.error('Kabul edilmiş teklif bulunamadı.')
+      return
+    }
     setMilestonePaying(milestoneId)
     try {
-      const res = await fetch('/api/milestones/approve', {
+      const res = await fetch('/api/paytr/create-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestone_id: milestoneId }),
+        body: JSON.stringify({
+          job_id: job.id,
+          offer_id: accOffer.id,
+          milestone_id: milestoneId,
+        }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        toast.error((data as { error?: string }).error || 'Ödeme onaylanamadı')
+        if ((data as { code?: string }).code === 'already_paid') {
+          toast.error('Bu aşama için ödeme zaten alınmış görünüyor.')
+        } else {
+          toast.error((data as { error?: string }).error || 'Ödeme başlatılamadı')
+        }
         return
       }
-      toast.success('Aşama ödemesi ustaya aktarıldı.')
-      await load()
+      if (!(data as { token?: string }).token) {
+        toast.error('Ödeme servisi beklenmeyen yanıt döndürdü.')
+        return
+      }
+      setPaymentModal({
+        token: (data as { token: string }).token,
+        merchantOid: (data as { merchant_oid: string }).merchant_oid,
+      })
+      toast.info('Kartla ödemeyi tamamlayın; onay otomatik işlenecek.')
     } catch (e) {
       console.error(e)
       toast.error('Bir hata oluştu')
@@ -272,7 +295,6 @@ export default function JobDetailPage() {
           body: JSON.stringify({
             job_id: jobId,
             offer_id: offerId,
-            amount: firstMilestone.amount,
             milestone_id: firstMilestone.id,
           }),
         })

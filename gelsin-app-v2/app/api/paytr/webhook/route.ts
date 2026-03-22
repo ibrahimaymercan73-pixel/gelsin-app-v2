@@ -142,7 +142,139 @@ export async function POST(request: NextRequest) {
       return new Response('OK', { status: 200 })
     }
 
-    // 2) Diğer tüm ödemeler – normal iş akışı
+    // 2) Gelsin Pro — her aşama ayrı PayTR (merchant_oid gelsinmilestone + uuid hex)
+    if (merchant_oid.startsWith('gelsinmilestone')) {
+      const { data: payment } = await supabase
+        .from('payments')
+        .select(
+          'id, job_id, offer_id, customer_id, provider_id, amount, provider_amount, status, idempotency_key'
+        )
+        .eq('paytr_merchant_oid', merchant_oid)
+        .maybeSingle()
+
+      if (!payment) {
+        console.error('[paytr/webhook] milestone payment not found for oid', merchant_oid)
+        return new Response('OK', { status: 200 })
+      }
+
+      const key = (payment as { idempotency_key?: string }).idempotency_key || ''
+      const milestoneId = key.startsWith('mspay_') ? key.slice('mspay_'.length) : ''
+      if (!milestoneId) {
+        console.error('[paytr/webhook] milestone idempotency_key beklenen formatta değil', key)
+        return new Response('OK', { status: 200 })
+      }
+
+      if (status === 'success') {
+        await supabase.from('payments').update({ status: 'in_escrow' }).eq('id', payment.id)
+
+        const { data: jobRow } = await supabase
+          .from('jobs')
+          .select('status')
+          .eq('id', payment.job_id)
+          .single()
+        const st = (jobRow as { status?: string } | null)?.status
+        const needsOfferAccept = st === 'open' || st === 'offered'
+
+        if (needsOfferAccept) {
+          const { data: offerRow } = await supabase
+            .from('offers')
+            .select('price')
+            .eq('id', payment.offer_id)
+            .single()
+          const agreed = Number((offerRow as { price?: number })?.price) || Number(payment.amount)
+
+          await Promise.all([
+            supabase
+              .from('jobs')
+              .update({
+                status: 'accepted',
+                provider_id: payment.provider_id,
+                agreed_price: agreed,
+                escrow_held: true,
+              })
+              .eq('id', payment.job_id),
+            supabase.from('offers').update({ status: 'accepted' }).eq('id', payment.offer_id),
+            supabase
+              .from('offers')
+              .update({ status: 'rejected' })
+              .eq('job_id', payment.job_id)
+              .neq('id', payment.offer_id),
+          ])
+          console.log('[paytr/webhook] milestone: iş + teklif kabul (ilk ödeme)')
+        }
+
+        const { data: ms } = await supabase.from('milestones').select('*').eq('id', milestoneId).single()
+        if (!ms) {
+          console.error('[paytr/webhook] milestone row missing', milestoneId)
+          return new Response('OK', { status: 200 })
+        }
+        if (ms.status === 'customer_approved') {
+          console.log('[paytr/webhook] milestone zaten ödenmiş (tekrarlı webhook)')
+          return new Response('OK', { status: 200 })
+        }
+
+        const providerId = payment.provider_id as string
+        const gross = Number(ms.amount)
+        const commission = gross * 0.05
+        const providerCredit = gross - commission
+
+        const { error: rpcErr } = await supabase.rpc('add_to_wallet', {
+          provider_id: providerId,
+          amount: providerCredit,
+        })
+        if (rpcErr) {
+          const { data: pp } = await supabase
+            .from('provider_profiles')
+            .select('wallet_balance')
+            .eq('id', providerId)
+            .single()
+          const nextBal = (Number(pp?.wallet_balance) || 0) + providerCredit
+          await supabase.from('provider_profiles').update({ wallet_balance: nextBal }).eq('id', providerId)
+        }
+
+        await supabase
+          .from('milestones')
+          .update({
+            customer_approved: true,
+            status: 'customer_approved',
+            paid_at: new Date().toISOString(),
+          })
+          .eq('id', milestoneId)
+
+        const { data: nextPending } = await supabase
+          .from('milestones')
+          .select('id')
+          .eq('job_id', ms.job_id)
+          .eq('status', 'pending')
+          .order('order_index', { ascending: true })
+          .limit(1)
+          .maybeSingle()
+        if (nextPending?.id) {
+          await supabase.from('milestones').update({ status: 'active' }).eq('id', nextPending.id)
+        }
+
+        await supabase.from('notifications').insert({
+          user_id: providerId,
+          title: '💰 Pro aşama ödemesi alındı',
+          body: `"${ms.title}" için ₺${providerCredit.toFixed(2)} cüzdanınıza yansıdı.`,
+          type: 'milestone_paid',
+          is_read: false,
+          related_job_id: ms.job_id,
+        })
+
+        console.log('[paytr/webhook] milestone ödeme tamam', milestoneId)
+        return new Response('OK', { status: 200 })
+      }
+
+      if (status === 'failed') {
+        await supabase.from('payments').update({ status: 'failed' }).eq('id', payment.id)
+        return new Response('OK', { status: 200 })
+      }
+
+      return new Response('OK', { status: 200 })
+    }
+
+    // 3) Diğer tüm ödemeler – normal iş akışı
     const { data: payment } = await supabase
       .from('payments')
       .select('id, job_id, offer_id, customer_id, provider_id, amount, provider_amount, status')
