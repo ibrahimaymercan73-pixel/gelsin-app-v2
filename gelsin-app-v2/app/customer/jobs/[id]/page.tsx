@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import {
   Check,
   ChevronLeft,
+  Lock,
   MapPin,
   MessageCircle,
   Phone,
@@ -18,6 +19,7 @@ import {
   Star,
   ShieldCheck,
   AlertTriangle,
+  User,
   X,
 } from 'lucide-react'
 
@@ -1339,73 +1341,112 @@ export default function JobDetailPage() {
 
       {detailOffer && (
         <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
           style={{ touchAction: 'none' }}
           onClick={() => setDetailOffer(null)}
         >
           <div
-            className="bg-white w-full max-w-lg rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto"
+            className="relative mx-4 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-7 shadow-2xl ring-1 ring-slate-200/60 sm:p-8"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-black text-gray-900">🏗️ İş Aşamaları</h3>
+            <div className="relative mb-6 pr-11">
               <button
                 type="button"
                 onClick={() => setDetailOffer(null)}
-                className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500"
+                className="absolute right-0 top-0 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+                aria-label="Kapat"
               >
-                ✕
+                <X className="h-4 w-4" strokeWidth={2} />
               </button>
-            </div>
-
-            <div className="bg-gray-50 rounded-2xl p-4 mb-4">
-              <div className="flex justify-between mb-1">
-                <span className="text-sm text-gray-500">Uzman</span>
-                <span className="text-sm font-bold text-gray-900">
-                  {detailOffer.profiles?.full_name ?? detailOffer.provider?.full_name}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-500">Toplam Fiyat</span>
-                <span className="text-lg font-black text-gray-900">
-                  ₺{detailOffer.price?.toLocaleString('tr-TR')}
-                </span>
-              </div>
-            </div>
-
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Ödeme Aşamaları</p>
-
-            {milestones
-              .filter((m: any) => m.offer_id === detailOffer.id)
-              .sort((a: any, b: any) => a.order_index - b.order_index)
-              .map((m: any, i: number) => (
-                <div
-                  key={m.id}
-                  className="flex items-center gap-4 p-4 border border-gray-100 rounded-2xl mb-2"
-                >
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-black text-blue-600">{i + 1}</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-gray-900">{m.title}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{m.description}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-black text-gray-900">₺{m.amount?.toLocaleString('tr-TR')}</p>
-                    <p className="text-xs text-gray-400">%{m.percentage}</p>
-                  </div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                <div className="min-w-0 max-w-[min(100%,18rem)]">
+                  <p className="font-serif text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Gelsin Pro
+                  </p>
+                  <h3 className="mt-1 font-serif text-2xl font-bold tracking-tight text-slate-900">İş aşamaları</h3>
+                  <p className="mt-1 text-sm text-slate-500">Ödeme planı ve taksit dağılımı</p>
                 </div>
-              ))}
+                <div className="shrink-0 text-left sm:text-right">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Toplam</p>
+                  <p className="font-serif text-2xl font-black tabular-nums tracking-tight text-slate-900 sm:text-3xl">
+                    ₺{detailOffer.price?.toLocaleString('tr-TR')}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            <div className="border-t border-gray-100 pt-4 mt-2 flex justify-between items-center mb-6">
-              <span className="text-sm text-gray-500">İlk ödeme (şimdi)</span>
-              <span className="text-xl font-black text-blue-600">
-                ₺
-                {milestones
-                  .filter((m: any) => m.offer_id === detailOffer.id)
-                  .sort((a: any, b: any) => a.order_index - b.order_index)[0]
-                  ?.amount?.toLocaleString('tr-TR')}
-              </span>
+            <div className="mb-8 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3.5">
+              <span className="text-xs font-medium uppercase tracking-wide text-slate-400">Uzman</span>
+              <div className="mt-1.5 flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <User className="h-4 w-4" strokeWidth={2} />
+                </span>
+                <span className="font-semibold text-slate-900">
+                  {detailOffer.profiles?.full_name ?? detailOffer.provider?.full_name ?? 'Uzman'}
+                </span>
+              </div>
+            </div>
+
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Ödeme aşamaları</p>
+
+            {(() => {
+              const offerMilestones = milestones
+                .filter((m: any) => m.offer_id === detailOffer.id)
+                .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))
+              return (
+                <div className="space-y-0">
+                  {offerMilestones.map((m: any, i: number) => (
+                    <div key={m.id} className="flex gap-4">
+                      <div className="flex w-12 shrink-0 flex-col items-center">
+                        <div className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full border-2 border-primary/20 bg-white text-sm font-black text-primary shadow-sm">
+                          {i + 1}
+                        </div>
+                        {i < offerMilestones.length - 1 && (
+                          <div className="my-0.5 min-h-[28px] w-px flex-1 bg-gradient-to-b from-primary/35 via-primary/15 to-primary/5" />
+                        )}
+                      </div>
+                      <div className="mb-5 min-w-0 flex-1 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100/80">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-900">{m.title}</p>
+                            {m.description ? (
+                              <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{m.description}</p>
+                            ) : null}
+                          </div>
+                          <div className="flex shrink-0 flex-col items-end gap-1.5">
+                            {m.percentage != null && (
+                              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary ring-1 ring-primary/20">
+                                %{m.percentage}
+                              </span>
+                            )}
+                            <p className="text-sm font-black tabular-nums text-slate-900">
+                              ₺{(m.amount != null ? Number(m.amount) : 0).toLocaleString('tr-TR')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+
+            <div className="mt-2 rounded-2xl border border-blue-100/90 bg-blue-50 px-5 py-5">
+              <p className="text-sm font-bold text-blue-950">Hemen ödenmesi gereken</p>
+              <p className="mt-1 text-xs leading-relaxed text-blue-800/80">
+                İlk taksit kapora olarak güvenli ödeme altyapısıyla tahsil edilir; iş ilerledikçe diğer aşamalar
+                açılır.
+              </p>
+              <div className="mt-4 flex flex-wrap items-end justify-between gap-2 border-t border-blue-200/50 pt-4">
+                <span className="text-sm font-medium text-slate-700">İlk ödeme (şimdi)</span>
+                <span className="font-serif text-2xl font-black tabular-nums text-blue-700">
+                  ₺
+                  {milestones
+                    .filter((m: any) => m.offer_id === detailOffer.id)
+                    .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0))[0]
+                    ?.amount?.toLocaleString('tr-TR')}
+                </span>
+              </div>
             </div>
 
             <button
@@ -1414,9 +1455,17 @@ export default function JobDetailPage() {
                 setDetailOffer(null)
                 void handleAcceptOffer(detailOffer.id)
               }}
-              className="w-full bg-gray-900 text-white rounded-2xl py-4 font-bold text-base"
+              className="group relative mt-6 w-full overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 py-5 text-base font-bold text-white shadow-xl transition hover:shadow-2xl hover:brightness-110"
             >
-              ✅ Teklifi Kabul Et & İlk Ödemeyi Yap
+              <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-0 transition duration-700 group-hover:translate-x-full group-hover:opacity-100" />
+              <span className="relative flex items-center justify-center gap-2.5 px-2">
+                <Lock className="h-5 w-5 shrink-0 text-emerald-300" strokeWidth={2.25} />
+                <span className="text-[13px] font-semibold uppercase tracking-wide text-emerald-100/90">
+                  Güvenli ödeme
+                </span>
+                <span className="hidden h-4 w-px bg-white/20 sm:inline" />
+                <span>Teklifi kabul et &amp; öde</span>
+              </span>
             </button>
           </div>
         </div>
