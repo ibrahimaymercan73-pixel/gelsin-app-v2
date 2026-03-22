@@ -3,8 +3,6 @@ import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
-import { milestonePhotoUrlsFromRaw } from '@/lib/milestone-photos'
-
 function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
@@ -113,70 +111,10 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         )
       }
-      const photoUrls = milestonePhotoUrlsFromRaw(ms.photos)
-      const hasPhotos = photoUrls.length > 0
       const st = (typeof ms.status === 'string' ? ms.status : '').trim()
-      const jobSt = (typeof (job as { status?: string }).status === 'string'
-        ? (job as { status: string }).status
-        : ''
-      ).trim()
-
-      /** Aynı işe ait eski teklif milestone'ları sırayı bozmasın — sadece bu teklifin aşamaları */
-      let { data: allMs } = await supabase
-        .from('milestones')
-        .select('id, order_index, sort_order')
-        .eq('job_id', jobId)
-        .eq('offer_id', offerId)
-      if (!allMs?.length) {
-        const { data: legacy } = await supabase
-          .from('milestones')
-          .select('id, order_index, sort_order')
-          .eq('job_id', jobId)
-        allMs = legacy ?? []
-      }
-      const sortedIds = [...(allMs || [])].sort((a, b) => {
-        const oa = Number(a.order_index ?? a.sort_order ?? 0)
-        const ob = Number(b.order_index ?? b.sort_order ?? 0)
-        if (oa !== ob) return oa - ob
-        return String(a.id).localeCompare(String(b.id))
-      })
-      const firstMilestoneId = sortedIds[0]?.id
-      /**
-       * İlk taksit: iş açık veya teklif aşamasında; ayrıca iş "accepted" ama ilk aşama hâlâ pending
-       * (ödeme yarım kaldı / webhook sırası) — yine kapora, fotoğraf yok.
-       */
-      const isProDepositPayment =
-        (jobSt === 'open' || jobSt === 'offered' || jobSt === 'accepted') &&
-        firstMilestoneId === ms.id &&
-        st === 'pending'
-
-      /** Fotoğraf yüklendi; bazı kayıtlarda durum active kaldı (awaiting_customer yazılmadı) */
-      const payableWithPhotos =
-        hasPhotos &&
-        (st === 'awaiting_customer' ||
-          st === 'ai_approved' ||
-          st === 'photos_uploaded' ||
-          st === 'active')
-
-      const canPay = isProDepositPayment || payableWithPhotos
-      if (!canPay) {
-        return NextResponse.json(
-          {
-            error:
-              'Bu aşama için ödeme şu an uygun değil. İlk taksit: iş teklif aşamasındayken veya ilk aşama beklerken deneyin. Sonraki taksitler: uzman fotoğraf yükledikten sonra deneyin. Sayfayı yenilemeyi deneyin.',
-            code: 'milestone_not_payable',
-            milestone_status: st,
-            job_status: jobSt,
-            has_photos: hasPhotos,
-          },
-          { status: 400 }
-        )
-      }
-      if (!isProDepositPayment && !hasPhotos) {
-        return NextResponse.json(
-          { error: 'Bu aşama için önce uzmanın fotoğraf yüklemesi gerekir.' },
-          { status: 400 }
-        )
+      // İlk ödeme için milestone 'pending' veya 'active' olabilir — sadece ödenmiş aşamalar tekrar ödenemez
+      if (st === 'customer_approved') {
+        return NextResponse.json({ error: 'Bu aşama zaten ödendi.' }, { status: 400 })
       }
       amount = Number(ms.amount)
       milestoneBasketLabel = (ms.title as string)?.trim() || 'Pro aşaması'
