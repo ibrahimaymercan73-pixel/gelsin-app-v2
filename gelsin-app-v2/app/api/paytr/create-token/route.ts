@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     if (milestoneId) {
       const { data: ms, error: msErr } = await supabase
         .from('milestones')
-        .select('id, job_id, amount, status, ai_approved, title, photos')
+        .select('id, job_id, offer_id, amount, status, ai_approved, title, photos')
         .eq('id', milestoneId)
         .single()
       if (msErr || !ms) {
@@ -105,6 +105,13 @@ export async function POST(req: NextRequest) {
       }
       if (ms.job_id !== jobId) {
         return NextResponse.json({ error: 'Aşama bu işe ait değil.' }, { status: 400 })
+      }
+      const msOfferId = (ms as { offer_id?: string | null }).offer_id
+      if (msOfferId != null && msOfferId !== offerId) {
+        return NextResponse.json(
+          { error: 'Bu aşama, ödeme için seçilen teklife ait değil. Sayfayı yenileyip doğru teklifle deneyin.' },
+          { status: 400 }
+        )
       }
       const photoUrls = milestonePhotoUrlsFromRaw(ms.photos)
       const hasPhotos = photoUrls.length > 0
@@ -114,11 +121,19 @@ export async function POST(req: NextRequest) {
         : ''
       ).trim()
 
-      /** Teklif kabulü: ilk aşama tutarı — iş henüz açık, milestone pending, fotoğraf yok */
-      const { data: allMs } = await supabase
+      /** Aynı işe ait eski teklif milestone'ları sırayı bozmasın — sadece bu teklifin aşamaları */
+      let { data: allMs } = await supabase
         .from('milestones')
         .select('id, order_index, sort_order')
         .eq('job_id', jobId)
+        .eq('offer_id', offerId)
+      if (!allMs?.length) {
+        const { data: legacy } = await supabase
+          .from('milestones')
+          .select('id, order_index, sort_order')
+          .eq('job_id', jobId)
+        allMs = legacy ?? []
+      }
       const sortedIds = [...(allMs || [])].sort((a, b) => {
         const oa = Number(a.order_index ?? a.sort_order ?? 0)
         const ob = Number(b.order_index ?? b.sort_order ?? 0)

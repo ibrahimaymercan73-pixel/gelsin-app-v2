@@ -137,11 +137,21 @@ export default function JobDetailPage() {
       }
     }
 
-    const { data: milestones } = await supabase
+    const acceptedForMilestones = offersList.find(
+      (o: any) =>
+        o.status === 'accepted' &&
+        j?.provider_id &&
+        String(o.provider_id).toLowerCase() === String(j.provider_id).toLowerCase()
+    )
+    let msQuery = supabase
       .from('milestones')
       .select('*')
       .eq('job_id', id)
       .order('order_index', { ascending: true })
+    if (acceptedForMilestones?.id) {
+      msQuery = msQuery.eq('offer_id', acceptedForMilestones.id)
+    }
+    const { data: milestones } = await msQuery
     setMilestones(milestones || [])
 
     const enrichedOffers = offersList.map((o) => {
@@ -272,11 +282,21 @@ export default function JobDetailPage() {
       const jobId = job.id
 
       if ((offer as { is_milestone?: boolean }).is_milestone) {
-        const { data: milestones } = await supabase
+        let { data: milestones } = await supabase
           .from('milestones')
           .select('*')
           .eq('job_id', jobId)
+          .eq('offer_id', offerId)
           .order('order_index', { ascending: true })
+
+        if (!milestones?.length) {
+          const { data: legacy } = await supabase
+            .from('milestones')
+            .select('*')
+            .eq('job_id', jobId)
+            .order('order_index', { ascending: true })
+          milestones = legacy ?? []
+        }
 
         console.log('Milestones:', milestones)
 
