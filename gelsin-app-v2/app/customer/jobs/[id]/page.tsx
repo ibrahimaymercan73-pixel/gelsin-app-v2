@@ -912,7 +912,7 @@ export default function JobDetailPage() {
                           ? 'bg-orange-100 text-orange-600'
                           : m.status === 'photos_uploaded'
                             ? 'bg-blue-100 text-blue-600'
-                            : m.status === 'ai_approved'
+                            : m.status === 'awaiting_customer' || m.status === 'ai_approved'
                               ? 'bg-green-100 text-green-600'
                               : m.status === 'customer_approved'
                                 ? 'bg-yellow-100 text-yellow-600'
@@ -925,13 +925,16 @@ export default function JobDetailPage() {
                         ? '🔨 Devam Ediyor'
                         : m.status === 'photos_uploaded'
                           ? '📸 Fotoğraf Yüklendi'
-                          : m.status === 'ai_approved'
-                            ? '✅ AI Onayladı'
-                            : m.status === 'customer_approved'
-                              ? '💰 Ödendi'
-                              : m.status}
+                          : m.status === 'awaiting_customer'
+                            ? '👀 İnceleme / ödeme bekliyor'
+                            : m.status === 'ai_approved'
+                              ? '✅ Ödeme bekliyor (eski kayıt)'
+                              : m.status === 'customer_approved'
+                                ? '💰 Ödendi'
+                                : m.status}
                   </span>
-                  {m.status === 'ai_approved' && (
+                  {((m.status === 'awaiting_customer' || m.status === 'ai_approved') ||
+                    (m.status === 'photos_uploaded' && photoUrls.length > 0)) && (
                     <button
                       type="button"
                       disabled={milestonePaying === m.id}
@@ -960,10 +963,10 @@ export default function JobDetailPage() {
                     </div>
                   </div>
                 )}
-                {m.ai_report && (
-                  <div className="mt-2 bg-green-50 rounded-xl p-3">
-                    <p className="text-xs text-green-700 font-semibold">
-                      🤖 AI Raporu: {m.ai_report}
+                {m.ai_report && m.status === 'ai_approved' && (
+                  <div className="mt-2 bg-slate-50 rounded-xl p-3">
+                    <p className="text-xs text-slate-600 font-semibold">
+                      (Eski kayıt notu) {m.ai_report}
                     </p>
                   </div>
                 )}

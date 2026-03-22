@@ -59,30 +59,25 @@ function MilestoneUpload({
     void refreshMilestones()
   }, [jobId])
 
-  /** AI bittiğinde (ai_approved / ai_rejected) kartın kaybolmaması için tüm “işlemdeki” durumlar */
+  /** Aktif / müşteri onayı bekleyen / eski AI durumları — kartın kaybolmaması için */
   const activeMilestone = [...milestones]
     .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
     .find((m) =>
-      ['active', 'photos_uploaded', 'ai_approved', 'ai_rejected'].includes(m.status)
+      [
+        'active',
+        'photos_uploaded',
+        'awaiting_customer',
+        'ai_approved',
+        'ai_rejected',
+      ].includes(m.status)
     )
-
-  /** AI API sonrası liste gecikirse veya photos_uploaded takılı kalırsa kısa süre yenile */
-  useEffect(() => {
-    const waiting = milestones.some((m) => m.status === 'photos_uploaded')
-    if (!waiting) return
-    let n = 0
-    const t = setInterval(() => {
-      n += 1
-      void refreshMilestones()
-      if (n >= 24) clearInterval(t)
-    }, 2500)
-    return () => clearInterval(t)
-  }, [jobId, milestones])
 
   /** Müşteri ödediğinde üst liste (bitiş QR kilidi) güncellensin */
   useEffect(() => {
     if (!onMilestoneChange) return
-    const waitingPay = milestones.some((m) => m.status === 'ai_approved')
+    const waitingPay = milestones.some(
+      (m) => m.status === 'ai_approved' || m.status === 'awaiting_customer'
+    )
     if (!waitingPay) return
     const t = setInterval(() => onMilestoneChange(), 12000)
     return () => clearInterval(t)
@@ -107,21 +102,10 @@ function MilestoneUpload({
       .from('milestones')
       .update({
         photos: urls,
-        status: 'photos_uploaded',
+        status: 'awaiting_customer',
+        ai_report: null,
       })
       .eq('id', activeMilestone.id)
-
-    // AI kontrolünü tetikle
-    const aiRes = await fetch('/api/ai/check-milestone', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ milestone_id: activeMilestone.id }),
-    })
-    try {
-      await aiRes.json()
-    } catch {
-      /* yanıt gövdesi yoksa yok say */
-    }
 
     setUploading(false)
 
@@ -153,15 +137,35 @@ function MilestoneUpload({
         </label>
       )}
 
-      {activeMilestone.status === 'photos_uploaded' && (
-        <div className="bg-blue-100 rounded-xl p-3 text-center">
-          <p className="text-sm font-bold text-blue-700">🤖 AI denetimi yapılıyor...</p>
+      {(activeMilestone.status === 'photos_uploaded' ||
+        activeMilestone.status === 'awaiting_customer') && (
+        <div className="bg-green-100 rounded-xl p-3 text-center space-y-2">
+          <p className="text-sm font-bold text-green-700">
+            ✅ Fotoğraflar yüklendi. Müşteri inceleyip ödeme yapabilir.
+          </p>
+          {milestonePhotoUrls(activeMilestone).length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold text-green-800 mb-1">Gönderilen fotoğraflar (müşteri de görür)</p>
+              <div className="flex gap-1.5 flex-wrap justify-center">
+                {milestonePhotoUrls(activeMilestone).map((url, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="overflow-hidden rounded-lg border border-green-300 w-14 h-14"
+                    onClick={() => window.open(url, '_blank')}
+                  >
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {activeMilestone.status === 'ai_approved' && (
         <div className="bg-green-100 rounded-xl p-3 text-center space-y-2">
-          <p className="text-sm font-bold text-green-700">✅ AI onayladı! Müşteri onayı bekleniyor.</p>
+          <p className="text-sm font-bold text-green-700">✅ Müşteri onayı ve ödeme bekleniyor.</p>
           {milestonePhotoUrls(activeMilestone).length > 0 && (
             <div>
               <p className="text-[10px] font-semibold text-green-800 mb-1">Gönderilen fotoğraflar (müşteri de görür)</p>
@@ -180,7 +184,7 @@ function MilestoneUpload({
             </div>
           )}
           {activeMilestone.ai_report && (
-            <p className="text-xs text-green-600 mt-1">{activeMilestone.ai_report}</p>
+            <p className="text-xs text-green-600 mt-1">(Eski kayıt) {activeMilestone.ai_report}</p>
           )}
         </div>
       )}
@@ -188,7 +192,7 @@ function MilestoneUpload({
       {activeMilestone.status === 'ai_rejected' && (
         <div>
           <div className="bg-red-100 rounded-xl p-3 mb-2">
-            <p className="text-sm font-bold text-red-700">❌ AI onaylamadı. Lütfen tekrar fotoğraf yükleyin.</p>
+            <p className="text-sm font-bold text-red-700">❌ Bu aşama onaylanmadı. Lütfen tekrar fotoğraf yükleyin.</p>
             {activeMilestone.ai_report && (
               <p className="text-xs text-red-600 mt-1">{activeMilestone.ai_report}</p>
             )}
@@ -222,7 +226,7 @@ function MilestoneUpload({
               className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
                 m.status === 'customer_approved'
                   ? 'bg-green-500 text-white'
-                  : m.status === 'ai_approved'
+                  : m.status === 'ai_approved' || m.status === 'awaiting_customer'
                     ? 'bg-blue-500 text-white'
                     : m.status === 'photos_uploaded'
                       ? 'bg-sky-500 text-white'
@@ -793,7 +797,7 @@ export default function ProviderMyJobsPage() {
                 {job.status === 'started' && job.is_pro && job.pro_block_end_qr && (
                   <p className="text-[11px] text-center text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                     Gelsin Pro: Müşteri tüm aşama ödemelerini tamamlayana kadar <strong>bitiş QR</strong> kullanılamaz.
-                    Her AI onayından sonra müşteri &quot;Onayla &amp; Öde&quot; yapınca sıradaki aşama açılır.
+                    Fotoğrafları yükledikten sonra müşteri inceleyip &quot;Onayla &amp; Öde&quot; yapınca sıradaki aşama açılır.
                   </p>
                 )}
                 {job.status === 'started' && (

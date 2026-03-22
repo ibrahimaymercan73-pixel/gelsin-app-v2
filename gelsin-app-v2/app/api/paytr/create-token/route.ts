@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     if (milestoneId) {
       const { data: ms, error: msErr } = await supabase
         .from('milestones')
-        .select('id, job_id, amount, status, ai_approved, title')
+        .select('id, job_id, amount, status, ai_approved, title, photos')
         .eq('id', milestoneId)
         .single()
       if (msErr || !ms) {
@@ -105,9 +105,24 @@ export async function POST(req: NextRequest) {
       if (ms.job_id !== jobId) {
         return NextResponse.json({ error: 'Aşama bu işe ait değil.' }, { status: 400 })
       }
-      if (!ms.ai_approved || ms.status !== 'ai_approved') {
+      const photoList = Array.isArray(ms.photos) ? (ms.photos as unknown[]) : []
+      const hasPhotos = photoList.some((p) => typeof p === 'string' && p.length > 0)
+      const canPay =
+        ms.status === 'awaiting_customer' ||
+        (ms.status === 'ai_approved' && ms.ai_approved === true) ||
+        (ms.status === 'photos_uploaded' && hasPhotos)
+      if (!canPay) {
         return NextResponse.json(
-          { error: 'Bu aşama için ödeme: önce AI onayı ve “AI Onayladı” durumu gerekir.' },
+          {
+            error:
+              'Bu aşama için ödeme: uzman fotoğraf yükledikten sonra siz inceleyip onaylayabilirsiniz (durum: müşteri onayı bekleniyor).',
+          },
+          { status: 400 }
+        )
+      }
+      if (!hasPhotos) {
+        return NextResponse.json(
+          { error: 'Bu aşama için önce uzmanın fotoğraf yüklemesi gerekir.' },
           { status: 400 }
         )
       }

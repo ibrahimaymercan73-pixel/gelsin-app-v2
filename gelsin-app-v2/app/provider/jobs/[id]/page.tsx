@@ -27,7 +27,6 @@ export default function ProviderJobDetailPage() {
   const [milestones, setMilestones] = useState<MilestoneRow[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState<string | null>(null)
-  const [aiRunning, setAiRunning] = useState<string | null>(null)
 
   const load = async () => {
     if (!jobId) return
@@ -119,7 +118,7 @@ export default function ProviderJobDetailPage() {
 
       const { error: updErr } = await supabase
         .from('milestones')
-        .update({ photos: urls, status: 'photos_uploaded' })
+        .update({ photos: urls, status: 'awaiting_customer', ai_report: null })
         .eq('id', milestoneId)
 
       if (updErr) {
@@ -128,21 +127,8 @@ export default function ProviderJobDetailPage() {
       }
 
       await load()
-
-      setAiRunning(milestoneId)
-      const res = await fetch('/api/ai/check-milestone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestone_id: milestoneId }),
-      })
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}))
-        alert(j?.error || 'AI kontrolü başarısız')
-      }
-      await load()
     } finally {
       setUploading(null)
-      setAiRunning(null)
     }
   }
 
@@ -201,13 +187,11 @@ export default function ProviderJobDetailPage() {
                       accept="image/*"
                       multiple
                       className="mt-2 block w-full text-sm"
-                      disabled={!!uploading || !!aiRunning}
+                      disabled={!!uploading}
                       onChange={(e) => void handleFiles(m.id, e.target.files)}
                     />
-                    {(uploading === m.id || aiRunning === m.id) && (
-                      <p className="mt-2 text-xs text-violet-600">
-                        {uploading === m.id ? 'Yükleniyor…' : 'AI değerlendiriyor…'}
-                      </p>
+                    {uploading === m.id && (
+                      <p className="mt-2 text-xs text-violet-600">Yükleniyor…</p>
                     )}
                   </div>
                 )}

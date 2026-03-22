@@ -1,0 +1,6 @@
+-- Gelsin Pro: Manuel müşteri onayı — yeni milestone durumu `awaiting_customer`.
+-- Kod, fotoğraf yüklenince bu duruma geçirir. Ödeme yalnızca `awaiting_customer` veya
+-- eski `ai_approved` + ai_approved=true kayıtlarında açılır.
+--
+-- Tabloda milestones.status için CHECK constraint varsa 'awaiting_customer' ekleyin.
+-- Constraint yoksa ek işlem gerekmez.
