@@ -307,6 +307,7 @@ export default function JobDetailPage() {
           return
         }
 
+        // İlk teklif kabulünde milestone genelde 'pending' — sunucu tutarı DB'den doğrular; istemci status kontrolü yok
         console.log('İlk aşama tutarı:', firstMilestone.amount)
 
         const res = await fetch('/api/paytr/create-token', {
@@ -315,6 +316,7 @@ export default function JobDetailPage() {
           body: JSON.stringify({
             job_id: jobId,
             offer_id: offerId,
+            amount: firstMilestone.amount,
             milestone_id: firstMilestone.id,
           }),
         })
