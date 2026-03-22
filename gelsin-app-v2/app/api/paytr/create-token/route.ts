@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
+import { milestonePhotoUrlsFromRaw } from '@/lib/milestone-photos'
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100
@@ -105,12 +106,14 @@ export async function POST(req: NextRequest) {
       if (ms.job_id !== jobId) {
         return NextResponse.json({ error: 'Aşama bu işe ait değil.' }, { status: 400 })
       }
-      const photoList = Array.isArray(ms.photos) ? (ms.photos as unknown[]) : []
-      const hasPhotos = photoList.some((p) => typeof p === 'string' && p.length > 0)
+      const photoUrls = milestonePhotoUrlsFromRaw(ms.photos)
+      const hasPhotos = photoUrls.length > 0
+      const st = (typeof ms.status === 'string' ? ms.status : '').trim()
+      // ai_approved: sütun (ai_approved) bazen null; durum metni yeterli
       const canPay =
-        ms.status === 'awaiting_customer' ||
-        (ms.status === 'ai_approved' && ms.ai_approved === true) ||
-        (ms.status === 'photos_uploaded' && hasPhotos)
+        st === 'awaiting_customer' ||
+        st === 'ai_approved' ||
+        (st === 'photos_uploaded' && hasPhotos)
       if (!canPay) {
         return NextResponse.json(
           {
