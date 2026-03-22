@@ -65,6 +65,7 @@ export default function JobDetailPage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [lightbox, setLightbox] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
   const [paymentModal, setPaymentModal] = useState<{ token: string; merchantOid: string } | null>(null)
   const [milestones, setMilestones] = useState<any[]>([])
   const [milestonePaying, setMilestonePaying] = useState<string | null>(null)
@@ -927,7 +928,7 @@ export default function JobDetailPage() {
           )}
         </section>
 
-        {job?.status !== 'open' && milestones && milestones.length > 0 && (
+        {milestones && milestones.length > 0 && (
           <div className="mt-6">
             <h3 className="font-bold text-gray-900 mb-3">
               🏗️ Gelsin Pro — İş Aşamaları
@@ -998,7 +999,7 @@ export default function JobDetailPage() {
                           src={url}
                           alt={`Aşama fotoğrafı ${i + 1}`}
                           className="w-20 h-20 object-cover rounded-xl border border-gray-200 cursor-pointer"
-                          onClick={() => window.open(url, '_blank')}
+                          onClick={() => setLightboxUrl(url)}
                         />
                       ))}
                     </div>
@@ -1381,6 +1382,27 @@ export default function JobDetailPage() {
               />
             )}
           </div>
+        </div>
+      )}
+
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <img
+            src={lightboxUrl}
+            alt=""
+            className="max-w-full max-h-full rounded-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-4 text-white text-2xl font-bold w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>
