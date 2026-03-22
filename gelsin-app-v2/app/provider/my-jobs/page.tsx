@@ -186,18 +186,22 @@ export default function ProviderMyJobsPage() {
   }
 
   const completeAction = async (jobId: string, action: 'start' | 'end') => {
-    const supabase = createClient()
     const job = jobs.find(j => j.id === jobId)
     if (action === 'start') {
       if (job?.qr_scanned_at) {
         setResult({ ok: false, msg: 'Bu QR kodu zaten kullanıldı.' })
         return
       }
-      await supabase.from('jobs').update({ status: 'started', qr_scanned_at: new Date().toISOString() }).eq('id', jobId)
-      await supabase.from('notifications').insert({
-        user_id: job.customer_id, title: '🔨 Uzman İşe Başladı!',
-        body: `"${job.title}" işi başladı.`, type: 'job_started', related_job_id: jobId
+      const res = await fetch('/api/qr/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId }),
       })
+      const data: any = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setResult({ ok: false, msg: data?.error || 'İş başlatılamadı.' })
+        return
+      }
       setResult({ ok: true, msg: '✅ İş başlatıldı! Göreve devam edin.' })
     } else {
       if (job?.payment_released || job?.qr_used_at) {
