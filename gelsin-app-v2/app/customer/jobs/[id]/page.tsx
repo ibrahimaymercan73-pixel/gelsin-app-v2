@@ -197,6 +197,17 @@ export default function JobDetailPage() {
     setMounted(true)
   }, [])
 
+  useEffect(() => {
+    if (detailOffer) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [detailOffer])
+
   // Hafif polling ile güncel tut (WebSocket yerine, client-side hataları önlemek için)
   useEffect(() => {
     let cancelled = false
@@ -929,96 +940,6 @@ export default function JobDetailPage() {
           )}
         </section>
 
-        {milestones && milestones.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-bold text-gray-900 mb-3">
-              🏗️ Gelsin Pro — İş Aşamaları
-            </h3>
-            {milestones.map((m: any) => {
-              const photoUrls = milestonePhotoUrls(m)
-              return (
-              <div key={m.id} className="border rounded-2xl p-4 mb-3">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-bold text-gray-900">{m.title}</span>
-                  <span className="text-sm font-bold text-blue-600">
-                    ₺{Number(m.amount).toLocaleString('tr-TR')} · %{m.percentage}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400 mb-3">{m.description}</p>
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-xs font-bold px-3 py-1 rounded-full ${
-                      m.status === 'pending'
-                        ? 'bg-gray-100 text-gray-500'
-                        : m.status === 'active'
-                          ? 'bg-orange-100 text-orange-600'
-                          : m.status === 'photos_uploaded'
-                            ? 'bg-blue-100 text-blue-600'
-                            : m.status === 'awaiting_customer' || m.status === 'ai_approved'
-                              ? 'bg-green-100 text-green-600'
-                              : m.status === 'customer_approved'
-                                ? 'bg-yellow-100 text-yellow-600'
-                                : 'bg-gray-100 text-gray-500'
-                    }`}
-                  >
-                    {m.status === 'pending'
-                      ? '⏳ Bekliyor'
-                      : m.status === 'active'
-                        ? '🔨 Devam Ediyor'
-                        : m.status === 'photos_uploaded'
-                          ? '📸 Fotoğraf Yüklendi'
-                          : m.status === 'awaiting_customer'
-                            ? '👀 İnceleme / ödeme bekliyor'
-                            : m.status === 'ai_approved'
-                              ? '✅ Ödeme bekliyor (eski kayıt)'
-                              : m.status === 'customer_approved'
-                                ? '💰 Ödendi'
-                                : m.status}
-                  </span>
-                  {((m.status === 'awaiting_customer' || m.status === 'ai_approved') ||
-                    (m.status === 'photos_uploaded' && photoUrls.length > 0) ||
-                    (m.status === 'active' && photoUrls.length > 0)) && (
-                    <button
-                      type="button"
-                      disabled={milestonePaying === m.id}
-                      onClick={() => void approveMilestonePayment(m.id)}
-                      className="bg-green-500 text-white text-xs font-bold px-4 py-2 rounded-xl disabled:opacity-50"
-                    >
-                      {milestonePaying === m.id
-                        ? 'İşleniyor…'
-                        : `Onayla & Öde ₺${Number(m.amount).toLocaleString('tr-TR')}`}
-                    </button>
-                  )}
-                </div>
-                {photoUrls.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-xs text-gray-400 mb-2">📸 Uzmanın yüklediği fotoğraflar:</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {photoUrls.map((url: string, i: number) => (
-                        <img
-                          key={i}
-                          src={url}
-                          alt={`Aşama fotoğrafı ${i + 1}`}
-                          className="w-20 h-20 object-cover rounded-xl border border-gray-200 cursor-pointer"
-                          onClick={() => setLightboxUrl(url)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {m.ai_report && m.status === 'ai_approved' && (
-                  <div className="mt-2 bg-slate-50 rounded-xl p-3">
-                    <p className="text-xs text-slate-600 font-semibold">
-                      (Eski kayıt notu) {m.ai_report}
-                    </p>
-                  </div>
-                )}
-              </div>
-              )
-            })}
-          </div>
-        )}
-
         {/* Teklifler / uzman kartı */}
         {offers.length > 0 && (
           <div>
@@ -1419,6 +1340,7 @@ export default function JobDetailPage() {
       {detailOffer && (
         <div
           className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
+          style={{ touchAction: 'none' }}
           onClick={() => setDetailOffer(null)}
         >
           <div
