@@ -1,95 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
-
-async function urlToInlinePart(url: string): Promise<{ mime_type: string; data: string } | null> {
-  try {
-    const res = await fetch(url)
-    if (!res.ok) return null
-    const buf = Buffer.from(await res.arrayBuffer())
-    const mime = res.headers.get('content-type') || 'image/jpeg'
-    return { mime_type: mime.split(';')[0], data: buf.toString('base64') }
-  } catch {
-    return null
-  }
-}
 
 export async function POST(req: NextRequest) {
+  console.log('=== AI CHECK MILESTONE BAŞLADI ===')
+
   try {
-    const body = await req.json().catch(() => ({}))
-    const milestone_id = typeof body?.milestone_id === 'string' ? body.milestone_id : null
-    if (!milestone_id) {
-      return NextResponse.json({ error: 'milestone_id gerekli' }, { status: 400 })
-    }
+    const { milestone_id } = await req.json()
+    console.log('Milestone ID:', milestone_id)
 
-    const auth = await createServerSupabaseClient()
-    const {
-      data: { user },
-    } = await auth.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
-    }
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!url || !serviceKey) {
-      return NextResponse.json({ error: 'Sunucu yapılandırması eksik' }, { status: 500 })
-    }
-
-    const supabase = createClient(url, serviceKey)
-
-    const { data: milestone, error: mErr } = await supabase
+    const { data: milestone, error: mError } = await supabase
       .from('milestones')
-      .select('*')
+      .select('*, jobs(title, description, customer_id)')
       .eq('id', milestone_id)
       .single()
 
-    if (mErr || !milestone) {
-      return NextResponse.json({ error: 'Milestone bulunamadı' }, { status: 404 })
+    console.log('Milestone:', milestone)
+    console.log('Milestone error:', mError)
+
+    if (mError || !milestone) {
+      return NextResponse.json(
+        { error: 'Milestone bulunamadı: ' + mError?.message },
+        { status: 400 }
+      )
     }
 
-    const { data: jobRow } = await supabase.from('jobs').select('title, description, provider_id').eq('id', milestone.job_id).single()
+    const photos = milestone.photos || []
+    console.log('Photos:', photos)
 
-    if (!jobRow || jobRow.provider_id !== user.id) {
-      return NextResponse.json({ error: 'Bu işlem için yetkiniz yok' }, { status: 403 })
+    if (photos.length === 0) {
+      return NextResponse.json({ error: 'Fotoğraf yok' }, { status: 400 })
     }
 
-    const photos = (milestone.photos as string[] | null) || []
-    if (!Array.isArray(photos) || photos.length === 0) {
-      return NextResponse.json({ error: 'Önce fotoğraf yükleyin' }, { status: 400 })
+    const GEMINI_KEY = process.env.GEMINI_API_KEY
+    console.log('Gemini key var mı:', !!GEMINI_KEY)
+
+    if (!GEMINI_KEY) {
+      return NextResponse.json(
+        { error: 'GEMINI_API_KEY tanımlı değil' },
+        { status: 400 }
+      )
     }
 
-    const prompt = `
-    Sen bir inşaat ve tadilat denetçisisin.
-    İş başlığı: ${jobRow.title}
-    Aşama: ${milestone.title}
-    Açıklama: ${milestone.description}
+    const prompt = `Sen bir inşaat ve tadilat denetçisisin.
+İş: ${milestone.jobs?.title}
+Aşama: ${milestone.title}
+Açıklama: ${milestone.description}
 
-    Bu fotoğrafları incele ve şunları değerlendir:
-    1. İş tamamlanmış mı?
-    2. Kalite standartlarına uygun mu?
-    3. Görünür bir hata veya eksiklik var mı?
+Bu fotoğrafları incele:
+1. İş tamamlanmış mı?
+2. Kalite uygun mu?
+3. Hata var mı?
 
-    Sonucu şu formatta ver:
-    ONAY: EVET veya HAYIR
-    RAPOR: Kısa değerlendirme (2-3 cümle)
-  `
+Şu formatta yanıt ver:
+ONAY: EVET veya HAYIR
+RAPOR: 2-3 cümle değerlendirme`
 
-    const imageParts: { inline_data: { mime_type: string; data: string } }[] = []
-    for (const u of photos) {
-      const part = await urlToInlinePart(u)
-      if (part) {
-        imageParts.push({ inline_data: { mime_type: part.mime_type, data: part.data } })
+    // Fotoğrafları base64'e çevir
+    const imageParts = []
+    for (const url of photos.slice(0, 3)) {
+      try {
+        const imgRes = await fetch(url)
+        const buffer = await imgRes.arrayBuffer()
+        const base64 = Buffer.from(buffer).toString('base64')
+        imageParts.push({
+          inline_data: {
+            mime_type: 'image/jpeg',
+            data: base64,
+          },
+        })
+      } catch (imgErr) {
+        console.error('Fotoğraf çekme hatası:', imgErr)
       }
     }
 
-    const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) {
-      return NextResponse.json({ error: 'GEMINI_API_KEY tanımlı değil' }, { status: 500 })
-    }
+    console.log('Image parts sayısı:', imageParts.length)
 
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,9 +96,23 @@ export async function POST(req: NextRequest) {
     )
 
     const geminiData = await geminiRes.json()
+    console.log('Gemini response:', JSON.stringify(geminiData).slice(0, 200))
+
+    if (!geminiRes.ok) {
+      return NextResponse.json(
+        { error: 'Gemini hatası: ' + JSON.stringify(geminiData) },
+        { status: 400 }
+      )
+    }
+
     const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
-    const approved = aiText.includes('ONAY: EVET')
-    const report = aiText.replace(/ONAY:\s*EVET/gi, '').replace(/ONAY:\s*HAYIR/gi, '').trim()
+    console.log('AI text:', aiText)
+
+    const approved = aiText.toUpperCase().includes('ONAY: EVET')
+    const report = aiText
+      .replace(/ONAY:\s*(EVET|HAYIR)/gi, '')
+      .replace(/RAPOR:/gi, '')
+      .trim()
 
     await supabase
       .from('milestones')
@@ -117,22 +123,23 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', milestone_id)
 
-    const { data: job } = await supabase.from('jobs').select('customer_id').eq('id', milestone.job_id).single()
-
-    if (job && approved) {
+    if (approved && milestone.jobs?.customer_id) {
       await supabase.from('notifications').insert({
-        user_id: job.customer_id,
+        user_id: milestone.jobs.customer_id,
         title: '✅ AI Denetimi Tamamlandı!',
-        body: `"${milestone.title}" aşaması AI tarafından onaylandı. Ödemeyi onaylayabilirsiniz.`,
+        body: `"${milestone.title}" aşaması onaylandı. Ödemeyi onaylayabilirsiniz.`,
         type: 'milestone_ai_approved',
         is_read: false,
-        related_job_id: milestone.job_id,
       })
     }
 
+    console.log('=== AI CHECK MILESTONE TAMAMLANDI ===', { approved, report })
     return NextResponse.json({ approved, report })
-  } catch (e) {
-    console.error('[check-milestone]', e)
-    return NextResponse.json({ error: 'Sunucu hatası' }, { status: 500 })
+  } catch (err: any) {
+    console.error('=== AI CHECK MILESTONE HATASI ===', err)
+    return NextResponse.json(
+      { error: err.message || 'Bilinmeyen hata' },
+      { status: 500 }
+    )
   }
 }
