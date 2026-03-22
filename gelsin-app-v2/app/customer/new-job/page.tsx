@@ -306,6 +306,16 @@ function NewJobForm() {
       return
     }
 
+    fetch('/api/ai/extract-tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        job_id: job.id,
+        title: title,
+        description: desc,
+      }),
+    })
+
     router.replace(`/customer/jobs/${job.id}`)
   }
 
