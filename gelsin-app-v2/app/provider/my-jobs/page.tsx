@@ -87,37 +87,45 @@ function MilestoneUpload({
     if (!activeMilestone) return
     setUploading(true)
 
-    const urls: string[] = []
-    for (let i = 0; i < files.length; i++) {
+    const base64Photos: string[] = []
+
+    for (let i = 0; i < Math.min(files.length, 4); i++) {
       const file = files[i]
-      const path = `milestones/${activeMilestone.id}/${Date.now()}_${i}`
-      console.log('Yükleniyor:', path, file.name, file.size)
-      const { error: uploadError } = await supabase.storage.from('job-images').upload(path, file)
-      if (uploadError) {
-        console.error('Storage upload hatası:', uploadError)
-        alert('Fotoğraf yüklenemedi: ' + uploadError.message)
-        setUploading(false)
-        return
-      }
-      const { data } = supabase.storage.from('job-images').getPublicUrl(path)
-      urls.push(data.publicUrl)
+      const reader = new FileReader()
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onload = (e) => resolve(e.target?.result as string)
+        reader.readAsDataURL(file)
+      })
+      base64Photos.push(base64)
     }
 
-    await supabase
+    const supabase = createClient()
+
+    const { error } = await supabase
       .from('milestones')
       .update({
-        photos: urls,
-        status: 'awaiting_customer',
-        ai_report: null,
+        photos: base64Photos,
+        status: 'photos_uploaded',
       })
       .eq('id', activeMilestone.id)
 
+    if (error) {
+      console.error('Milestone güncelleme hatası:', error)
+      alert('Hata: ' + error.message)
+      setUploading(false)
+      return
+    }
+
+    console.log('Fotoğraflar kaydedildi!')
     setUploading(false)
 
-    await refreshMilestones()
-    await new Promise((r) => setTimeout(r, 400))
-    await refreshMilestones()
-    onMilestoneChange?.()
+    // Milestones yenile
+    const { data } = await supabase
+      .from('milestones')
+      .select('*')
+      .eq('job_id', activeMilestone.job_id)
+      .order('order_index', { ascending: true })
+    if (data) setMilestones(data)
   }
 
   if (!activeMilestone) return null
