@@ -91,11 +91,16 @@ function MilestoneUpload({
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const path = `milestones/${activeMilestone.id}/${Date.now()}_${i}`
-      const { error } = await supabase.storage.from('job-images').upload(path, file)
-      if (!error) {
-        const { data } = supabase.storage.from('job-images').getPublicUrl(path)
-        urls.push(data.publicUrl)
+      console.log('Yükleniyor:', path, file.name, file.size)
+      const { error: uploadError } = await supabase.storage.from('job-images').upload(path, file)
+      if (uploadError) {
+        console.error('Storage upload hatası:', uploadError)
+        alert('Fotoğraf yüklenemedi: ' + uploadError.message)
+        setUploading(false)
+        return
       }
+      const { data } = supabase.storage.from('job-images').getPublicUrl(path)
+      urls.push(data.publicUrl)
     }
 
     await supabase
