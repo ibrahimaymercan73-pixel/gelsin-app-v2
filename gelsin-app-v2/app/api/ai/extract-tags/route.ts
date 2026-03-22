@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req: NextRequest) {
+  console.log('=== EXTRACT TAGS BAŞLADI ===')
   const { job_id, description, title } = await req.json()
+  console.log('Body:', { job_id, description, title })
+  console.log('Gemini key var mı:', !!process.env.GEMINI_API_KEY)
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,9 +41,11 @@ Kurallar:
       }),
     }
   )
+  console.log('Gemini response status:', geminiRes.status)
 
   const geminiData = await geminiRes.json()
   const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '[]'
+  console.log('AI text:', aiText)
 
   let tags: string[] = []
   try {
@@ -49,6 +54,7 @@ Kurallar:
   } catch {
     console.error('Tag parse hatası:', aiText)
   }
+  console.log('Tags:', tags)
 
   // job_tags tablosuna kaydet
   if (tags.length > 0) {
@@ -65,6 +71,7 @@ Kurallar:
     .from('expertise_tags')
     .select('provider_id')
     .in('tag', tags.map(t => t.toLowerCase().trim()))
+  console.log('Matched providers:', matchingProviders?.length)
 
   if (matchingProviders && matchingProviders.length > 0) {
     const uniqueProviders = Array.from(new Set(matchingProviders.map(p => p.provider_id)))
