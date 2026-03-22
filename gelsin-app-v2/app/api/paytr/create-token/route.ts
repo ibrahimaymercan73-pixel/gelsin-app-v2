@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     const { data: job, error: jobErr } = await supabase
       .from('jobs')
-      .select('id, customer_id, title')
+      .select('id, customer_id, title, status')
       .eq('id', jobId)
       .single()
 
@@ -109,8 +109,29 @@ export async function POST(req: NextRequest) {
       const photoUrls = milestonePhotoUrlsFromRaw(ms.photos)
       const hasPhotos = photoUrls.length > 0
       const st = (typeof ms.status === 'string' ? ms.status : '').trim()
-      // ai_approved: sütun (ai_approved) bazen null; durum metni yeterli
+      const jobSt = (typeof (job as { status?: string }).status === 'string'
+        ? (job as { status: string }).status
+        : ''
+      ).trim()
+
+      /** Teklif kabulü: ilk aşama tutarı — iş henüz açık, milestone pending, fotoğraf yok */
+      const { data: allMs } = await supabase
+        .from('milestones')
+        .select('id, order_index, sort_order')
+        .eq('job_id', jobId)
+      const sortedIds = [...(allMs || [])].sort((a, b) => {
+        const oa = Number(a.order_index ?? a.sort_order ?? 0)
+        const ob = Number(b.order_index ?? b.sort_order ?? 0)
+        return oa - ob
+      })
+      const firstMilestoneId = sortedIds[0]?.id
+      const isProDepositPayment =
+        (jobSt === 'open' || jobSt === 'offered') &&
+        firstMilestoneId === ms.id &&
+        st === 'pending'
+
       const canPay =
+        isProDepositPayment ||
         st === 'awaiting_customer' ||
         st === 'ai_approved' ||
         (st === 'photos_uploaded' && hasPhotos)
@@ -123,7 +144,7 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         )
       }
-      if (!hasPhotos) {
+      if (!isProDepositPayment && !hasPhotos) {
         return NextResponse.json(
           { error: 'Bu aşama için önce uzmanın fotoğraf yüklemesi gerekir.' },
           { status: 400 }
