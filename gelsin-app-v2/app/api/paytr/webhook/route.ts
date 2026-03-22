@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import crypto from 'crypto'
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
@@ -9,6 +9,35 @@ function hexToUuid(hex32: string): string {
   const s = hex32.replace(/[^a-fA-F0-9]/g, '').slice(0, 32)
   if (s.length !== 32) return ''
   return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20)}`
+}
+
+/** Pro ilk taksitte payment.amount küçük kalır; agreed_price asla ilk taksit olmamalı */
+async function resolveAgreedPriceForJob(
+  supabase: SupabaseClient,
+  jobId: string,
+  offerId: string,
+  paymentAmountFallback: number
+): Promise<number> {
+  const { data: offerRow } = await supabase
+    .from('offers')
+    .select('price')
+    .eq('id', offerId)
+    .maybeSingle()
+
+  const fromOffer = Number((offerRow as { price?: number } | null)?.price)
+  if (Number.isFinite(fromOffer) && fromOffer > 0) {
+    return fromOffer
+  }
+
+  const { data: mss } = await supabase.from('milestones').select('amount').eq('job_id', jobId)
+  const sumMs = (mss || []).reduce(
+    (s, m) => s + (Number((m as { amount?: number }).amount) || 0),
+    0
+  )
+  if (sumMs > 0) return sumMs
+
+  const fb = Number(paymentAmountFallback)
+  return Number.isFinite(fb) && fb > 0 ? fb : 0
 }
 
 export async function POST(request: NextRequest) {
@@ -176,12 +205,12 @@ export async function POST(request: NextRequest) {
         const needsOfferAccept = st === 'open' || st === 'offered'
 
         if (needsOfferAccept) {
-          const { data: offerRow } = await supabase
-            .from('offers')
-            .select('price')
-            .eq('id', payment.offer_id)
-            .single()
-          const agreed = Number((offerRow as { price?: number })?.price) || Number(payment.amount)
+          const agreed = await resolveAgreedPriceForJob(
+            supabase,
+            payment.job_id,
+            payment.offer_id as string,
+            Number((payment as { amount?: number }).amount)
+          )
 
           await Promise.all([
             supabase

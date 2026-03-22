@@ -122,24 +122,37 @@ export async function POST(req: NextRequest) {
       const sortedIds = [...(allMs || [])].sort((a, b) => {
         const oa = Number(a.order_index ?? a.sort_order ?? 0)
         const ob = Number(b.order_index ?? b.sort_order ?? 0)
-        return oa - ob
+        if (oa !== ob) return oa - ob
+        return String(a.id).localeCompare(String(b.id))
       })
       const firstMilestoneId = sortedIds[0]?.id
+      /**
+       * İlk taksit: iş açık veya teklif aşamasında; ayrıca iş "accepted" ama ilk aşama hâlâ pending
+       * (ödeme yarım kaldı / webhook sırası) — yine kapora, fotoğraf yok.
+       */
       const isProDepositPayment =
-        (jobSt === 'open' || jobSt === 'offered') &&
+        (jobSt === 'open' || jobSt === 'offered' || jobSt === 'accepted') &&
         firstMilestoneId === ms.id &&
         st === 'pending'
 
-      const canPay =
-        isProDepositPayment ||
-        st === 'awaiting_customer' ||
-        st === 'ai_approved' ||
-        (st === 'photos_uploaded' && hasPhotos)
+      /** Fotoğraf yüklendi; bazı kayıtlarda durum active kaldı (awaiting_customer yazılmadı) */
+      const payableWithPhotos =
+        hasPhotos &&
+        (st === 'awaiting_customer' ||
+          st === 'ai_approved' ||
+          st === 'photos_uploaded' ||
+          st === 'active')
+
+      const canPay = isProDepositPayment || payableWithPhotos
       if (!canPay) {
         return NextResponse.json(
           {
             error:
-              'Bu aşama için ödeme: uzman fotoğraf yükledikten sonra siz inceleyip onaylayabilirsiniz (durum: müşteri onayı bekleniyor).',
+              'Bu aşama için ödeme şu an uygun değil. İlk taksit: iş teklif aşamasındayken veya ilk aşama beklerken deneyin. Sonraki taksitler: uzman fotoğraf yükledikten sonra deneyin. Sayfayı yenilemeyi deneyin.',
+            code: 'milestone_not_payable',
+            milestone_status: st,
+            job_status: jobSt,
+            has_photos: hasPhotos,
           },
           { status: 400 }
         )

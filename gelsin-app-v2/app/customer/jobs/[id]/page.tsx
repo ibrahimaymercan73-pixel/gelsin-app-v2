@@ -518,14 +518,32 @@ export default function JobDetailPage() {
   else if (hasOffers && rawStatus === 'open') activeStep = 1
   else activeStep = 0
 
+  /** Pro’da agreed_price bazen ilk taksit kadar yazılmış; gösterimde teklif / aşama toplamı öncelikli */
+  const displayAgreedPrice = (() => {
+    if (!job) return null as number | null
+    const acc = offers.find(
+      (o: any) =>
+        o.status === 'accepted' &&
+        job.provider_id &&
+        String(o.provider_id).toLowerCase() === String(job.provider_id).toLowerCase()
+    )
+    const mSum = milestones.reduce((s, m) => s + (Number(m.amount) || 0), 0)
+    const jobAg = typeof job.agreed_price === 'number' && job.agreed_price > 0 ? job.agreed_price : null
+    if (job.is_pro) {
+      const offerP =
+        acc && acc.is_milestone && Number(acc.price) > 0 ? Number(acc.price) : null
+      return offerP ?? (mSum > 0 ? mSum : null) ?? jobAg ?? null
+    }
+    const offerP = acc && Number(acc.price) > 0 ? Number(acc.price) : null
+    return jobAg ?? offerP ?? null
+  })()
+
   const commissionRate = 0.02
   const commissionAmount =
-    typeof job?.agreed_price === 'number'
-      ? job.agreed_price * commissionRate
-      : null
+    typeof displayAgreedPrice === 'number' ? displayAgreedPrice * commissionRate : null
   const providerNetAmount =
-    typeof job?.agreed_price === 'number' && commissionAmount !== null
-      ? job.agreed_price - commissionAmount
+    typeof displayAgreedPrice === 'number' && commissionAmount !== null
+      ? displayAgreedPrice - commissionAmount
       : null
 
   const submitReview = async () => {
@@ -832,11 +850,11 @@ export default function JobDetailPage() {
 
         {/* İş detayları + fiyat — yumuşak bloklar, çizgisiz */}
         <section className="rounded-2xl border border-slate-200/60 bg-white p-5 sm:p-6 shadow-sm space-y-5">
-          {job?.agreed_price != null && Number(job.agreed_price) > 0 && (
+          {displayAgreedPrice != null && Number(displayAgreedPrice) > 0 && (
             <div className="rounded-2xl bg-slate-50/90 px-5 py-5">
               <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Anlaşılan tutar</p>
               <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                ₺{Number(job.agreed_price).toLocaleString('tr-TR')}
+                ₺{Number(displayAgreedPrice).toLocaleString('tr-TR')}
               </p>
               {providerNetAmount !== null && (
                 <div className="mt-4 space-y-1.5 text-xs text-slate-400">
@@ -934,7 +952,8 @@ export default function JobDetailPage() {
                                 : m.status}
                   </span>
                   {((m.status === 'awaiting_customer' || m.status === 'ai_approved') ||
-                    (m.status === 'photos_uploaded' && photoUrls.length > 0)) && (
+                    (m.status === 'photos_uploaded' && photoUrls.length > 0) ||
+                    (m.status === 'active' && photoUrls.length > 0)) && (
                     <button
                       type="button"
                       disabled={milestonePaying === m.id}
