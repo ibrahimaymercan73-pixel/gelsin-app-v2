@@ -25,20 +25,38 @@ function MilestoneUpload({ jobId }: { jobId: string }) {
   const [uploading, setUploading] = useState(false)
   const supabase = createClient()
 
-  useEffect(() => {
-    supabase
+  const refreshMilestones = async () => {
+    const { data } = await supabase
       .from('milestones')
       .select('*')
       .eq('job_id', jobId)
       .order('order_index', { ascending: true })
-      .then(({ data }) => {
-        if (data) setMilestones(data)
-      })
+    if (data) setMilestones(data)
+  }
+
+  useEffect(() => {
+    void refreshMilestones()
   }, [jobId])
 
-  const activeMilestone = milestones.find(
-    (m) => m.status === 'active' || m.status === 'photos_uploaded'
-  )
+  /** AI bittiğinde (ai_approved / ai_rejected) kartın kaybolmaması için tüm “işlemdeki” durumlar */
+  const activeMilestone = [...milestones]
+    .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+    .find((m) =>
+      ['active', 'photos_uploaded', 'ai_approved', 'ai_rejected'].includes(m.status)
+    )
+
+  /** AI API sonrası liste gecikirse veya photos_uploaded takılı kalırsa kısa süre yenile */
+  useEffect(() => {
+    const waiting = milestones.some((m) => m.status === 'photos_uploaded')
+    if (!waiting) return
+    let n = 0
+    const t = setInterval(() => {
+      n += 1
+      void refreshMilestones()
+      if (n >= 24) clearInterval(t)
+    }, 2500)
+    return () => clearInterval(t)
+  }, [jobId, milestones])
 
   const handlePhotoUpload = async (files: FileList) => {
     if (!activeMilestone) return
@@ -64,21 +82,22 @@ function MilestoneUpload({ jobId }: { jobId: string }) {
       .eq('id', activeMilestone.id)
 
     // AI kontrolünü tetikle
-    await fetch('/api/ai/check-milestone', {
+    const aiRes = await fetch('/api/ai/check-milestone', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ milestone_id: activeMilestone.id }),
     })
+    try {
+      await aiRes.json()
+    } catch {
+      /* yanıt gövdesi yoksa yok say */
+    }
 
     setUploading(false)
 
-    // Milestones yenile
-    const { data } = await supabase
-      .from('milestones')
-      .select('*')
-      .eq('job_id', jobId)
-      .order('order_index', { ascending: true })
-    if (data) setMilestones(data)
+    await refreshMilestones()
+    await new Promise((r) => setTimeout(r, 400))
+    await refreshMilestones()
   }
 
   if (!activeMilestone) return null

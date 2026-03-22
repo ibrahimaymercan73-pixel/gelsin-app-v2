@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-const GEMINI_MODEL = 'gemini-1.5-flash'
+/** v1beta'da kısa ad (gemini-1.5-flash) 404 verebiliyor; güncel görüş modelleri */
+const GEMINI_MODEL_DEFAULT = 'gemini-2.0-flash'
 
 function jsonSuccess(body: {
   approved: boolean
@@ -164,27 +165,66 @@ RAPOR: 2-3 cümle değerlendirme`
       return runFallback('GEMINI_API_KEY tanımlı değil; yedek onay uygulandı.')
     }
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`
+    const body = JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: prompt }, ...imageParts],
+        },
+      ],
+    })
 
-    let geminiRes: Response
+    const model =
+      (process.env.GEMINI_MODEL && process.env.GEMINI_MODEL.trim()) || GEMINI_MODEL_DEFAULT
+    const attempts: { api: 'v1' | 'v1beta'; model: string }[] = [
+      { api: 'v1beta', model },
+      { api: 'v1beta', model: 'gemini-2.0-flash' },
+      { api: 'v1', model: 'gemini-2.0-flash' },
+      { api: 'v1beta', model: 'gemini-1.5-flash-latest' },
+    ]
+    const tried = new Set<string>()
+    let geminiRes: Response | null = null
+    let geminiData: Record<string, unknown> = {}
+
     try {
-      geminiRes = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: prompt }, ...imageParts],
-            },
-          ],
-        }),
-      })
+      for (const { api, model: m } of attempts) {
+        const key = `${api}:${m}`
+        if (tried.has(key)) continue
+        tried.add(key)
+        const geminiUrl = `https://generativelanguage.googleapis.com/${api}/models/${m}:generateContent?key=${GEMINI_KEY}`
+        console.log('Gemini denemesi:', geminiUrl.replace(GEMINI_KEY, 'REDACTED'))
+        const res = await fetch(geminiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        })
+        const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+        geminiData = data
+        if (res.ok) {
+          geminiRes = res
+          break
+        }
+        const errObj = data?.error as { code?: number; message?: string } | undefined
+        const is404 =
+          res.status === 404 ||
+          errObj?.code === 404 ||
+          (typeof errObj?.message === 'string' && errObj.message.includes('not found'))
+        console.warn('Gemini deneme başarısız:', res.status, is404 ? '(model/endpoint, sıradaki denenecek)' : '')
+        if (!is404) {
+          geminiRes = res
+          break
+        }
+      }
     } catch (fetchErr) {
       console.error('Gemini fetch ağ hatası:', fetchErr)
       return runFallback('Gemini isteği gönderilemedi; yedek onay uygulandı.')
     }
 
-    const geminiData = await geminiRes.json().catch(() => ({}))
+    if (!geminiRes) {
+      return runFallback(
+        `Gemini API: uygun model bulunamadı (${JSON.stringify(geminiData).slice(0, 200)})`
+      )
+    }
+
     console.log('Gemini response:', JSON.stringify(geminiData).slice(0, 500))
 
     if (!geminiRes.ok) {
@@ -194,7 +234,10 @@ RAPOR: 2-3 cümle değerlendirme`
       )
     }
 
-    const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    const gd = geminiData as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+    }
+    const aiText = gd.candidates?.[0]?.content?.parts?.[0]?.text || ''
     console.log('AI text:', aiText)
 
     if (!aiText.trim()) {
