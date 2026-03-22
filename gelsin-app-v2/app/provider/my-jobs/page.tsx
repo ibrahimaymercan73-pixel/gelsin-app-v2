@@ -20,7 +20,28 @@ import { useChatOverlay } from '@/components/ChatOverlay'
 
 const QrScanner = dynamic(() => import('@/components/QrScanner'), { ssr: false })
 
-function MilestoneUpload({ jobId }: { jobId: string }) {
+function milestonePhotoUrls(m: { photos?: unknown }): string[] {
+  const p = m?.photos
+  if (!p) return []
+  if (Array.isArray(p)) return p.filter((x): x is string => typeof x === 'string')
+  if (typeof p === 'string') {
+    try {
+      const j = JSON.parse(p)
+      return Array.isArray(j) ? j.filter((x: unknown): x is string => typeof x === 'string') : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+function MilestoneUpload({
+  jobId,
+  onMilestoneChange,
+}: {
+  jobId: string
+  onMilestoneChange?: () => void
+}) {
   const [milestones, setMilestones] = useState<any[]>([])
   const [uploading, setUploading] = useState(false)
   const supabase = createClient()
@@ -57,6 +78,15 @@ function MilestoneUpload({ jobId }: { jobId: string }) {
     }, 2500)
     return () => clearInterval(t)
   }, [jobId, milestones])
+
+  /** Müşteri ödediğinde üst liste (bitiş QR kilidi) güncellensin */
+  useEffect(() => {
+    if (!onMilestoneChange) return
+    const waitingPay = milestones.some((m) => m.status === 'ai_approved')
+    if (!waitingPay) return
+    const t = setInterval(() => onMilestoneChange(), 12000)
+    return () => clearInterval(t)
+  }, [milestones, onMilestoneChange])
 
   const handlePhotoUpload = async (files: FileList) => {
     if (!activeMilestone) return
@@ -98,6 +128,7 @@ function MilestoneUpload({ jobId }: { jobId: string }) {
     await refreshMilestones()
     await new Promise((r) => setTimeout(r, 400))
     await refreshMilestones()
+    onMilestoneChange?.()
   }
 
   if (!activeMilestone) return null
@@ -129,8 +160,25 @@ function MilestoneUpload({ jobId }: { jobId: string }) {
       )}
 
       {activeMilestone.status === 'ai_approved' && (
-        <div className="bg-green-100 rounded-xl p-3 text-center">
+        <div className="bg-green-100 rounded-xl p-3 text-center space-y-2">
           <p className="text-sm font-bold text-green-700">✅ AI onayladı! Müşteri onayı bekleniyor.</p>
+          {milestonePhotoUrls(activeMilestone).length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold text-green-800 mb-1">Gönderilen fotoğraflar (müşteri de görür)</p>
+              <div className="flex gap-1.5 flex-wrap justify-center">
+                {milestonePhotoUrls(activeMilestone).map((url, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="overflow-hidden rounded-lg border border-green-300 w-14 h-14"
+                    onClick={() => window.open(url, '_blank')}
+                  >
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {activeMilestone.ai_report && (
             <p className="text-xs text-green-600 mt-1">{activeMilestone.ai_report}</p>
           )}
@@ -176,9 +224,13 @@ function MilestoneUpload({ jobId }: { jobId: string }) {
                   ? 'bg-green-500 text-white'
                   : m.status === 'ai_approved'
                     ? 'bg-blue-500 text-white'
-                    : m.status === 'active'
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-gray-200 text-gray-500'
+                    : m.status === 'photos_uploaded'
+                      ? 'bg-sky-500 text-white'
+                      : m.status === 'ai_rejected'
+                        ? 'bg-red-400 text-white'
+                        : m.status === 'active'
+                          ? 'bg-orange-500 text-white'
+                          : 'bg-gray-200 text-gray-500'
               }`}
             >
               {i + 1}
@@ -272,6 +324,26 @@ export default function ProviderMyJobsPage() {
       profiles: counterpartsByJobId[j.id]
         ? { full_name: counterpartsByJobId[j.id].full_name, phone: counterpartsByJobId[j.id].phone, hide_phone: !counterpartsByJobId[j.id].phone }
         : null,
+    }))
+
+    // Pro iş: bitiş QR — tüm milestone'lar customer_approved olmadan kapalı
+    const proJobIds = jobsCombined.filter((j: any) => j.is_pro).map((j: any) => j.id as string)
+    let proBlockEndQr: Record<string, boolean> = {}
+    if (proJobIds.length > 0) {
+      const { data: msRows } = await supabase
+        .from('milestones')
+        .select('job_id, status')
+        .in('job_id', proJobIds)
+      for (const jid of proJobIds) {
+        const list = (msRows || []).filter((m: any) => m.job_id === jid)
+        proBlockEndQr[jid] =
+          list.length > 0 && list.some((m: any) => m.status !== 'customer_approved')
+      }
+    }
+
+    jobsCombined = jobsCombined.map((j: any) => ({
+      ...j,
+      pro_block_end_qr: j.is_pro ? !!proBlockEndQr[j.id] : false,
     }))
 
     // Tarihe göre yeniden sırala (en yeni üstte)
@@ -378,6 +450,13 @@ export default function ProviderMyJobsPage() {
     } else {
       if (job?.payment_released || job?.qr_used_at) {
         setResult({ ok: false, msg: 'Bu QR kodu zaten kullanıldı, ödeme yapıldı.' })
+        return
+      }
+      if (job?.is_pro && job?.pro_block_end_qr) {
+        setResult({
+          ok: false,
+          msg: 'Gelsin Pro: Önce müşterinin tüm aşama ödemelerini tamamlaması gerekir. Bitiş QR şimdilik kapalı.',
+        })
         return
       }
       const res = await fetch('/api/qr/complete', {
@@ -708,12 +787,25 @@ export default function ProviderMyJobsPage() {
                     Başlangıç QR okut
                   </button>
                 )}
-                {job.status === 'started' && job.is_pro && <MilestoneUpload jobId={job.id} />}
+                {job.status === 'started' && job.is_pro && (
+                  <MilestoneUpload jobId={job.id} onMilestoneChange={() => void load()} />
+                )}
+                {job.status === 'started' && job.is_pro && job.pro_block_end_qr && (
+                  <p className="text-[11px] text-center text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                    Gelsin Pro: Müşteri tüm aşama ödemelerini tamamlayana kadar <strong>bitiş QR</strong> kullanılamaz.
+                    Her AI onayından sonra müşteri &quot;Onayla &amp; Öde&quot; yapınca sıradaki aşama açılır.
+                  </p>
+                )}
                 {job.status === 'started' && (
                   <button
                     type="button"
                     onClick={() => setScanModal({ jobId: job.id, action: 'end' })}
-                    className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-emerald-600 py-3.5 text-[15px] font-semibold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-500 active:scale-[0.99]"
+                    disabled={!!job.is_pro && !!job.pro_block_end_qr}
+                    className={`flex w-full items-center justify-center gap-2.5 rounded-2xl py-3.5 text-[15px] font-semibold shadow-md transition-all active:scale-[0.99] ${
+                      job.is_pro && job.pro_block_end_qr
+                        ? 'bg-slate-200 text-slate-500 cursor-not-allowed shadow-none'
+                        : 'bg-emerald-600 text-white shadow-emerald-600/20 hover:bg-emerald-500'
+                    }`}
                   >
                     <QrCode className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
                     Bitiş QR okut

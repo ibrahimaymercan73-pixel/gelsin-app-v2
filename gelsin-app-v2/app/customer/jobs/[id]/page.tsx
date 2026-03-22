@@ -31,6 +31,22 @@ const CATEGORY_LABELS: Record<string, string> = {
   repair: 'Tamir',
 }
 
+/** Supabase JSONB bazen dizi, bazen JSON string döner */
+function milestonePhotoUrls(m: { photos?: unknown }): string[] {
+  const p = m?.photos
+  if (!p) return []
+  if (Array.isArray(p)) return p.filter((x): x is string => typeof x === 'string')
+  if (typeof p === 'string') {
+    try {
+      const j = JSON.parse(p)
+      return Array.isArray(j) ? j.filter((x: unknown): x is string => typeof x === 'string') : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
 export default function JobDetailPage() {
   const { id } = useParams()
   const router = useRouter()
@@ -854,7 +870,9 @@ export default function JobDetailPage() {
             <h3 className="font-bold text-gray-900 mb-3">
               🏗️ Gelsin Pro — İş Aşamaları
             </h3>
-            {milestones.map((m: any) => (
+            {milestones.map((m: any) => {
+              const photoUrls = milestonePhotoUrls(m)
+              return (
               <div key={m.id} className="border rounded-2xl p-4 mb-3">
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-bold text-gray-900">{m.title}</span>
@@ -904,11 +922,11 @@ export default function JobDetailPage() {
                     </button>
                   )}
                 </div>
-                {m.photos && m.photos.length > 0 && (
+                {photoUrls.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-xs text-gray-400 mb-2">📸 Uzman fotoğraf yükledi:</p>
+                    <p className="text-xs text-gray-400 mb-2">📸 Uzmanın yüklediği fotoğraflar:</p>
                     <div className="flex gap-2 flex-wrap">
-                      {m.photos.map((url: string, i: number) => (
+                      {photoUrls.map((url: string, i: number) => (
                         <img
                           key={i}
                           src={url}
@@ -928,7 +946,8 @@ export default function JobDetailPage() {
                   </div>
                 )}
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
 

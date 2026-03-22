@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     const { data: job } = await supabase
       .from('jobs')
-      .select('id, status, customer_id, provider_id, title, payment_released, qr_scanned_at, qr_used_at')
+      .select('id, status, customer_id, provider_id, title, payment_released, qr_scanned_at, qr_used_at, is_pro')
       .eq('id', jobId)
       .single()
 
@@ -106,6 +106,24 @@ export async function POST(req: NextRequest) {
     // end
     if (job.payment_released || job.qr_used_at || job.status === 'completed') {
       return NextResponse.json({ error: 'Bu bitiş QR zaten kullanılmış.' }, { status: 409 })
+    }
+
+    // Gelsin Pro: tüm milestone ödemeleri tamamlanmadan iş bitirilemez
+    if ((job as { is_pro?: boolean }).is_pro) {
+      const { data: msRows } = await supabase.from('milestones').select('id, status').eq('job_id', jobId)
+      const list = msRows || []
+      if (list.length > 0) {
+        const allPaid = list.every((m) => m.status === 'customer_approved')
+        if (!allPaid) {
+          return NextResponse.json(
+            {
+              error:
+                'Tüm aşamalar müşteri tarafından onaylanıp ödenmeden iş bitirilemez. Lütfen müşterinin her aşamayı onaylamasını bekleyin.',
+            },
+            { status: 400 }
+          )
+        }
+      }
     }
 
     // 1) job status → completed

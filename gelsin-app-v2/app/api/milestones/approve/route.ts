@@ -79,6 +79,20 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', milestone_id)
 
+    // Sonraki bekleyen aşamayı uzman için aktif et
+    const { data: nextPending } = await supabase
+      .from('milestones')
+      .select('id')
+      .eq('job_id', milestone.job_id)
+      .eq('status', 'pending')
+      .order('order_index', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (nextPending?.id) {
+      await supabase.from('milestones').update({ status: 'active' }).eq('id', nextPending.id)
+    }
+
     await supabase.from('notifications').insert({
       user_id: providerId,
       title: '💰 Ödeme Alındı!',

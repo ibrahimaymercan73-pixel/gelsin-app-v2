@@ -119,10 +119,14 @@ Bu fotoğrafları incele:
 ONAY: EVET veya HAYIR
 RAPOR: 2-3 cümle değerlendirme`
 
-    const imageParts: Array<{ inline_data: { mime_type: string; data: string } }> = []
+    /** REST örnekleri: inline_data + mime_type; bazı istemciler inlineData kullanır — istekte ikisini de deniyoruz */
+    type ImgPart =
+      | { inline_data: { mime_type: string; data: string } }
+      | { inlineData: { mimeType: string; data: string } }
+    const imagePayloads: { snake: ImgPart[]; camel: ImgPart[] } = { snake: [], camel: [] }
     for (const url of photos.slice(0, 3)) {
       try {
-        const imgRes = await fetch(url)
+        const imgRes = await fetch(url, { redirect: 'follow' })
         if (!imgRes.ok) {
           console.error('Fotoğraf HTTP hatası:', url, imgRes.status)
           continue
@@ -130,19 +134,19 @@ RAPOR: 2-3 cümle değerlendirme`
         const buffer = await imgRes.arrayBuffer()
         const base64 = Buffer.from(buffer).toString('base64')
         const ct = imgRes.headers.get('content-type') || ''
-        const mime_type = ct.startsWith('image/') ? ct.split(';')[0].trim() : 'image/jpeg'
-        imageParts.push({
-          inline_data: {
-            mime_type,
-            data: base64,
-          },
+        const mime = ct.startsWith('image/') ? ct.split(';')[0].trim() : 'image/jpeg'
+        imagePayloads.snake.push({
+          inline_data: { mime_type: mime, data: base64 },
+        })
+        imagePayloads.camel.push({
+          inlineData: { mimeType: mime, data: base64 },
         })
       } catch (imgErr) {
         console.error('Fotoğraf çekme hatası:', imgErr)
       }
     }
 
-    console.log('Image parts sayısı:', imageParts.length)
+    console.log('Görüntü parça sayısı:', imagePayloads.snake.length)
 
     const runFallback = async (reason: string) => {
       console.warn('=== AI FALLBACK (onay) ===', reason)
@@ -157,7 +161,7 @@ RAPOR: 2-3 cümle değerlendirme`
       })
     }
 
-    if (imageParts.length === 0) {
+    if (imagePayloads.snake.length === 0) {
       return runFallback('Fotoğraflar indirilemedi; yedek onay uygulandı.')
     }
 
@@ -165,13 +169,21 @@ RAPOR: 2-3 cümle değerlendirme`
       return runFallback('GEMINI_API_KEY tanımlı değil; yedek onay uygulandı.')
     }
 
-    const body = JSON.stringify({
-      contents: [
-        {
-          parts: [{ text: prompt }, ...imageParts],
-        },
-      ],
-    })
+    const generationConfig = {
+      temperature: 0.4,
+      maxOutputTokens: 1024,
+    }
+
+    const buildBody = (parts: ImgPart[]) =>
+      JSON.stringify({
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: prompt }, ...parts],
+          },
+        ],
+        generationConfig,
+      })
 
     const model =
       (process.env.GEMINI_MODEL && process.env.GEMINI_MODEL.trim()) || GEMINI_MODEL_DEFAULT
@@ -186,32 +198,43 @@ RAPOR: 2-3 cümle değerlendirme`
     let geminiData: Record<string, unknown> = {}
 
     try {
-      for (const { api, model: m } of attempts) {
-        const key = `${api}:${m}`
-        if (tried.has(key)) continue
-        tried.add(key)
-        const geminiUrl = `https://generativelanguage.googleapis.com/${api}/models/${m}:generateContent?key=${GEMINI_KEY}`
-        console.log('Gemini denemesi:', geminiUrl.replace(GEMINI_KEY, 'REDACTED'))
-        const res = await fetch(geminiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body,
-        })
-        const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
-        geminiData = data
-        if (res.ok) {
-          geminiRes = res
-          break
-        }
-        const errObj = data?.error as { code?: number; message?: string } | undefined
-        const is404 =
-          res.status === 404 ||
-          errObj?.code === 404 ||
-          (typeof errObj?.message === 'string' && errObj.message.includes('not found'))
-        console.warn('Gemini deneme başarısız:', res.status, is404 ? '(model/endpoint, sıradaki denenecek)' : '')
-        if (!is404) {
-          geminiRes = res
-          break
+      outer: for (const partStyle of ['snake', 'camel'] as const) {
+        const imageParts = partStyle === 'snake' ? imagePayloads.snake : imagePayloads.camel
+        const body = buildBody(imageParts)
+        for (const { api, model: m } of attempts) {
+          const key = `${partStyle}:${api}:${m}`
+          if (tried.has(key)) continue
+          tried.add(key)
+          const geminiUrl = `https://generativelanguage.googleapis.com/${api}/models/${m}:generateContent?key=${GEMINI_KEY}`
+          console.log('Gemini denemesi:', geminiUrl.replace(GEMINI_KEY, 'REDACTED'), partStyle)
+          const res = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+          })
+          const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+          geminiData = data
+          if (res.ok) {
+            geminiRes = res
+            break outer
+          }
+          const errObj = data?.error as { code?: number; message?: string; status?: string } | undefined
+          const is404 =
+            res.status === 404 ||
+            errObj?.code === 404 ||
+            (typeof errObj?.message === 'string' && errObj.message.toLowerCase().includes('not found'))
+          const isInvalidImagePart =
+            res.status === 400 &&
+            typeof errObj?.message === 'string' &&
+            (errObj.message.includes('inline') || errObj.message.includes('Part') || errObj.message.includes('Invalid'))
+          console.warn('Gemini deneme başarısız:', res.status, partStyle, is404 ? '(404→sıradaki)' : '')
+          if (isInvalidImagePart) {
+            break
+          }
+          if (!is404) {
+            geminiRes = res
+            break outer
+          }
         }
       }
     } catch (fetchErr) {
@@ -235,13 +258,38 @@ RAPOR: 2-3 cümle değerlendirme`
     }
 
     const gd = geminiData as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>
+      promptFeedback?: { blockReason?: string }
+      candidates?: Array<{
+        finishReason?: string
+        content?: { parts?: Array<{ text?: string }> }
+      }>
     }
-    const aiText = gd.candidates?.[0]?.content?.parts?.[0]?.text || ''
-    console.log('AI text:', aiText)
+
+    const extractAiText = (): string => {
+      const parts = gd.candidates?.[0]?.content?.parts
+      if (!Array.isArray(parts)) return ''
+      return parts.map((p) => (typeof p.text === 'string' ? p.text : '')).join('\n').trim()
+    }
+
+    let aiText = extractAiText()
+    const finishReason = gd.candidates?.[0]?.finishReason
+    const blockReason = gd.promptFeedback?.blockReason
+    console.log('AI text (raw):', aiText.slice(0, 500))
+    console.log('finishReason:', finishReason, 'blockReason:', blockReason)
 
     if (!aiText.trim()) {
-      return runFallback('AI yanıt metni boş; yedek onay uygulandı.')
+      const detail = [
+        blockReason && `prompt block: ${blockReason}`,
+        finishReason && `finish: ${finishReason}`,
+      ]
+        .filter(Boolean)
+        .join(' | ')
+      console.error('Gemini boş metin, tam gövde:', JSON.stringify(geminiData).slice(0, 1500))
+      return runFallback(
+        detail
+          ? `AI yanıt üretemedi (${detail}); yedek onay.`
+          : 'AI yanıt metni boş; yedek onay uygulandı.'
+      )
     }
 
     const approved = aiText.toUpperCase().includes('ONAY: EVET')
