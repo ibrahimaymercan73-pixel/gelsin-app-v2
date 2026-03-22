@@ -67,7 +67,7 @@ Kurallar:
     .in('tag', tags.map(t => t.toLowerCase().trim()))
 
   if (matchingProviders && matchingProviders.length > 0) {
-    const uniqueProviders = [...new Set(matchingProviders.map(p => p.provider_id))]
+    const uniqueProviders = Array.from(new Set(matchingProviders.map(p => p.provider_id)))
 
     await supabase.from('notifications').insert(
       uniqueProviders.map(provider_id => ({
