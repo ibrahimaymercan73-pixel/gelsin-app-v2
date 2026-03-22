@@ -69,6 +69,7 @@ export default function JobDetailPage() {
   const [paymentModal, setPaymentModal] = useState<{ token: string; merchantOid: string } | null>(null)
   const [milestones, setMilestones] = useState<any[]>([])
   const [milestonePaying, setMilestonePaying] = useState<string | null>(null)
+  const [detailOffer, setDetailOffer] = useState<any>(null)
 
   const load = async () => {
     const supabase = createClient()
@@ -1184,6 +1185,15 @@ export default function JobDetailPage() {
                         job?.status !== 'accepted' &&
                         job?.status !== 'started' && (
                           <div className="mt-5 flex flex-col gap-2.5">
+                            {offer.is_milestone && (
+                              <button
+                                type="button"
+                                onClick={() => setDetailOffer(offer)}
+                                className="w-full py-3 rounded-2xl border border-blue-200 bg-blue-50 text-blue-700 font-bold text-sm mb-2"
+                              >
+                                🏗️ Teklif Detayları & Aşamaları Gör
+                              </button>
+                            )}
                             <button
                               type="button"
                               className="w-full rounded-2xl bg-slate-900 py-3.5 text-sm font-semibold text-white shadow-lg shadow-slate-900/15 transition-colors hover:bg-slate-800 disabled:opacity-50"
@@ -1403,6 +1413,90 @@ export default function JobDetailPage() {
           >
             ✕
           </button>
+        </div>
+      )}
+
+      {detailOffer && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
+          onClick={() => setDetailOffer(null)}
+        >
+          <div
+            className="bg-white w-full max-w-lg rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-black text-gray-900">🏗️ İş Aşamaları</h3>
+              <button
+                type="button"
+                onClick={() => setDetailOffer(null)}
+                className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-gray-50 rounded-2xl p-4 mb-4">
+              <div className="flex justify-between mb-1">
+                <span className="text-sm text-gray-500">Uzman</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {detailOffer.profiles?.full_name ?? detailOffer.provider?.full_name}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">Toplam Fiyat</span>
+                <span className="text-lg font-black text-gray-900">
+                  ₺{detailOffer.price?.toLocaleString('tr-TR')}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Ödeme Aşamaları</p>
+
+            {milestones
+              .filter((m: any) => m.offer_id === detailOffer.id)
+              .sort((a: any, b: any) => a.order_index - b.order_index)
+              .map((m: any, i: number) => (
+                <div
+                  key={m.id}
+                  className="flex items-center gap-4 p-4 border border-gray-100 rounded-2xl mb-2"
+                >
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-black text-blue-600">{i + 1}</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-gray-900">{m.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{m.description}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black text-gray-900">₺{m.amount?.toLocaleString('tr-TR')}</p>
+                    <p className="text-xs text-gray-400">%{m.percentage}</p>
+                  </div>
+                </div>
+              ))}
+
+            <div className="border-t border-gray-100 pt-4 mt-2 flex justify-between items-center mb-6">
+              <span className="text-sm text-gray-500">İlk ödeme (şimdi)</span>
+              <span className="text-xl font-black text-blue-600">
+                ₺
+                {milestones
+                  .filter((m: any) => m.offer_id === detailOffer.id)
+                  .sort((a: any, b: any) => a.order_index - b.order_index)[0]
+                  ?.amount?.toLocaleString('tr-TR')}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setDetailOffer(null)
+                void handleAcceptOffer(detailOffer.id)
+              }}
+              className="w-full bg-gray-900 text-white rounded-2xl py-4 font-bold text-base"
+            >
+              ✅ Teklifi Kabul Et & İlk Ödemeyi Yap
+            </button>
+          </div>
         </div>
       )}
     </div>
