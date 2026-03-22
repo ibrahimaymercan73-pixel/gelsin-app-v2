@@ -904,8 +904,24 @@ export default function JobDetailPage() {
                     </button>
                   )}
                 </div>
+                {m.photos && m.photos.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs text-gray-400 mb-2">📸 Uzman fotoğraf yükledi:</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {m.photos.map((url: string, i: number) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt={`Aşama fotoğrafı ${i + 1}`}
+                          className="w-20 h-20 object-cover rounded-xl border border-gray-200 cursor-pointer"
+                          onClick={() => window.open(url, '_blank')}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {m.ai_report && (
-                  <div className="mt-3 bg-green-50 rounded-xl p-3">
+                  <div className="mt-2 bg-green-50 rounded-xl p-3">
                     <p className="text-xs text-green-700 font-semibold">
                       🤖 AI Raporu: {m.ai_report}
                     </p>

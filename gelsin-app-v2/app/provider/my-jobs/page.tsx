@@ -20,6 +20,159 @@ import { useChatOverlay } from '@/components/ChatOverlay'
 
 const QrScanner = dynamic(() => import('@/components/QrScanner'), { ssr: false })
 
+function MilestoneUpload({ jobId }: { jobId: string }) {
+  const [milestones, setMilestones] = useState<any[]>([])
+  const [uploading, setUploading] = useState(false)
+  const supabase = createClient()
+
+  useEffect(() => {
+    supabase
+      .from('milestones')
+      .select('*')
+      .eq('job_id', jobId)
+      .order('order_index', { ascending: true })
+      .then(({ data }) => {
+        if (data) setMilestones(data)
+      })
+  }, [jobId])
+
+  const activeMilestone = milestones.find(
+    (m) => m.status === 'active' || m.status === 'photos_uploaded'
+  )
+
+  const handlePhotoUpload = async (files: FileList) => {
+    if (!activeMilestone) return
+    setUploading(true)
+
+    const urls: string[] = []
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const path = `milestones/${activeMilestone.id}/${Date.now()}_${i}`
+      const { error } = await supabase.storage.from('job-images').upload(path, file)
+      if (!error) {
+        const { data } = supabase.storage.from('job-images').getPublicUrl(path)
+        urls.push(data.publicUrl)
+      }
+    }
+
+    await supabase
+      .from('milestones')
+      .update({
+        photos: urls,
+        status: 'photos_uploaded',
+      })
+      .eq('id', activeMilestone.id)
+
+    // AI kontrolünü tetikle
+    await fetch('/api/ai/check-milestone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ milestone_id: activeMilestone.id }),
+    })
+
+    setUploading(false)
+
+    // Milestones yenile
+    const { data } = await supabase
+      .from('milestones')
+      .select('*')
+      .eq('job_id', jobId)
+      .order('order_index', { ascending: true })
+    if (data) setMilestones(data)
+  }
+
+  if (!activeMilestone) return null
+
+  return (
+    <div className="border border-orange-200 bg-orange-50 rounded-2xl p-4 mb-3">
+      <p className="text-xs font-bold text-orange-600 mb-1">🏗️ AKTİF AŞAMA</p>
+      <p className="font-bold text-gray-900 mb-1">{activeMilestone.title}</p>
+      <p className="text-xs text-gray-500 mb-3">{activeMilestone.description}</p>
+
+      {activeMilestone.status === 'active' && (
+        <label className="block w-full bg-orange-500 text-white text-center font-bold py-3 rounded-xl cursor-pointer">
+          {uploading ? 'Yükleniyor...' : '📸 Fotoğraf Yükle (3-4 adet)'}
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => e.target.files && handlePhotoUpload(e.target.files)}
+            disabled={uploading}
+          />
+        </label>
+      )}
+
+      {activeMilestone.status === 'photos_uploaded' && (
+        <div className="bg-blue-100 rounded-xl p-3 text-center">
+          <p className="text-sm font-bold text-blue-700">🤖 AI denetimi yapılıyor...</p>
+        </div>
+      )}
+
+      {activeMilestone.status === 'ai_approved' && (
+        <div className="bg-green-100 rounded-xl p-3 text-center">
+          <p className="text-sm font-bold text-green-700">✅ AI onayladı! Müşteri onayı bekleniyor.</p>
+          {activeMilestone.ai_report && (
+            <p className="text-xs text-green-600 mt-1">{activeMilestone.ai_report}</p>
+          )}
+        </div>
+      )}
+
+      {activeMilestone.status === 'ai_rejected' && (
+        <div>
+          <div className="bg-red-100 rounded-xl p-3 mb-2">
+            <p className="text-sm font-bold text-red-700">❌ AI onaylamadı. Lütfen tekrar fotoğraf yükleyin.</p>
+            {activeMilestone.ai_report && (
+              <p className="text-xs text-red-600 mt-1">{activeMilestone.ai_report}</p>
+            )}
+          </div>
+          <label className="block w-full bg-orange-500 text-white text-center font-bold py-3 rounded-xl cursor-pointer">
+            📸 Tekrar Fotoğraf Yükle
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                if (e.target.files) {
+                  await supabase
+                    .from('milestones')
+                    .update({ status: 'active', photos: [] })
+                    .eq('id', activeMilestone.id)
+                  handlePhotoUpload(e.target.files)
+                }
+              }}
+            />
+          </label>
+        </div>
+      )}
+
+      <div className="mt-3">
+        <p className="text-xs text-gray-400 mb-2">Tüm aşamalar:</p>
+        {milestones.map((m, i) => (
+          <div key={m.id} className="flex items-center gap-2 mb-1">
+            <span
+              className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                m.status === 'customer_approved'
+                  ? 'bg-green-500 text-white'
+                  : m.status === 'ai_approved'
+                    ? 'bg-blue-500 text-white'
+                    : m.status === 'active'
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-gray-200 text-gray-500'
+              }`}
+            >
+              {i + 1}
+            </span>
+            <span className="text-xs text-gray-600">{m.title}</span>
+            <span className="text-xs text-gray-400 ml-auto">₺{m.amount?.toLocaleString('tr-TR')}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function ProviderMyJobsPage() {
   const [jobs, setJobs] = useState<any[]>([])
   const [scanModal, setScanModal] = useState<{ jobId: string; action: 'start' | 'end' } | null>(null)
@@ -46,7 +199,7 @@ export default function ProviderMyJobsPage() {
     const { data: jobsByProvider } = await supabase
       .from('jobs')
       .select(
-        'id, title, status, agreed_price, address, lat, lng, customer_id, qr_scanned_at, payment_released, qr_used_at, created_at, service_categories(name, icon)'
+        'id, title, status, agreed_price, address, lat, lng, customer_id, qr_scanned_at, payment_released, qr_used_at, created_at, is_pro, service_categories(name, icon)'
       )
       .eq('provider_id', user.id)
       .order('created_at', { ascending: false })
@@ -71,7 +224,7 @@ export default function ProviderMyJobsPage() {
       const { data: jobsByOffers } = await supabase
         .from('jobs')
         .select(
-          'id, title, status, agreed_price, address, lat, lng, customer_id, qr_scanned_at, payment_released, qr_used_at, created_at, service_categories(name, icon)'
+          'id, title, status, agreed_price, address, lat, lng, customer_id, qr_scanned_at, payment_released, qr_used_at, created_at, is_pro, service_categories(name, icon)'
         )
         .in('id', jobIds)
 
@@ -536,6 +689,7 @@ export default function ProviderMyJobsPage() {
                     Başlangıç QR okut
                   </button>
                 )}
+                {job.status === 'started' && job.is_pro && <MilestoneUpload jobId={job.id} />}
                 {job.status === 'started' && (
                   <button
                     type="button"
