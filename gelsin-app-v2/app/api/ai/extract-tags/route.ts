@@ -5,55 +5,32 @@ export async function POST(req: NextRequest) {
   console.log('=== EXTRACT TAGS BAŞLADI ===')
   const { job_id, description, title } = await req.json()
   console.log('Body:', { job_id, description, title })
-  console.log('Gemini key var mı:', !!process.env.GEMINI_API_KEY)
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const GEMINI_KEY = process.env.GEMINI_API_KEY
-  if (!GEMINI_KEY) {
-    return NextResponse.json({ error: 'GEMINI_API_KEY yok' }, { status: 400 })
-  }
+  const stopWords = ['ve', 'ile', 'bir', 'bu', 'şu', 'da', 
+    'de', 'mi', 'mu', 'mü', 'için', 'ama', 'fakat', 'veya',
+    'olan', 'olur', 'edilir', 'yapılır', 'istiyorum', 'lazım',
+    'gerek', 'var', 'yok', 'çok', 'az', 'büyük', 'küçük',
+    'the', 'bir', 'ben', 'sen', 'biz', 'onlar', 'gibi']
 
-  const prompt = `Aşağıdaki iş ilanından uzmanlık etiketlerini ayıkla.
-İş başlığı: ${title}
-İş açıklaması: ${description}
+  const text = `${title} ${description}`.toLowerCase()
+  const words = text
+    .replace(/[^a-züğışçö\s]/gi, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2)
+    .filter(w => !stopWords.includes(w))
 
-Sadece JSON array döndür, başka hiçbir şey yazma:
-["etiket1", "etiket2", "etiket3"]
+  const freq: Record<string, number> = {}
+  words.forEach(w => { freq[w] = (freq[w] || 0) + 1 })
 
-Kurallar:
-- Maksimum 5 etiket
-- Kısa ve öz (1-3 kelime)
-- Teknik terimler öncelikli
-- Türkçe olsun
-- Örnek: ["İtalyan Boya", "Duvar", "25m2"]`
-
-  const geminiRes = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
-    }
-  )
-  console.log('Gemini response status:', geminiRes.status)
-
-  const geminiData = await geminiRes.json()
-  const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '[]'
-  console.log('AI text:', aiText)
-
-  let tags: string[] = []
-  try {
-    const cleaned = aiText.replace(/```json|```/g, '').trim()
-    tags = JSON.parse(cleaned)
-  } catch {
-    console.error('Tag parse hatası:', aiText)
-  }
+  const tags = Object.entries(freq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([word]) => word)
   console.log('Tags:', tags)
 
   // job_tags tablosuna kaydet
